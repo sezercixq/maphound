@@ -1,0 +1,10 @@
+node_modules
+.output
+.wxt
+.env*
+*.log
+src/generated/
+coverage
+test-results
+playwright-report
+.DS_Store
