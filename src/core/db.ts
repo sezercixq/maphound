@@ -4,10 +4,29 @@ export const DB_NAME = 'maphound';
 export const DB_VERSION = 1;
 
 export type Scope = 'origin' | 'subdomains';
-export type JobState = 'queued' | 'fetching' | 'fetched' | 'scanning' | 'done' | 'failed';
+export type JobState =
+  | 'queued'
+  | 'fetching'
+  | 'fetched'
+  | 'scanning'
+  | 'done'
+  | 'failed'
+  /** Deliberately not fetched or not usable; see `skipReason`. Terminal. */
+  | 'skipped';
 export type JobKind = 'script' | 'map';
 export type Severity = 'critical' | 'high' | 'medium' | 'low' | 'info';
 export type Confidence = 'verified-format' | 'high' | 'medium' | 'low';
+export type ThirdPartyKind = 'cdn' | 'analytics' | 'other';
+export type SkipReason =
+  /** Outside the site's scope: shown in the UI as "third party (not scanned)". */
+  | 'third-party'
+  | 'too-large'
+  /** A `<script>.map` probe that returned 404/410. */
+  | 'not-found'
+  /** The response did not look like a source map. */
+  | 'not-a-map'
+  | 'unsupported-url'
+  | 'site-disabled';
 
 export interface SiteSettings {
   /** Probe `<script>.map` even when no sourceMappingURL is declared. Off by default. */
@@ -75,9 +94,21 @@ export interface JobRecord {
   hash?: string;
   state: JobState;
   attempts: number;
-  /** Epoch ms until which a worker owns this job. Expired leases return to `queued`. */
+  /**
+   * While `fetching`/`scanning`: epoch ms until which a worker owns this job; expired leases
+   * return to `queued`. While `queued`: earliest time it may run again (retry backoff).
+   */
   leasedUntil: number;
   error?: string;
+  skipReason?: SkipReason;
+  /** Set for `skipReason: 'third-party'`. */
+  thirdParty?: ThirdPartyKind;
+  /** For map jobs: hash of the script that referenced this map. */
+  parentHash?: string;
+  /** How a map job was discovered. */
+  via?: 'header' | 'comment' | 'data-uri' | 'probe';
+  /** Page on which a script job was discovered. */
+  pageUrl?: string;
   createdAt: number;
   updatedAt: number;
 }

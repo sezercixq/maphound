@@ -1,5 +1,6 @@
 import { defineExtensionMessaging } from '@webext-core/messaging';
 import type { Scope } from './db';
+import type { EnableResult } from './sites';
 
 export interface ScanResult {
   jobId: string;
@@ -16,8 +17,9 @@ export interface PingResult {
 /** Typed protocol. Messages carry keys, never content. */
 export interface ProtocolMap {
   'scripts:discovered': (data: { pageUrl: string; urls: string[] }) => void;
-  'site:enable': (data: { origin: string; scope: Scope }) => { ok: boolean };
-  'site:disable': (data: { origin: string; purge: boolean }) => { ok: boolean };
+  /** Sent by the side panel after `permissions.request` succeeded. */
+  'site:enable': (data: { origin: string; scope: Scope }) => EnableResult;
+  'site:disable': (data: { origin: string; purge: boolean }) => { ok: boolean; revoked: string[] };
   'scan:request': (data: { jobId: string; blobKey: string; kind: 'script' | 'map' }) => ScanResult;
   'scan:rescan': (data: { origin: string }) => { queued: number };
   /** Background to offscreen to worker round trip used to verify the pipeline. */
