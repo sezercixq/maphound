@@ -1,7 +1,8 @@
 import { type DBSchema, type IDBPDatabase, openDB } from 'idb';
 
 export const DB_NAME = 'maphound';
-export const DB_VERSION = 1;
+/** v2: `maps` keyed by job id with origin/hash indexes and the rebuilt file index. */
+export const DB_VERSION = 2;
 
 export type Scope = 'origin' | 'subdomains';
 export type JobState =
@@ -60,12 +61,37 @@ export interface BlobRecord {
   lastAccess: number;
 }
 
+export interface MapFileEntry {
+  path: string;
+  size: number;
+  vendor: boolean;
+  /** Why the file has no content in the export, if it has none. */
+  omitted?: 'no-content' | 'too-large' | 'total-limit';
+}
+
+/** Result of analysing one fetched source map. File contents stay in the map blob. */
 export interface MapRecord {
+  /** Id of the map job. */
+  id: string;
+  /** SHA-256 of the map blob. */
   hash: string;
   scriptHash: string;
+  origin: string;
+  url: string;
+  via?: JobRecord['via'];
+  indexed: boolean;
+  sourceCount: number;
   fileCount: number;
+  withContent: number;
+  missingContent: number;
+  vendorCount: number;
+  totalBytes: number;
   hasSourcesContent: boolean;
   partial: boolean;
+  partialReasons: string[];
+  warnings: string[];
+  files: MapFileEntry[];
+  createdAt: number;
 }
 
 export interface FindingRecord {
@@ -128,7 +154,7 @@ export interface MaphoundDB extends DBSchema {
   maps: {
     key: string;
     value: MapRecord;
-    indexes: { 'by-scriptHash': string };
+    indexes: { 'by-origin': string; 'by-scriptHash': string; 'by-hash': string };
   };
   findings: {
     key: string;
@@ -147,27 +173,34 @@ export type MaphoundHandle = IDBPDatabase<MaphoundDB>;
 
 export function openMaphoundDb(name: string = DB_NAME): Promise<MaphoundHandle> {
   return openDB<MaphoundDB>(name, DB_VERSION, {
-    upgrade(db) {
-      db.createObjectStore('sites', { keyPath: 'origin' });
+    upgrade(db, oldVersion) {
+      if (oldVersion < 1) {
+        db.createObjectStore('sites', { keyPath: 'origin' });
 
-      const scripts = db.createObjectStore('scripts', { keyPath: 'hash' });
-      scripts.createIndex('by-origin', 'origin');
-      scripts.createIndex('by-lastAccess', 'lastAccess');
+        const scripts = db.createObjectStore('scripts', { keyPath: 'hash' });
+        scripts.createIndex('by-origin', 'origin');
+        scripts.createIndex('by-lastAccess', 'lastAccess');
 
-      const blobs = db.createObjectStore('blobs', { keyPath: 'hash' });
-      blobs.createIndex('by-lastAccess', 'lastAccess');
+        const blobs = db.createObjectStore('blobs', { keyPath: 'hash' });
+        blobs.createIndex('by-lastAccess', 'lastAccess');
 
-      const maps = db.createObjectStore('maps', { keyPath: 'hash' });
-      maps.createIndex('by-scriptHash', 'scriptHash');
+        const findings = db.createObjectStore('findings', { keyPath: 'id' });
+        findings.createIndex('by-origin', 'origin');
+        findings.createIndex('by-scriptHash', 'scriptHash');
+        findings.createIndex('by-secretHash', 'secretHash');
 
-      const findings = db.createObjectStore('findings', { keyPath: 'id' });
-      findings.createIndex('by-origin', 'origin');
-      findings.createIndex('by-scriptHash', 'scriptHash');
-      findings.createIndex('by-secretHash', 'secretHash');
-
-      const jobs = db.createObjectStore('jobs', { keyPath: 'id' });
-      jobs.createIndex('by-state', 'state');
-      jobs.createIndex('by-origin', 'origin');
+        const jobs = db.createObjectStore('jobs', { keyPath: 'id' });
+        jobs.createIndex('by-state', 'state');
+        jobs.createIndex('by-origin', 'origin');
+      }
+      if (oldVersion < 2) {
+        // v1 `maps` was keyed by map hash and never written; recreate it keyed by job id.
+        if (db.objectStoreNames.contains('maps')) db.deleteObjectStore('maps');
+        const maps = db.createObjectStore('maps', { keyPath: 'id' });
+        maps.createIndex('by-origin', 'origin');
+        maps.createIndex('by-scriptHash', 'scriptHash');
+        maps.createIndex('by-hash', 'hash');
+      }
     },
   });
 }

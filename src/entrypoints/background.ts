@@ -6,8 +6,9 @@ import { resumeJobs } from '@/core/jobs';
 import { onMessage, type PingResult, sendMessage } from '@/core/messaging';
 import { ensureOffscreen } from '@/core/offscreen';
 import { registeredCollectorIds } from '@/core/permissions';
+import { Processor } from '@/core/processor';
 import { enqueueDiscovered } from '@/core/queue';
-import { disableSite, enableSite, syncSites } from '@/core/sites';
+import { disableSite, enableSite, syncSites, updateSiteSettings } from '@/core/sites';
 
 /** Background to offscreen to worker round trip. */
 export async function pingPipeline(text: string): Promise<PingResult> {
@@ -26,17 +27,28 @@ async function scanBlobForTest(text: string) {
   return sendMessage('scan:request', { jobId: 'e2e', blobKey: hash, kind: 'script' });
 }
 
+const processor = new Processor({
+  db: getDb,
+  analyze: async (request) => {
+    await ensureOffscreen();
+    return sendMessage('map:analyze', request);
+  },
+  notify: notifyDbChanged,
+  schedule: (callback, ms) => setTimeout(callback, ms),
+});
+
 const fetcher = new Fetcher({
   db: getDb,
   fetch: (input, init) => fetch(input, init),
   notify: notifyDbChanged,
   schedule: (callback, ms) => setTimeout(callback, ms),
+  onSettled: () => void processor.pump(),
 });
 
-/** Requeue expired leases, then continue downloading. Runs on every wake-up path. */
+/** Requeue expired leases, then continue downloading and analysing. Runs on every wake-up. */
 async function resume(): Promise<void> {
   await resumeJobs();
-  await fetcher.pump();
+  await Promise.all([fetcher.pump(), processor.pump()]);
 }
 
 export default defineBackground(() => {
@@ -70,7 +82,10 @@ export default defineBackground(() => {
     if (result.queued > 0) void fetcher.pump();
   });
 
-  onMessage('site:enable', ({ data }) => enableSite(data.origin, data.scope));
+  onMessage('site:enable', ({ data }) =>
+    enableSite(data.origin, data.scope, undefined, data.settings),
+  );
+  onMessage('site:settings', ({ data }) => updateSiteSettings(data.origin, data.patch));
   onMessage('site:disable', ({ data }) => disableSite(data.origin, data.purge));
   onMessage('scan:rescan', () => ({ queued: 0 }));
 
@@ -84,6 +99,7 @@ export default defineBackground(() => {
     g.__mhRegistered = registeredCollectorIds;
     g.__mhJobs = async () => (await getDb()).getAll('jobs');
     g.__mhScripts = async () => (await getDb()).getAll('scripts');
+    g.__mhMaps = async () => (await getDb()).getAll('maps');
     g.__mhSetSettings = async (origin: string, patch: Partial<SiteSettings>) => {
       const db = await getDb();
       const site = await db.get('sites', origin);

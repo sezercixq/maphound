@@ -101,6 +101,8 @@ export interface FetcherDeps {
   maxMapBytes?: number;
   perOriginConcurrency?: number;
   maxConcurrency?: number;
+  /** Called after every job settles, e.g. to start analysing fetched maps. */
+  onSettled?: (job: JobRecord) => void;
 }
 
 type JobPatch = Partial<Omit<JobRecord, 'id'>>;
@@ -187,6 +189,7 @@ export class Fetcher {
       const task: Promise<void> = this.run(job)
         .catch(() => {})
         .finally(() => {
+          this.deps.onSettled?.(job);
           this.active.set(key, (this.active.get(key) ?? 1) - 1);
           this.running.delete(task);
           void this.pump();
@@ -352,7 +355,7 @@ export class Fetcher {
     await tx.done;
     this.deps.notify?.({ store: 'scripts', origin: job.origin });
 
-    await this.finish(db, job, { state: 'fetched', hash, error: undefined });
+    await this.finish(db, job, { state: 'fetched', hash, attempts: 0, error: undefined });
   }
 
   private async storeInlineMap(
@@ -395,6 +398,6 @@ export class Fetcher {
     }
     const hash = await sha256Hex(outcome.bytes);
     await this.storeBlob(db, hash, 'map', outcome.bytes);
-    return this.finish(db, job, { state: 'fetched', hash, error: undefined });
+    return this.finish(db, job, { state: 'fetched', hash, attempts: 0, error: undefined });
   }
 }

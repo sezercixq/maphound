@@ -1,3 +1,4 @@
+import { collectGarbage } from './analyze';
 import { notifyDbChanged } from './channel';
 import { getDb, type MaphoundHandle, type Scope, type SiteRecord, type SiteSettings } from './db';
 import {
@@ -30,6 +31,7 @@ export async function enableSite(
   input: string,
   scope: Scope,
   db?: MaphoundHandle,
+  settings: Partial<SiteSettings> = {},
 ): Promise<EnableResult> {
   const origin = parseOrigin(input);
   if (!origin) return { ok: false, reason: 'invalid-origin' };
@@ -43,7 +45,7 @@ export async function enableSite(
     origin,
     scope: finalScope,
     enabledAt: previous?.enabledAt ?? Date.now(),
-    settings: previous?.settings ?? DEFAULT_SETTINGS,
+    settings: { ...DEFAULT_SETTINGS, ...previous?.settings, ...settings },
   });
   await registerCollector(origin, finalScope);
   const injected = await injectIntoOpenTabs(origin, finalScope);
@@ -52,13 +54,32 @@ export async function enableSite(
 }
 
 async function purgeOrigin(handle: MaphoundHandle, origin: string): Promise<void> {
-  for (const store of ['scripts', 'findings', 'jobs'] as const) {
+  for (const store of ['scripts', 'maps', 'findings', 'jobs'] as const) {
     const tx = handle.transaction(store, 'readwrite');
     for (const key of await tx.store.index('by-origin').getAllKeys(origin)) {
       await tx.store.delete(key);
     }
     await tx.done;
   }
+  await collectGarbage(handle);
+}
+
+/** Change a site's settings. Takes effect for scripts fetched from now on. */
+export async function updateSiteSettings(
+  origin: string,
+  patch: Partial<SiteSettings>,
+  db?: MaphoundHandle,
+): Promise<{ ok: boolean }> {
+  const handle = db ?? (await getDb());
+  const site = await handle.get('sites', origin);
+  if (!site) return { ok: false };
+  const settings: SiteSettings = {
+    aggressiveMapProbing: patch.aggressiveMapProbing ?? site.settings.aggressiveMapProbing,
+    useCredentials: patch.useCredentials ?? site.settings.useCredentials,
+  };
+  await handle.put('sites', { ...site, settings });
+  notifyDbChanged({ store: 'sites', origin });
+  return { ok: true };
 }
 
 /**

@@ -1,3 +1,4 @@
+import { analyzeMap } from '@/core/analyze';
 import { getDb } from '@/core/db';
 import type { WorkerRequest, WorkerResponse } from './protocol';
 
@@ -12,6 +13,13 @@ async function handle(request: WorkerRequest): Promise<WorkerResponse> {
       return { id: request.id, ok: true, result: { type: 'ping', echo: request.text } };
     }
     const db = await getDb();
+    if (request.type === 'analyze-map') {
+      return {
+        id: request.id,
+        ok: true,
+        result: { type: 'analyze-map', result: await analyzeMap(db, request.request) },
+      };
+    }
     const record = await db.get('blobs', request.blobKey);
     if (!record) throw new Error(`blob not found: ${request.blobKey}`);
     const buffer = await record.blob.arrayBuffer();

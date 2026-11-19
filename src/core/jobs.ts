@@ -4,7 +4,8 @@ export const LEASE_MS = 60_000;
 export const MAX_ATTEMPTS = 3;
 
 /**
- * Return jobs whose lease expired (service worker died mid-flight) to `queued`,
+ * Return jobs whose lease expired (service worker died mid-flight) to `queued` (fetching) or
+ * `fetched` (scanning),
  * or mark them failed after too many attempts. Idempotent; safe to call on every wake-up.
  */
 export async function resumeJobs(
@@ -29,7 +30,9 @@ export async function resumeJobs(
         });
         failed++;
       } else {
-        await tx.store.put({ ...job, state: 'queued', leasedUntil: 0, updatedAt: now });
+        // A fetch restarts from the queue; an analysis restarts from the stored blob.
+        const resumed = state === 'fetching' ? 'queued' : 'fetched';
+        await tx.store.put({ ...job, state: resumed, leasedUntil: 0, updatedAt: now });
         requeued++;
       }
     }

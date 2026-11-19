@@ -1,0 +1,191 @@
+{
+  "extDescription": {
+    "message": "Passive source map and bundle secret scanner. Everything stays local."
+  },
+  "tagline": {
+    "message": "Source maps, rebuilt locally"
+  },
+  "originLabel": {
+    "message": "Active site"
+  },
+  "originUnavailable": {
+    "message": "This tab's address can't be read. Enter a site:"
+  },
+  "originPlaceholder": {
+    "message": "https://example.com"
+  },
+  "originUse": {
+    "message": "Use"
+  },
+  "originChange": {
+    "message": "Change"
+  },
+  "originInvalid": {
+    "message": "Enter an http(s) address."
+  },
+  "optionSubdomains": {
+    "message": "Include subdomains"
+  },
+  "optionSubdomainsHint": {
+    "message": "Covers $1 and every *.$1"
+  },
+  "optionProbing": {
+    "message": "Aggressive .map guessing"
+  },
+  "optionProbingHint": {
+    "message": "Also request <script>.map when no map is declared. Sends extra requests."
+  },
+  "enable": {
+    "message": "Enable this site"
+  },
+  "enabling": {
+    "message": "Waiting for permission…"
+  },
+  "permissionDenied": {
+    "message": "Permission was not granted."
+  },
+  "enableFailed": {
+    "message": "Could not enable the site: $1"
+  },
+  "enabledScopeOrigin": {
+    "message": "Enabled for this origin only"
+  },
+  "enabledScopeSubdomains": {
+    "message": "Enabled with subdomains"
+  },
+  "enabledVia": {
+    "message": "Covered by $1"
+  },
+  "disable": {
+    "message": "Disable and delete data"
+  },
+  "disableConfirm": {
+    "message": "Delete everything collected for this site?"
+  },
+  "confirmDelete": {
+    "message": "Delete"
+  },
+  "cancel": {
+    "message": "Cancel"
+  },
+  "privacyNote": {
+    "message": "Only script URLs are read from the page. Files are fetched without cookies and never leave this device."
+  },
+  "statScripts": {
+    "message": "Scripts"
+  },
+  "statMaps": {
+    "message": "Maps"
+  },
+  "statFiles": {
+    "message": "Files"
+  },
+  "statThirdParty": {
+    "message": "3rd party"
+  },
+  "sectionScripts": {
+    "message": "Scripts"
+  },
+  "sectionMaps": {
+    "message": "Source maps"
+  },
+  "emptyScripts": {
+    "message": "No scripts collected yet."
+  },
+  "emptyMaps": {
+    "message": "No source maps found yet."
+  },
+  "stateQueued": {
+    "message": "queued"
+  },
+  "stateFetching": {
+    "message": "fetching"
+  },
+  "stateFetched": {
+    "message": "fetched"
+  },
+  "stateScanning": {
+    "message": "analysing"
+  },
+  "stateDone": {
+    "message": "done"
+  },
+  "stateFailed": {
+    "message": "failed"
+  },
+  "skipThirdParty": {
+    "message": "3rd party (not scanned)"
+  },
+  "skipTooLarge": {
+    "message": "too large"
+  },
+  "skipNotFound": {
+    "message": "not found"
+  },
+  "skipNotAMap": {
+    "message": "not a source map"
+  },
+  "skipUnsupported": {
+    "message": "unsupported"
+  },
+  "skipSiteDisabled": {
+    "message": "site disabled"
+  },
+  "thirdPartyCdn": {
+    "message": "CDN"
+  },
+  "thirdPartyAnalytics": {
+    "message": "analytics"
+  },
+  "thirdPartyOther": {
+    "message": "other"
+  },
+  "mapFiles": {
+    "message": "$1 files"
+  },
+  "mapVendor": {
+    "message": "$1 vendor"
+  },
+  "mapMissing": {
+    "message": "$1 without source"
+  },
+  "mapPartial": {
+    "message": "partial"
+  },
+  "mapSourcesIncluded": {
+    "message": "sources included"
+  },
+  "mapNoSources": {
+    "message": "no sourcesContent"
+  },
+  "viaComment": {
+    "message": "comment"
+  },
+  "viaHeader": {
+    "message": "header"
+  },
+  "viaDataUri": {
+    "message": "inline"
+  },
+  "viaProbe": {
+    "message": "guessed"
+  },
+  "downloadZip": {
+    "message": "Download sources (ZIP)"
+  },
+  "downloadPreparing": {
+    "message": "Packing $1 / $2…"
+  },
+  "downloadDone": {
+    "message": "Saved $1 files"
+  },
+  "downloadNothing": {
+    "message": "No source content to export yet."
+  },
+  "downloadFailed": {
+    "message": "Export failed: $1"
+  },
+  "showMore": {
+    "message": "Show $1 more"
+  }
+}

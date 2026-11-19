@@ -9,7 +9,8 @@ export default defineConfig({
   vite: () => ({ plugins: [preact(), tailwindcss()] }),
   manifest: {
     name: 'MapHound',
-    description: 'Passive source map and bundle secret scanner. Everything stays local.',
+    description: '__MSG_extDescription__',
+    default_locale: 'en',
     minimum_chrome_version: '116',
     permissions: ['storage', 'sidePanel', 'offscreen', 'scripting', 'alarms', 'activeTab'],
     optional_host_permissions: ['https://*/*', 'http://*/*'],

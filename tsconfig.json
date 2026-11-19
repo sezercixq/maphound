@@ -5,6 +5,7 @@
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
     "exactOptionalPropertyTypes": false,
+    "resolveJsonModule": true,
     "jsx": "react-jsx",
     "jsxImportSource": "preact",
     "types": ["vitest/globals", "node"]

@@ -1,0 +1,191 @@
+{
+  "extDescription": {
+    "message": "Pasif source map ve paket sırrı tarayıcısı. Her şey yerelde kalır."
+  },
+  "tagline": {
+    "message": "Source map'ler, yerelde yeniden kurulur"
+  },
+  "originLabel": {
+    "message": "Aktif site"
+  },
+  "originUnavailable": {
+    "message": "Bu sekmenin adresi okunamıyor. Bir site girin:"
+  },
+  "originPlaceholder": {
+    "message": "https://ornek.com"
+  },
+  "originUse": {
+    "message": "Kullan"
+  },
+  "originChange": {
+    "message": "Değiştir"
+  },
+  "originInvalid": {
+    "message": "Geçerli bir http(s) adresi girin."
+  },
+  "optionSubdomains": {
+    "message": "Alt alan adlarını (subdomains) dahil et"
+  },
+  "optionSubdomainsHint": {
+    "message": "$1 ve tüm *.$1 adreslerini kapsar"
+  },
+  "optionProbing": {
+    "message": "Agresif .map tahmini"
+  },
+  "optionProbingHint": {
+    "message": "Map bildirilmemişse de <script>.map ister. Ek istek gönderir."
+  },
+  "enable": {
+    "message": "Bu siteyi etkinleştir"
+  },
+  "enabling": {
+    "message": "İzin bekleniyor…"
+  },
+  "permissionDenied": {
+    "message": "İzin verilmedi."
+  },
+  "enableFailed": {
+    "message": "Site etkinleştirilemedi: $1"
+  },
+  "enabledScopeOrigin": {
+    "message": "Yalnızca bu origin için etkin"
+  },
+  "enabledScopeSubdomains": {
+    "message": "Alt alan adlarıyla etkin"
+  },
+  "enabledVia": {
+    "message": "$1 kapsamında"
+  },
+  "disable": {
+    "message": "Kapat ve verileri sil"
+  },
+  "disableConfirm": {
+    "message": "Bu site için toplanan her şey silinsin mi?"
+  },
+  "confirmDelete": {
+    "message": "Sil"
+  },
+  "cancel": {
+    "message": "Vazgeç"
+  },
+  "privacyNote": {
+    "message": "Sayfadan yalnızca betik adresleri okunur. Dosyalar çerezsiz indirilir ve bu cihazdan çıkmaz."
+  },
+  "statScripts": {
+    "message": "Betikler"
+  },
+  "statMaps": {
+    "message": "Map'ler"
+  },
+  "statFiles": {
+    "message": "Dosyalar"
+  },
+  "statThirdParty": {
+    "message": "3. taraf"
+  },
+  "sectionScripts": {
+    "message": "Betikler"
+  },
+  "sectionMaps": {
+    "message": "Source map'ler"
+  },
+  "emptyScripts": {
+    "message": "Henüz betik toplanmadı."
+  },
+  "emptyMaps": {
+    "message": "Henüz source map bulunamadı."
+  },
+  "stateQueued": {
+    "message": "sırada"
+  },
+  "stateFetching": {
+    "message": "indiriliyor"
+  },
+  "stateFetched": {
+    "message": "indirildi"
+  },
+  "stateScanning": {
+    "message": "analiz ediliyor"
+  },
+  "stateDone": {
+    "message": "tamam"
+  },
+  "stateFailed": {
+    "message": "hata"
+  },
+  "skipThirdParty": {
+    "message": "3. taraf (taranmadı)"
+  },
+  "skipTooLarge": {
+    "message": "çok büyük"
+  },
+  "skipNotFound": {
+    "message": "bulunamadı"
+  },
+  "skipNotAMap": {
+    "message": "source map değil"
+  },
+  "skipUnsupported": {
+    "message": "desteklenmiyor"
+  },
+  "skipSiteDisabled": {
+    "message": "site kapalı"
+  },
+  "thirdPartyCdn": {
+    "message": "CDN"
+  },
+  "thirdPartyAnalytics": {
+    "message": "analitik"
+  },
+  "thirdPartyOther": {
+    "message": "diğer"
+  },
+  "mapFiles": {
+    "message": "$1 dosya"
+  },
+  "mapVendor": {
+    "message": "$1 vendor"
+  },
+  "mapMissing": {
+    "message": "$1 kaynaksız"
+  },
+  "mapPartial": {
+    "message": "kısmi"
+  },
+  "mapSourcesIncluded": {
+    "message": "kaynak kodu açık"
+  },
+  "mapNoSources": {
+    "message": "sourcesContent yok"
+  },
+  "viaComment": {
+    "message": "yorum"
+  },
+  "viaHeader": {
+    "message": "başlık"
+  },
+  "viaDataUri": {
+    "message": "gömülü"
+  },
+  "viaProbe": {
+    "message": "tahmin"
+  },
+  "downloadZip": {
+    "message": "Kaynak Kodları İndir (ZIP)"
+  },
+  "downloadPreparing": {
+    "message": "Paketleniyor $1 / $2…"
+  },
+  "downloadDone": {
+    "message": "$1 dosya kaydedildi"
+  },
+  "downloadNothing": {
+    "message": "Dışa aktarılacak kaynak kodu yok."
+  },
+  "downloadFailed": {
+    "message": "Dışa aktarma başarısız: $1"
+  },
+  "showMore": {
+    "message": "$1 tane daha göster"
+  }
+}

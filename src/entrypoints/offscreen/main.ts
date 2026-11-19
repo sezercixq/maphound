@@ -50,3 +50,9 @@ onMessage('scan:request', async ({ data }) => {
   if (result.type !== 'scan') throw new Error('unexpected worker result');
   return { jobId: data.jobId, bytes: result.bytes, sha256: result.sha256 };
 });
+
+onMessage('map:analyze', async ({ data }) => {
+  const result = await call({ type: 'analyze-map', request: data });
+  if (result.type !== 'analyze-map') throw new Error('unexpected worker result');
+  return result.result;
+});
