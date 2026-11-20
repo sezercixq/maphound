@@ -4,7 +4,7 @@ description: "Legacy FCM server key: sends push notifications to every user of t
 severity: high
 confidence: high
 keywords: [":apa91b"]
-regex: "(AAAA[A-Za-z0-9_-]{7}:APA91b[A-Za-z0-9_-]{134,140})(?![A-Za-z0-9_-])"
+regex: "(?<![A-Za-z0-9_-])(AAAA[A-Za-z0-9_-]{7}:APA91b[A-Za-z0-9_-]{134,140})(?![A-Za-z0-9_-])"
 secretGroup: 1
 entropy: 4.0
 references:

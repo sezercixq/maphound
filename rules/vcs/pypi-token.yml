@@ -4,7 +4,7 @@ description: "PyPI upload token (macaroon)."
 severity: critical
 confidence: high
 keywords: ["pypi-ageichlwas5vcmc"]
-regex: "(pypi-AgEIcHlwaS5vcmc[A-Za-z0-9_-]{50,200})(?![A-Za-z0-9_-])"
+regex: "(?<![A-Za-z0-9_-])(pypi-AgEIcHlwaS5vcmc[A-Za-z0-9_-]{50,200})(?![A-Za-z0-9_-])"
 secretGroup: 1
 entropy: 4.0
 references:

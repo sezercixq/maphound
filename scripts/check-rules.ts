@@ -6,6 +6,8 @@ import { loadRules, runRuleTests } from './rules-lib';
  * per regex with recheck, and a timing test against hostile input.
  */
 const started = Date.now();
+// More fuzzing seeds on CI; fewer locally to keep the command quick.
+const RECHECK_SEEDS = process.env.CI ? [1, 2, 3, 4, 5] : [1, 2];
 const { rules, errors } = loadRules();
 const tests = runRuleTests(rules);
 errors.push(...tests.errors);
@@ -19,13 +21,21 @@ for (const { file, source } of rules) {
   ] as const;
   for (const [name, pattern, flags] of patterns) {
     if (!pattern) continue;
-    const result = await check(pattern, flags, { timeout: 20_000 });
-    if (result.status === 'vulnerable') {
-      errors.push(
-        `${file}: ${name} is vulnerable to ReDoS (${result.complexity.summary}), attack: ${result.attack.pattern}`,
-      );
-    } else if (result.status === 'unknown') {
-      warnings.push(`${file}: ${name} could not be proven safe (${result.error.kind})`);
+    // Patterns with lookarounds are checked by recheck's fuzzer, which is random. Fixed seeds
+    // make CI deterministic, and several of them widen the search.
+    for (const randomSeed of RECHECK_SEEDS) {
+      const result = await check(pattern, flags, { timeout: 20_000, randomSeed });
+      if (result.status === 'vulnerable') {
+        errors.push(
+          `${file}: ${name} is vulnerable to ReDoS (${result.complexity.summary}), attack: ${result.attack.pattern}`,
+        );
+        break;
+      }
+      if (result.status === 'unknown') {
+        warnings.push(`${file}: ${name} could not be proven safe (${result.error.kind})`);
+        break;
+      }
+      if (result.checker === 'automaton') break; // exact proof, seeds do not matter
     }
   }
 
