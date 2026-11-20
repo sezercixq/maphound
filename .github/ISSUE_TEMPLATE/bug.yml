@@ -1,0 +1,62 @@
+name: Bug report
+description: Something does not work as expected.
+title: "[bug] "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please do not include real secrets, private URLs or exported ZIP files. If the bug is a false
+        positive or a missed detection, describe the format and use a fake value.
+        For security vulnerabilities in MapHound itself, use [private reporting](https://github.com/sezercixq/maphound/security/advisories/new) instead.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What you did, what you expected and what happened instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Enable MapHound on a site that serves source maps
+        2. Open the side panel
+        3. ...
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Script collection or fetching
+        - Source map rebuild
+        - Secret detection (false positive or missed secret)
+        - ZIP export
+        - Side panel
+        - Permissions
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: MapHound version or commit
+      placeholder: 0.1.0 or a1b2c3d
+    validations:
+      required: true
+  - type: input
+    id: chrome
+    attributes:
+      label: Chrome version and OS
+      placeholder: Chrome 142 on Windows 11
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Errors
+      description: From chrome://extensions (Errors) or the service worker console. Remove anything sensitive.
+      render: text

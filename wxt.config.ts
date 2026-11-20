@@ -12,7 +12,7 @@ export default defineConfig({
     description: '__MSG_extDescription__',
     default_locale: 'en',
     minimum_chrome_version: '116',
-    permissions: ['storage', 'sidePanel', 'offscreen', 'scripting', 'alarms', 'activeTab'],
+    permissions: ['sidePanel', 'offscreen', 'scripting', 'alarms', 'activeTab'],
     optional_host_permissions: ['https://*/*', 'http://*/*'],
     // E2E builds pre-grant the local test server, since a headless test cannot click the prompt.
     ...(e2e ? { host_permissions: ['http://127.0.0.1/*'] } : {}),

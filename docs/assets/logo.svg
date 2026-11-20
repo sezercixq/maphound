@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="96" height="96" fill="none" stroke-width="1.8">
+  <title>MapHound</title>
+  <path d="M4 7l4-3 4 3 4-3 4 3v13l-4-3-4 3-4-3-4 3z" stroke="#71717a" stroke-linejoin="round"/>
+  <circle cx="12" cy="11.5" r="3.2" stroke="#10b981"/>
+  <path d="M14.4 13.9L17 16.5" stroke="#10b981" stroke-linecap="round"/>
+</svg>

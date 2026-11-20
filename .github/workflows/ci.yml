@@ -1,0 +1,101 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Lint, types, rules, unit tests, build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint and format (Biome)
+        run: pnpm lint
+
+      - name: Type check
+        run: pnpm typecheck
+
+      - name: Rules (schema, samples, ReDoS proof)
+        run: pnpm rules:check
+
+      - name: Unit tests
+        run: pnpm test
+
+      - name: Production build and package
+        run: pnpm zip
+
+      - name: Check the manifest asks for no static host access
+        run: |
+          node -e '
+            const m = require("./.output/chrome-mv3/manifest.json");
+            if (m.host_permissions || m.content_scripts) { console.error("static host access in manifest"); process.exit(1); }
+            console.log("permissions:", m.permissions.join(", "));
+          '
+
+      - name: Upload extension package
+        uses: actions/upload-artifact@v4
+        with:
+          name: maphound-chrome-${{ github.sha }}
+          path: .output/*-chrome.zip
+          if-no-files-found: error
+          retention-days: 30
+
+  e2e:
+    name: End-to-end (Chromium)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Build with test hooks
+        run: pnpm build
+        env:
+          VITE_MH_E2E: "1"
+
+      - name: Run end-to-end tests
+        run: xvfb-run --auto-servernum pnpm test:e2e
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-${{ github.sha }}
+          path: |
+            playwright-report
+            test-results
+          retention-days: 14

@@ -1,0 +1,63 @@
+name: New detector
+description: Propose a rule for a credential type MapHound does not detect yet.
+title: "[detector] "
+labels: [detector, enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping MapHound find more leaks. **Never paste a real or active credential here**:
+        issues are public. Describe the format and link to the provider's documentation instead, or
+        use an obviously fake value such as `prefix_0000…`.
+  - type: input
+    id: provider
+    attributes:
+      label: Provider and credential
+      description: Who issues it and what it is.
+      placeholder: "Acme Cloud API key"
+    validations:
+      required: true
+  - type: textarea
+    id: format
+    attributes:
+      label: Format
+      description: Prefix, length, alphabet, separators and any checksum. The more distinctive, the fewer false positives.
+      placeholder: |
+        Prefix `acme_live_`, then 32 characters of [A-Za-z0-9]. The last 6 characters are a CRC32 checksum.
+    validations:
+      required: true
+  - type: input
+    id: docs
+    attributes:
+      label: Provider documentation
+      description: An official page that describes the format.
+      placeholder: https://docs.acme.example/api-keys
+    validations:
+      required: true
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Suggested severity
+      options:
+        - critical (full account or data access, money movement)
+        - high (significant access)
+        - medium (limited access, or needs a second value)
+        - low (test or sandbox credentials)
+        - info (meant to be public, inventory only)
+    validations:
+      required: true
+  - type: textarea
+    id: impact
+    attributes:
+      label: What can an attacker do with it?
+      placeholder: Read and delete every object in the account's storage.
+    validations:
+      required: true
+  - type: checkboxes
+    id: confirm
+    attributes:
+      label: Confirmation
+      options:
+        - label: This issue contains no real, active or production credential.
+          required: true
+        - label: I am willing to open a pull request with the YAML rule (see CONTRIBUTING.md).

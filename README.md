@@ -1,24 +1,91 @@
+<div align="center">
+
+<img src="docs/assets/logo.svg" width="84" alt="MapHound logo">
+
 # MapHound
 
-Passive source map and bundle secret scanner for Chrome (Manifest V3). Everything stays local: no telemetry, no remote code, no live token validation.
+**Rebuild exposed source maps and find the secrets they leak, entirely inside your browser.**
 
-> Status: early development (v0.1.0). Not yet published to the Chrome Web Store.
+[![CI](https://github.com/sezercixq/maphound/actions/workflows/ci.yml/badge.svg)](https://github.com/sezercixq/maphound/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-10b981.svg)](LICENSE)
+![Chrome Manifest V3](https://img.shields.io/badge/Chrome-Manifest%20V3-4285F4?logo=googlechrome&logoColor=white)
+![40 detectors](https://img.shields.io/badge/detectors-40%2C%20ReDoS--proven-10b981)
+![100% local](https://img.shields.io/badge/data-100%25%20local-18181b)
 
-## What it does
+<img src="docs/assets/maphound-preview.png" alt="MapHound rebuilds app.js.map into its original source tree and flags a hard-coded GitHub token with a verified checksum" width="100%">
 
-- Discovers the JavaScript bundles a page loads, on sites you explicitly enable.
-- Finds exposed source maps and rebuilds the original source tree in the browser.
-- Scans for secrets with a pipeline: keyword prefilter, regex, entropy, offline format and checksum validation.
-- Exports the rebuilt source and a findings report as a ZIP.
+</div>
 
-## Usage
+Modern web apps ship minified bundles, and often the source maps that turn them back into the
+original code: file names, comments, internal API routes and, too often, hard-coded credentials.
+MapHound collects the scripts a page loads, recovers that source tree, scans it for secrets and lets
+you export everything as a ZIP. No server, no account, no telemetry.
 
-1. Open the site and click the MapHound toolbar icon. The side panel opens.
-2. Choose whether to include subdomains and whether to guess `<script>.map` URLs, then click **Enable this site**. Chrome asks for access to that site only.
-3. MapHound lists the scripts the page loads, including lazy-loaded chunks, and the source maps it finds through the `SourceMap` header, the `sourceMappingURL` comment or inline `data:` URIs.
-4. Click **Download sources (ZIP)**. The archive contains:
+## Why MapHound?
+
+|                                                                               | MapHound | Typical secret-finder extensions | Source map downloaders |
+| ----------------------------------------------------------------------------- | :------: | :------------------------------: | :--------------------: |
+| Rebuilds the original source tree from source maps                            |    ✅    |                ❌                |           ✅           |
+| Finds lazy-loaded chunks and `SourceMap` headers, not just `<script>` tags    |    ✅    |              partly              |         partly         |
+| Scans the original files **and** values inlined into the bundle at build time |    ✅    |           bundle only            |           ❌           |
+| Reports the original file and line, mapped back through the source map        |    ✅    |                ❌                |           ❌           |
+| Offline checksum and structure validation (GitHub CRC32, JWT, PEM)            |    ✅    |                ❌                |           ❌           |
+| Every rule proven free of catastrophic backtracking (ReDoS) in CI             |    ✅    |                ❌                |          n/a           |
+| Zip-Slip-safe export of attacker-controlled paths                             |    ✅    |               n/a                |         rarely         |
+| No host access at install; one site at a time, revocable                      |    ✅    |       usually `<all_urls>`       |         varies         |
+| Nothing leaves the browser                                                    |    ✅    |              varies              |           ✅           |
+
+### Highlights
+
+- **Source map reconstruction.** `SourceMap`/`X-SourceMap` headers, `sourceMappingURL` comments,
+  inline `data:` maps, index maps with `sections`, XSSI prefixes. `node_modules` and `ignoreList`
+  files are separated into `_vendor/`.
+- **40 detectors** for AWS, Google Cloud, Azure, Stripe, GitHub, GitLab, npm, OpenAI, Anthropic,
+  Slack, Supabase, Twilio, SendGrid, private keys and more, written as YAML and compiled into the
+  extension at build time.
+- **A five-stage scanner** that stays fast on large bundles (about 100 ms for 5 MB): Aho-Corasick
+  keyword prefilter, regex only around keyword hits, entropy and placeholder filtering, offline
+  validators, context and suppression.
+- **Low noise.** Placeholders such as `your_api_key_here` are dropped, checksums must match, and keys
+  meant to be public (Stripe `pk_live_`, Firebase web config, Supabase anon keys) are reported as
+  `info`, not as alarms.
+- **Private by construction.** Optional per-site host permissions only, no `webRequest`, no remote
+  code, no outbound requests except to the site you enabled. See [`docs/PRIVACY.md`](docs/PRIVACY.md).
+
+## Quick start
+
+### Install a build
+
+1. Open the latest successful [CI run](https://github.com/sezercixq/maphound/actions/workflows/ci.yml)
+   and download the `maphound-chrome-…` artifact, then unzip it (the artifact contains
+   `maphound-<version>-chrome.zip`; unzip that too).
+2. Go to `chrome://extensions`, turn on **Developer mode** and click **Load unpacked**.
+3. Select the unzipped folder (the one that contains `manifest.json`).
+
+### Build from source
+
+Requires Node 22+ and pnpm (`corepack enable` picks the pinned version).
+
+```bash
+git clone https://github.com/sezercixq/maphound.git
+cd maphound
+pnpm install
+pnpm build          # output: .output/chrome-mv3, load it as above
+# or: pnpm dev      # Chrome with the extension and hot reload
+```
+
+### Use it
+
+1. Open the site and click the MapHound toolbar icon to open the side panel.
+2. Choose whether to include subdomains and whether to guess `<script>.map` URLs, then click
+   **Enable this site**. Chrome asks for access to that site only.
+3. MapHound lists scripts (including lazy chunks), the source maps it found and the **Findings**:
+   severity, confidence, `file:line` in the original source, with reveal and copy.
+4. **Download sources (ZIP)** exports:
 
    ```
+   FINDINGS.md                          readable report, secrets always masked
+   findings.json                        machine-readable; raw values only if you opt in
    manifest.json                        scanned URLs, hashes, what was skipped and why
    source/<host>/<script>/src/...       first-party files
    source/<host>/<script>/_vendor/...   node_modules and ignoreList files
@@ -26,41 +93,80 @@ Passive source map and bundle secret scanner for Chrome (Manifest V3). Everythin
 
 5. **Disable and delete data** removes the collector, the site's data and the host permission.
 
-The archive also contains `FINDINGS.md` and `findings.json`. Secret values are masked (`AKIA…XY12`) unless you tick **Include raw secret values in findings.json**; `FINDINGS.md` is always masked.
+## How it works
 
-Paths from source maps are untrusted: every entry is sanitized (no `..`, absolute paths, drive letters, control characters or Windows device names), so an archive cannot write outside its folder. Limits per map: 20,000 files, 200 MB of content, 10 MB per file; maps over a limit are exported partially and marked as such.
+```mermaid
+flowchart LR
+  A["Collector<br/>script URLs"] --> B["Service worker<br/>fetch, SHA-256, queue"]
+  B --> C["Source map<br/>discovery"]
+  C --> D["Scan worker<br/>rebuild tree"]
+  D --> E["Secret scanner<br/>5 stages"]
+  E --> F[("IndexedDB")]
+  F --> G["Side panel<br/>and ZIP export"]
+```
 
-## Secret scanning
+Scripts are fetched by the extension (no CORS issues, no cookies by default), stored once by hash,
+and analysed in a worker. Maps are parsed and every path is sanitized before it can reach an
+archive. Each script is scanned after its maps, so a secret found in the bundle can still be traced to
+its original file. Details: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
-Each script is scanned after its source maps are analysed: every original file from `sourcesContent` (exact file and line), then the bundle itself, which also holds values a bundler inlined at build time. Bundle positions are mapped back to the original file with the source map when possible.
+## Contribute a detector
 
-The pipeline runs in a worker, offline:
+A detector is one YAML file. This is all it takes:
 
-1. **Keyword prefilter**: one Aho-Corasick pass; files without a keyword never reach a regex.
-2. **Windowed regex**: only ±300 characters around keyword hits; files over 1 MB in overlapping chunks.
-3. **Entropy and placeholders**: `your_api_key_here`, `xxxxx`, `EXAMPLE` and low-entropy values are dropped.
-4. **Offline validation**: GitHub and npm token CRC32 checksums, JWT header/payload decoding, PEM key structure. A passing check means `verified-format` confidence; a failing one drops the match. Nothing is ever sent to a provider.
-5. **Context**: `maphound-ignore` comments and `process.env` references are suppressed, repeats are merged, and publishable keys (Stripe `pk_live_`, Firebase web config, Supabase anon keys) are reported as `info`.
+```yaml
+id: acme-api-key
+name: "Acme API key"
+severity: high
+confidence: high
+keywords: ["acme_live_"]
+regex: "(?<![A-Za-z0-9_])(acme_live_[A-Za-z0-9]{32})(?![A-Za-z0-9])"
+secretGroup: 1
+entropy: 3.5
+references: [https://docs.acme.example/api-keys]
+tests:
+  positive: ['const key = "acme_live_{{}}Hq3ZtV9mK2pR7xW4bN8cL1fD6gJ0sY5a";']
+  negative: ["acme_live_{{}}xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"]
+```
 
-The 40 rules live in [`rules/`](./rules) as YAML (cloud, payment, VCS, SaaS/AI and generic). `pnpm rules:check` validates them against the schema, runs each rule's positive and negative samples, and proves every regex free of catastrophic backtracking with [recheck](https://makenowjust-labs.github.io/recheck/). See [`rules/README.md`](./rules/README.md) to add one.
+Save it as `rules/saas/acme-api-key.yml` and run `pnpm rules:check`: it validates the schema, runs
+your samples through the real scanner and proves the regex ReDoS-safe. The `{{}}` marker keeps fake
+samples from tripping repository secret scanners. Validators for checksums and JWTs, public-key
+handling and more are explained in [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
-## Privacy and permissions
-
-MapHound declares no static `host_permissions` and no static `content_scripts`. Access is requested per site at runtime (`optional_host_permissions`). Third-party script origins are not scanned by default. Aggressive `<script>.map` probing is off by default.
+Missing a provider? [Propose a detector](https://github.com/sezercixq/maphound/issues/new?template=new-detector.yml),
+or open a pull request. Every rule ships with tests, so reviews are quick.
 
 ## Development
 
 ```bash
-pnpm install
-pnpm dev        # opens Chrome with the extension
-pnpm build
-pnpm test
-pnpm lint
-pnpm rules:check   # schema, rule tests and ReDoS proof for every rule
+pnpm lint          # Biome lint and format check
+pnpm typecheck     # TypeScript, strict
+pnpm test          # 199 unit tests (Vitest)
+pnpm rules:check   # rule schema, samples, ReDoS proof
+VITE_MH_E2E=1 pnpm build && pnpm test:e2e   # real-Chromium end-to-end tests (Playwright)
 ```
 
-Requires Node 20+ and pnpm.
+CI runs all of the above on every push and pull request and publishes the packaged extension as a
+build artifact.
+
+## Responsible use
+
+MapHound is for **authorized security testing and for auditing your own applications.** Only enable
+it on sites you own or have explicit permission to test, for example within the scope of a bug bounty
+program. Source maps and bundles are publicly served, but what you do with what you find is your
+responsibility.
+
+If MapHound finds a credential on someone else's site, **do not use it**. Report it to the owner
+through their security contact or bug bounty program so it can be revoked. The authors accept no
+liability for misuse.
+
+## Security and privacy
+
+- Found a vulnerability in MapHound? Please report it privately: [`SECURITY.md`](SECURITY.md).
+- What MapHound does and does not do with data, and why each permission is needed:
+  [`docs/PRIVACY.md`](docs/PRIVACY.md).
 
 ## License
 
-MIT
+[MIT](LICENSE) © MapHound contributors

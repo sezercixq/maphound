@@ -4,12 +4,16 @@
   "private": true,
   "description": "Passive source map and bundle secret scanner. Everything stays local.",
   "license": "MIT",
+  "packageManager": "pnpm@12.21.0",
+  "engines": {
+    "node": ">=22"
+  },
   "type": "module",
   "scripts": {
     "dev": "pnpm rules:compile && wxt",
     "build": "pnpm rules:compile && wxt build",
     "zip": "pnpm rules:compile && wxt zip",
-    "compile": "pnpm rules:compile && tsc --noEmit",
+    "typecheck": "pnpm rules:compile && tsc --noEmit",
     "lint": "biome check .",
     "format": "biome format --write .",
     "test": "pnpm rules:compile && vitest run",
