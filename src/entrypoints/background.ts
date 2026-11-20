@@ -8,7 +8,15 @@ import { ensureOffscreen } from '@/core/offscreen';
 import { registeredCollectorIds } from '@/core/permissions';
 import { Processor } from '@/core/processor';
 import { enqueueDiscovered } from '@/core/queue';
-import { disableSite, enableSite, rescanSite, syncSites, updateSiteSettings } from '@/core/sites';
+import {
+  addExtraOrigins,
+  disableSite,
+  enableSite,
+  removeExtraOrigin,
+  rescanSite,
+  syncSites,
+  updateSiteSettings,
+} from '@/core/sites';
 
 /** Background to offscreen to worker round trip. */
 export async function pingPipeline(text: string): Promise<PingResult> {
@@ -91,6 +99,12 @@ export default defineBackground(() => {
   );
   onMessage('site:settings', ({ data }) => updateSiteSettings(data.origin, data.patch));
   onMessage('site:disable', ({ data }) => disableSite(data.origin, data.purge));
+  onMessage('site:add-origins', async ({ data }) => {
+    const result = await addExtraOrigins(data.origin, data.origins);
+    if (result.ok && result.requeued > 0) void fetcher.pump();
+    return result;
+  });
+  onMessage('site:remove-origin', ({ data }) => removeExtraOrigin(data.origin, data.extraOrigin));
   onMessage('scan:rescan', async ({ data }) => {
     const result = await rescanSite(data.origin);
     void processor.pump();
@@ -104,6 +118,7 @@ export default defineBackground(() => {
     g.__mhScan = scanBlobForTest;
     g.__mhEnableSite = (origin: string, scope: Scope) => enableSite(origin, scope);
     g.__mhDisableSite = (origin: string, purge: boolean) => disableSite(origin, purge);
+    g.__mhSites = async () => (await getDb()).getAll('sites');
     g.__mhRegistered = registeredCollectorIds;
     g.__mhJobs = async () => (await getDb()).getAll('jobs');
     g.__mhScripts = async () => (await getDb()).getAll('scripts');

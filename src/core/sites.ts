@@ -3,6 +3,7 @@ import { notifyDbChanged } from './channel';
 import { getDb, type MaphoundHandle, type Scope, type SiteRecord, type SiteSettings } from './db';
 import {
   collectorScriptId,
+  hasOriginPermission,
   hasSitePermission,
   injectIntoOpenTabs,
   registerCollector,
@@ -11,7 +12,14 @@ import {
   unregisterCollector,
   unregisterCollectorIds,
 } from './permissions';
-import { effectiveScope, parseOrigin, patternsToRevoke } from './scope';
+import { requeueThirdParty } from './queue';
+import {
+  effectiveScope,
+  extraOriginPatternsToRevoke,
+  isInSiteScope,
+  parseOrigin,
+  patternsToRevoke,
+} from './scope';
 
 export const DEFAULT_SETTINGS: SiteSettings = {
   aggressiveMapProbing: false,
@@ -46,6 +54,7 @@ export async function enableSite(
     scope: finalScope,
     enabledAt: previous?.enabledAt ?? Date.now(),
     settings: { ...DEFAULT_SETTINGS, ...previous?.settings, ...settings },
+    extraOrigins: previous?.extraOrigins ?? [],
   });
   await registerCollector(origin, finalScope);
   const injected = await injectIntoOpenTabs(origin, finalScope);
@@ -123,13 +132,18 @@ export async function syncSites(db?: MaphoundHandle): Promise<{ disabled: string
       disabled.push(site.origin);
       continue;
     }
+    // An extra origin revoked in Chrome drops out of the site; the site itself stays.
+    const extras = site.extraOrigins ?? [];
+    const kept: string[] = [];
+    for (const extra of extras) if (await hasOriginPermission(extra)) kept.push(extra);
+    if (kept.length !== extras.length) await handle.put('sites', { ...site, extraOrigins: kept });
     const id = collectorScriptId(site.origin);
     wanted.add(id);
     if (!registered.has(id)) await registerCollector(site.origin, site.scope);
   }
 
   await unregisterCollectorIds([...registered].filter((id) => !wanted.has(id)));
-  if (disabled.length > 0) notifyDbChanged({ store: 'sites' });
+  notifyDbChanged({ store: 'sites' });
   return { disabled };
 }
 
@@ -159,4 +173,61 @@ export async function rescanSite(origin: string, db?: MaphoundHandle): Promise<{
   await tx.done;
   notifyDbChanged({ store: 'findings', origin });
   return { queued };
+}
+
+export type AddOriginsResult =
+  | { ok: true; added: string[]; requeued: number }
+  | { ok: false; reason: 'site-not-enabled' | 'permission-missing' };
+
+/**
+ * Service worker side of "Allow & scan": the side panel already obtained host access to the
+ * origins. Each one is verified, added to the site and its skipped scripts and maps requeued.
+ */
+export async function addExtraOrigins(
+  siteOrigin: string,
+  inputs: readonly string[],
+  db?: MaphoundHandle,
+): Promise<AddOriginsResult> {
+  const handle = db ?? (await getDb());
+  const site = await handle.get('sites', siteOrigin);
+  if (!site) return { ok: false, reason: 'site-not-enabled' };
+  const current = new Set(site.extraOrigins ?? []);
+  const added: string[] = [];
+  for (const input of inputs) {
+    const origin = parseOrigin(input);
+    if (!origin || current.has(origin) || isInSiteScope(origin, site)) continue;
+    if (!(await hasOriginPermission(origin))) continue;
+    current.add(origin);
+    added.push(origin);
+  }
+  if (added.length === 0 && inputs.length > 0) return { ok: false, reason: 'permission-missing' };
+  await handle.put('sites', { ...site, extraOrigins: [...current].sort() });
+  const requeued = await requeueThirdParty(handle, site.origin, added);
+  notifyDbChanged({ store: 'sites', origin: site.origin });
+  if (requeued > 0) notifyDbChanged({ store: 'jobs', origin: site.origin });
+  return { ok: true, added, requeued };
+}
+
+/**
+ * Stop scanning one extra origin: remove it from the site and revoke its pattern unless another
+ * site (or this site's own scope) still needs it. Already downloaded data is kept; new scripts
+ * from there are listed as third party again.
+ */
+export async function removeExtraOrigin(
+  siteOrigin: string,
+  extra: string,
+  db?: MaphoundHandle,
+): Promise<{ ok: boolean; revoked: string[] }> {
+  const handle = db ?? (await getDb());
+  const site = await handle.get('sites', siteOrigin);
+  if (!site?.extraOrigins?.includes(extra)) return { ok: false, revoked: [] };
+  const others = (await handle.getAll('sites')).filter((s) => s.origin !== site.origin);
+  const candidates = extraOriginPatternsToRevoke(extra, site, others);
+  await handle.put('sites', {
+    ...site,
+    extraOrigins: site.extraOrigins.filter((o) => o !== extra),
+  });
+  const revoked = (await revokePatterns(candidates)) ? candidates : [];
+  notifyDbChanged({ store: 'sites', origin: site.origin });
+  return { ok: true, revoked };
 }

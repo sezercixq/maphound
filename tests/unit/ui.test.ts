@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import type { JobRecord, MapRecord, ScriptRecord } from '@/core/db';
+import { bulkCandidates } from '@/ui/components/ThirdParty';
 import {
   CONFIDENCE_KEYS,
   fileName,
@@ -163,5 +164,54 @@ describe('locales', () => {
     }
     expect(used.size).toBeGreaterThan(30);
     for (const key of used) expect(Object.keys(en), key).toContain(key);
+  });
+});
+
+describe('third-party origins', () => {
+  const site = {
+    origin: 'https://www.airbnb.com.tr',
+    extraOrigins: ['https://cdn.allowed.example'],
+  };
+  const skipped = (
+    url: string,
+    thirdParty: 'cdn' | 'analytics' | 'other',
+    kind: 'script' | 'map' = 'script',
+  ) =>
+    job({
+      id: `${kind}:${url}`,
+      kind,
+      url,
+      state: 'skipped',
+      skipReason: 'third-party',
+      thirdParty,
+    });
+  const jobs = [
+    ...Array.from({ length: 3 }, (_, i) => skipped(`https://a0.muscache.com/${i}.js`, 'other')),
+    skipped('https://a0.muscache.com/0.js.map', 'other', 'map'),
+    skipped('https://d0a7e.airbnb.com/app.js', 'other'),
+    skipped('https://www.googletagmanager.com/gtm.js', 'analytics'),
+    job({ url: 'https://cdn.allowed.example/x.js', state: 'done' }),
+    job({ url: 'https://www.airbnb.com.tr/own.js', state: 'done' }),
+  ];
+
+  it('groups skipped jobs by origin, related domains first', () => {
+    const vm = buildViewModel(jobs, [], [], [], site);
+    expect(vm.thirdParty.map((g) => [g.host, g.scripts, g.maps, g.kind, g.related])).toEqual([
+      ['d0a7e.airbnb.com', 1, 0, 'other', true],
+      ['a0.muscache.com', 3, 1, 'other', false],
+      ['www.googletagmanager.com', 1, 0, 'analytics', false],
+    ]);
+    expect(vm.allowedOrigins).toEqual([
+      { origin: 'https://cdn.allowed.example', host: 'cdn.allowed.example', scripts: 1 },
+    ]);
+  });
+
+  it('leaves analytics out of the bulk action unless asked', () => {
+    const groups = buildViewModel(jobs, [], [], [], site).thirdParty;
+    expect(bulkCandidates(groups, false)).toEqual([
+      'https://d0a7e.airbnb.com',
+      'https://a0.muscache.com',
+    ]);
+    expect(bulkCandidates(groups, true)).toHaveLength(3);
   });
 });

@@ -109,6 +109,11 @@ test('enable site, collect scripts and lazy chunks, discover and analyse maps', 
   expect(secrets).toEqual(expect.arrayContaining([leaks.github, leaks.stripe, leaks.firebase]));
   expect(secrets).not.toContain(leaks.ignored);
   expect(secrets).not.toContain(leaks.thirdParty);
+  expect(secrets).not.toContain(leaks.cdn); // on a third-party origin until the user allows it
+  const jobs = await jobsByUrl(sw);
+  for (const url of [`${server.cdnBase}/cdn.js`, `${server.vendorBase}/vendor.js`]) {
+    expect(jobs[url]).toMatchObject({ state: 'skipped', skipReason: 'third-party' });
+  }
 });
 
 test('registered collector runs on new navigations; disable purges', async () => {

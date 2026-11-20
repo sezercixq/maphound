@@ -3,6 +3,7 @@ import { useEffect } from 'preact/hooks';
 import { FindingList } from './components/Findings';
 import { MapList, ScriptList } from './components/Lists';
 import { SiteCard } from './components/SiteCard';
+import { ThirdPartyOrigins } from './components/ThirdParty';
 import { downloadSourcesZip } from './export-client';
 import { t } from './i18n';
 import { site, startState, view } from './state';
@@ -147,6 +148,11 @@ export function App() {
             counts={model.findingCounts}
             scanning={model.scanning}
             origin={enabled.origin}
+          />
+          <ThirdPartyOrigins
+            siteOrigin={enabled.origin}
+            groups={model.thirdParty}
+            allowed={model.allowedOrigins}
           />
           <ScriptList rows={model.scripts} />
           <MapList rows={model.maps} />

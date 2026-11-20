@@ -49,6 +49,9 @@ you export everything as a ZIP. No server, no account, no telemetry.
 - **Low noise.** Placeholders such as `your_api_key_here` are dropped, checksums must match, and keys
   meant to be public (Stripe `pk_live_`, Firebase web config, Supabase anon keys) are reported as
   `info`, not as alarms.
+- **CDNs and sibling domains, one click away.** Big apps serve their bundles from a CDN or another
+  domain of theirs. MapHound groups those origins and scans them with **Allow & scan**, one origin
+  or all of them at once, without ever asking for blanket access.
 - **Private by construction.** Optional per-site host permissions only, no `webRequest`, no remote
   code, no outbound requests except to the site you enabled. See [`docs/PRIVACY.md`](docs/PRIVACY.md).
 
@@ -80,7 +83,13 @@ pnpm build          # output: .output/chrome-mv3, load it as above
    **Enable this site**. Chrome asks for access to that site only.
 3. MapHound lists scripts (including lazy chunks), the source maps it found and the **Findings**:
    severity, confidence, `file:line` in the original source, with reveal and copy.
-4. **Download sources (ZIP)** exports:
+   With subdomains on, the scope is the whole registrable domain (`*.airbnb.com.tr` for
+   `www.airbnb.com.tr`).
+4. Scripts from other origins are listed under **Third-party origins**. If one of them is really the
+   site's own CDN or a sibling domain, click **Allow & scan** (or **Allow & scan all**; analytics and
+   tag managers are left out unless you tick them). Chrome asks once, and those scripts are fetched
+   and scanned like the site's own.
+5. **Download sources (ZIP)** exports:
 
    ```
    FINDINGS.md                          readable report, secrets always masked
@@ -90,7 +99,8 @@ pnpm build          # output: .output/chrome-mv3, load it as above
    source/<host>/<script>/_vendor/...   node_modules and ignoreList files
    ```
 
-5. **Disable and delete data** removes the collector, the site's data and the host permission.
+6. **Disable and delete data** removes the collector, the site's data and every host permission it
+   was granted, extra origins included.
 
 ## How it works
 

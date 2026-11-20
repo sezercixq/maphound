@@ -2,11 +2,15 @@ import { describe, expect, it } from 'vitest';
 import {
   classifyThirdParty,
   effectiveScope,
+  extraOriginPatternsToRevoke,
   isInScope,
+  isRelatedDomain,
   originPatterns,
   parseOrigin,
   patternsToRevoke,
+  registrableDomain,
   siteForUrl,
+  sitePatterns,
 } from '@/core/scope';
 
 describe('parseOrigin', () => {
@@ -35,7 +39,7 @@ describe('originPatterns', () => {
       'https://*.example.com/*',
     ]);
     expect(originPatterns('https://app.example.com', 'subdomains')).toEqual([
-      'https://*.app.example.com/*',
+      'https://*.example.com/*',
     ]);
   });
   it('falls back to origin scope where subdomains make no sense', () => {
@@ -92,5 +96,107 @@ describe('classifyThirdParty', () => {
     expect(classifyThirdParty('https://www.googletagmanager.com/gtm.js')).toBe('analytics');
     expect(classifyThirdParty('https://cdn.jsdelivr.net/npm/x.js')).toBe('cdn');
     expect(classifyThirdParty('https://partner.io/widget.js')).toBe('other');
+  });
+});
+
+describe('registrable domains (Public Suffix List)', () => {
+  it.each([
+    ['www.airbnb.com.tr', 'airbnb.com.tr'],
+    ['d0a7e.airbnb.com', 'airbnb.com'],
+    ['shop.example.co.uk', 'example.co.uk'],
+    ['me.github.io', 'me.github.io'],
+    ['a.b.vercel.app', 'b.vercel.app'],
+    ['github.io', null],
+    ['localhost', null],
+    ['127.0.0.1', null],
+  ])('%s -> %s', (host, domain) => {
+    expect(registrableDomain(host)).toBe(domain);
+  });
+
+  it('roots subdomain scope at the registrable domain, never at a public suffix', () => {
+    expect(originPatterns('https://www.airbnb.com.tr', 'subdomains')).toEqual([
+      'https://*.airbnb.com.tr/*',
+    ]);
+    expect(originPatterns('https://shop.example.co.uk', 'subdomains')).toEqual([
+      'https://*.example.co.uk/*',
+    ]);
+    expect(originPatterns('https://me.github.io', 'subdomains')).toEqual([
+      'https://*.me.github.io/*',
+    ]);
+    expect(effectiveScope('https://github.io', 'subdomains')).toBe('origin');
+    const site = { origin: 'https://app.example.com', scope: 'subdomains' as const };
+    expect(isInScope('https://cdn.example.com/a.js', site)).toBe(true);
+    expect(
+      isInScope('https://other.github.io/a.js', {
+        origin: 'https://me.github.io',
+        scope: 'subdomains',
+      }),
+    ).toBe(false);
+  });
+
+  it('keeps sibling TLDs out of scope but flags them as related', () => {
+    const site = { origin: 'https://www.airbnb.com.tr', scope: 'subdomains' as const };
+    expect(isInScope('https://d0a7e.airbnb.com/app.js', site)).toBe(false);
+    expect(isInScope('https://a0.muscache.com/app.js', site)).toBe(false);
+    expect(isRelatedDomain('www.airbnb.com.tr', 'd0a7e.airbnb.com')).toBe(true);
+    expect(isRelatedDomain('www.airbnb.com.tr', 'a0.muscache.com')).toBe(false);
+    expect(isRelatedDomain('www.airbnb.com.tr', 'static.airbnb.com.tr')).toBe(false); // same domain
+  });
+});
+
+describe('extra origins', () => {
+  const site = {
+    origin: 'https://www.airbnb.com.tr',
+    scope: 'subdomains' as const,
+    extraOrigins: ['https://a0.muscache.com', 'http://localhost:4000'],
+  };
+
+  it('are in scope exactly, port and scheme included', () => {
+    expect(isInScope('https://a0.muscache.com/airbnb/static/app.js', site)).toBe(true);
+    expect(isInScope('https://a1.muscache.com/app.js', site)).toBe(false);
+    expect(isInScope('http://a0.muscache.com/app.js', site)).toBe(false);
+    expect(isInScope('http://localhost:4000/x.js', site)).toBe(true);
+    expect(isInScope('http://localhost:5000/x.js', site)).toBe(false);
+  });
+
+  it('do not make their pages part of the site', () => {
+    expect(siteForUrl([site], 'https://a0.muscache.com/page')).toBeUndefined();
+    expect(siteForUrl([site], 'https://www.airbnb.com.tr/rooms')?.origin).toBe(site.origin);
+  });
+
+  it('add their patterns to the site and are revoked with it', () => {
+    expect(sitePatterns(site)).toEqual([
+      'https://*.airbnb.com.tr/*',
+      'https://a0.muscache.com/*',
+      'http://localhost/*',
+    ]);
+    const other = {
+      origin: 'https://shop.example',
+      scope: 'origin' as const,
+      extraOrigins: ['https://a0.muscache.com'],
+    };
+    expect(patternsToRevoke(site, [other])).toEqual([
+      'https://*.airbnb.com.tr/*',
+      'http://localhost/*',
+    ]);
+    expect(patternsToRevoke(site, [])).toEqual(sitePatterns(site));
+  });
+
+  it('revoke one extra origin only when nothing else needs its pattern', () => {
+    expect(extraOriginPatternsToRevoke('https://a0.muscache.com', site, [])).toEqual([
+      'https://a0.muscache.com/*',
+    ]);
+    const other = {
+      origin: 'https://shop.example',
+      scope: 'origin' as const,
+      extraOrigins: ['https://a0.muscache.com'],
+    };
+    expect(extraOriginPatternsToRevoke('https://a0.muscache.com', site, [other])).toEqual([]);
+    const local = {
+      origin: 'http://localhost:3000',
+      scope: 'origin' as const,
+      extraOrigins: ['http://localhost:4000'],
+    };
+    expect(extraOriginPatternsToRevoke('http://localhost:4000', local, [])).toEqual([]); // same host as the site
   });
 });

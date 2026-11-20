@@ -52,7 +52,7 @@ test('side panel enables a site, lists results live and exports a safe ZIP', asy
   await expect(panel.getByTestId('origin')).toHaveText(base);
 
   await expect(panel.getByTestId('stat-maps')).toHaveText('3', { timeout: 20_000 });
-  await expect(panel.getByTestId('stat-third-party')).toHaveText('1');
+  await expect(panel.getByTestId('stat-third-party')).toHaveText('3');
   await expect(panel.getByTestId('stat-files')).toHaveText('9');
   await expect(panel.getByTestId('script-row').filter({ hasText: 'tp.js' })).toContainText(
     '3rd party (not scanned)',
@@ -125,9 +125,18 @@ test('side panel enables a site, lists results live and exports a safe ZIP', asy
   const manifest = JSON.parse(strFromU8(files['manifest.json'] as Uint8Array));
   expect(manifest.site).toEqual({ origin: base, scope: 'origin' });
   expect(manifest.summary).toMatchObject({ maps: 3, mapsExported: 3, files: 9 });
-  expect(manifest.notScanned).toEqual([
-    { url: `${thirdPartyBase}/tp.js`, kind: 'script', reason: 'third-party', thirdParty: 'other' },
-  ]);
+  expect(manifest.notScanned.map((entry: { url: string }) => entry.url).sort()).toEqual(
+    [
+      `${thirdPartyBase}/tp.js`,
+      `${server.cdnBase}/cdn.js`,
+      `${server.vendorBase}/vendor.js`,
+    ].sort(),
+  );
+  expect(manifest.notScanned[0]).toMatchObject({
+    kind: 'script',
+    reason: 'third-party',
+    thirdParty: 'other',
+  });
 
   // Opt-in raw values: only findings.json gets them, FINDINGS.md stays masked.
   await panel.getByTestId('include-secrets').check();

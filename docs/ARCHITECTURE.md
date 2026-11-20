@@ -109,6 +109,16 @@ Rules are YAML, validated against `rules/_schema.json` and compiled at build tim
 `src/generated/rules.json`. `pnpm rules:check` also proves each regex free of catastrophic
 backtracking with recheck and times it on hostile input.
 
+## Scope
+
+A site's own scope is its exact origin, or with subdomains its registrable domain from the Public
+Suffix List (`tldts`, private suffixes included): `www.airbnb.com.tr` covers `*.airbnb.com.tr`,
+`me.github.io` never covers `github.io`. Scripts elsewhere are recorded as skipped third party. The
+user can allow such origins one by one or in bulk; they are stored as `extraOrigins` on the site,
+match exactly (scheme, host and port) and widen only what may be fetched, never which pages run the
+collector. Allowing one requeues its skipped jobs; removing one revokes its pattern unless another
+site needs it.
+
 ## Permissions
 
 No static host permissions and no static content scripts. Host access is optional and requested per

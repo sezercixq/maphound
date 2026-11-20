@@ -259,5 +259,41 @@
   },
   "includeSecretsWarning": {
     "message": "Arşiv çalışan kimlik bilgileri içerecek. Gizli tutun."
+  },
+  "sectionThirdParty": {
+    "message": "3. taraf origin'ler"
+  },
+  "thirdPartyHint": {
+    "message": "Bu origin'lerdeki betikler indirilmedi ve taranmadı. Büyük siteler kendi paketlerini çoğu zaman bir CDN'den veya kardeş alan adından sunar: taramak için izin verin."
+  },
+  "allowScan": {
+    "message": "İzin ver ve tara"
+  },
+  "allowScanAll": {
+    "message": "Tüm 3. taraflara izin ver ve tara ($1 domain)"
+  },
+  "includeAnalytics": {
+    "message": "Analitik ve etiket yöneticilerini dahil et ($1)"
+  },
+  "originScriptsOne": {
+    "message": "1 betik"
+  },
+  "originScripts": {
+    "message": "$1 betik"
+  },
+  "originMapsOne": {
+    "message": "1 map"
+  },
+  "originMaps": {
+    "message": "$1 map"
+  },
+  "relatedDomain": {
+    "message": "ilişkili alan adı"
+  },
+  "allowedOrigins": {
+    "message": "Bu site için ayrıca taranan"
+  },
+  "removeOrigin": {
+    "message": "$1 taramasını durdur"
   }
 }

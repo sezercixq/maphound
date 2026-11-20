@@ -1,6 +1,6 @@
 # Privacy policy
 
-_Last updated: 20 November 2026_
+_Last updated: 20 November 2026 (version 0.2.0)_
 
 MapHound is a browser extension that helps developers and security teams find source maps and
 leaked credentials in the JavaScript of websites they choose. **MapHound does not collect, transmit,
@@ -27,7 +27,8 @@ On a site you explicitly enable, MapHound:
 - **The only network requests** MapHound makes are to the site you enabled (and, if you choose,
   its subdomains), to download scripts and source maps the site already serves publicly. They are
   sent without cookies unless you turn that on for the site. Scripts from other domains (CDNs,
-  analytics) are listed as "third party (not scanned)" and are not downloaded.
+  analytics) are listed as "third party (not scanned)" and are not downloaded unless you click
+  **Allow & scan** for that origin, which asks Chrome for access to that origin only.
 
 ## Data stored on your device
 
@@ -42,14 +43,14 @@ extension; Chrome then deletes all of its storage.
 
 ## Permissions and why they are needed
 
-| Permission                                         | Why                                                                                                                                                                                                             |
-| -------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `sidePanel`                                        | The user interface is a Chrome side panel.                                                                                                                                                                      |
-| `activeTab`                                        | Read the address of the current tab when you click the toolbar icon, so the panel can offer to enable that site.                                                                                                |
-| `scripting`                                        | Register the script-URL collector on the sites you enable, and inject it into tabs of that site that are already open.                                                                                          |
-| `offscreen`                                        | Host the background worker that parses source maps and scans for secrets, which a service worker cannot do itself.                                                                                              |
-| `alarms`                                           | Resume interrupted downloads and scans after Chrome suspends the service worker.                                                                                                                                |
-| Optional host access (`https://*/*`, `http://*/*`) | Declared as optional only. Chrome asks for access to one site at a time when you click **Enable this site**. Access is used to download that site's scripts and maps, and is removed when you disable the site. |
+| Permission                                         | Why                                                                                                                                                                                                                                                                                                                                            |
+| -------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `sidePanel`                                        | The user interface is a Chrome side panel.                                                                                                                                                                                                                                                                                                     |
+| `activeTab`                                        | Read the address of the current tab when you click the toolbar icon, so the panel can offer to enable that site.                                                                                                                                                                                                                               |
+| `scripting`                                        | Register the script-URL collector on the sites you enable, and inject it into tabs of that site that are already open.                                                                                                                                                                                                                         |
+| `offscreen`                                        | Host the background worker that parses source maps and scans for secrets, which a service worker cannot do itself.                                                                                                                                                                                                                             |
+| `alarms`                                           | Resume interrupted downloads and scans after Chrome suspends the service worker.                                                                                                                                                                                                                                                               |
+| Optional host access (`https://*/*`, `http://*/*`) | Declared as optional only. Chrome asks for access to one site at a time when you click **Enable this site**, and to individual extra origins (for example the site's CDN) when you click **Allow & scan**. Access is used only to download scripts and maps from those origins, and is removed when you remove the origin or disable the site. |
 
 MapHound requests no host access at install time, injects no content script into sites you have not
 enabled, and does not use `webRequest`, `cookies`, `history`, `tabs` or `downloads`.

@@ -2,7 +2,7 @@ import { defineExtensionMessaging } from '@webext-core/messaging';
 import type { MapAnalysisRequest, MapAnalysisResult } from './analyze';
 import type { Scope, SiteSettings } from './db';
 import type { ScriptScanRequest, ScriptScanResult } from './scan-job';
-import type { EnableResult } from './sites';
+import type { AddOriginsResult, EnableResult } from './sites';
 
 export interface ScanResult {
   jobId: string;
@@ -27,6 +27,12 @@ export interface ProtocolMap {
   }) => EnableResult;
   'site:settings': (data: { origin: string; patch: Partial<SiteSettings> }) => { ok: boolean };
   'site:disable': (data: { origin: string; purge: boolean }) => { ok: boolean; revoked: string[] };
+  /** Sent by the side panel after `permissions.request` for the extra origins succeeded. */
+  'site:add-origins': (data: { origin: string; origins: string[] }) => AddOriginsResult;
+  'site:remove-origin': (data: { origin: string; extraOrigin: string }) => {
+    ok: boolean;
+    revoked: string[];
+  };
   'scan:request': (data: { jobId: string; blobKey: string; kind: 'script' | 'map' }) => ScanResult;
   /** Background to offscreen: parse a fetched map and store its file index. */
   'map:analyze': (data: MapAnalysisRequest) => MapAnalysisResult;

@@ -31,7 +31,7 @@ const findings = signal<FindingRecord[]>([]);
 export const loaded = signal(false);
 
 export const view = computed(() =>
-  buildViewModel(jobs.value, scripts.value, maps.value, findings.value),
+  buildViewModel(jobs.value, scripts.value, maps.value, findings.value, site.value),
 );
 
 /** Re-read everything for the current site. The channel only says "something changed". */

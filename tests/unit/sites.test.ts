@@ -64,7 +64,9 @@ vi.mock('wxt/browser', () => ({ browser: browserMock }));
 
 const { openMaphoundDb } = await import('@/core/db');
 const { collectorScriptId, COLLECTOR_FILE } = await import('@/core/permissions');
-const { disableSite, enableSite, syncSites } = await import('@/core/sites');
+const { addExtraOrigins, disableSite, enableSite, removeExtraOrigin, syncSites } = await import(
+  '@/core/sites'
+);
 
 let counter = 0;
 const freshDb = () => openMaphoundDb(`sites-${counter++}`);
@@ -207,5 +209,135 @@ describe('disableSite with a required permission', () => {
     expect(await disableSite('https://req.com', true, db)).toEqual({ ok: true, revoked: [] });
     expect(await db.count('sites')).toBe(0);
     expect(state.registered.size).toBe(0);
+  });
+});
+
+describe('extra origins', () => {
+  async function enabled() {
+    const db = await freshDb();
+    state.granted.add('https://*.airbnb.com.tr/*');
+    await enableSite('https://www.airbnb.com.tr', 'subdomains', db);
+    const skipped = (url: string, kind: 'script' | 'map' = 'script') => ({
+      id: `${kind}:${url}`,
+      kind,
+      url,
+      origin: 'https://www.airbnb.com.tr',
+      state: 'skipped' as const,
+      skipReason: 'third-party' as const,
+      thirdParty: 'other' as const,
+      attempts: 0,
+      leasedUntil: 0,
+      createdAt: 0,
+      updatedAt: 0,
+    });
+    for (const url of [
+      'https://a0.muscache.com/a.js',
+      'https://a0.muscache.com/b.js',
+      'https://d0a7e.airbnb.com/c.js',
+    ]) {
+      await db.put('jobs', skipped(url));
+    }
+    await db.put('jobs', skipped('https://a0.muscache.com/a.js.map', 'map'));
+    await db.put('jobs', skipped('https://www.googletagmanager.com/gtm.js'));
+    return db;
+  }
+
+  it('refuses origins without host permission', async () => {
+    const db = await enabled();
+    expect(
+      await addExtraOrigins('https://www.airbnb.com.tr', ['https://a0.muscache.com'], db),
+    ).toEqual({
+      ok: false,
+      reason: 'permission-missing',
+    });
+    expect((await db.get('sites', 'https://www.airbnb.com.tr'))?.extraOrigins).toEqual([]);
+  });
+
+  it('adds granted origins in bulk and requeues their scripts and maps', async () => {
+    const db = await enabled();
+    state.granted.add('https://a0.muscache.com/*');
+    state.granted.add('https://d0a7e.airbnb.com/*');
+    const result = await addExtraOrigins(
+      'https://www.airbnb.com.tr',
+      [
+        'https://a0.muscache.com/some/path',
+        'https://d0a7e.airbnb.com',
+        'https://static.airbnb.com.tr',
+      ],
+      db,
+    );
+    expect(result).toEqual({
+      ok: true,
+      added: ['https://a0.muscache.com', 'https://d0a7e.airbnb.com'],
+      requeued: 4,
+    });
+    expect((await db.get('sites', 'https://www.airbnb.com.tr'))?.extraOrigins).toEqual([
+      'https://a0.muscache.com',
+      'https://d0a7e.airbnb.com',
+    ]);
+    const requeued = await db.get('jobs', 'map:https://a0.muscache.com/a.js.map');
+    expect(requeued).toMatchObject({ state: 'queued', attempts: 0 });
+    expect(requeued?.skipReason).toBeUndefined();
+    expect((await db.get('jobs', 'script:https://www.googletagmanager.com/gtm.js'))?.state).toBe(
+      'skipped',
+    );
+    expect(await addExtraOrigins('https://nope.example', ['https://a0.muscache.com'], db)).toEqual({
+      ok: false,
+      reason: 'site-not-enabled',
+    });
+  });
+
+  it('removes one origin and revokes its pattern', async () => {
+    const db = await enabled();
+    state.granted.add('https://a0.muscache.com/*');
+    await addExtraOrigins('https://www.airbnb.com.tr', ['https://a0.muscache.com'], db);
+    expect(
+      await removeExtraOrigin('https://www.airbnb.com.tr', 'https://a0.muscache.com', db),
+    ).toEqual({
+      ok: true,
+      revoked: ['https://a0.muscache.com/*'],
+    });
+    expect(state.granted.has('https://a0.muscache.com/*')).toBe(false);
+    expect((await db.get('sites', 'https://www.airbnb.com.tr'))?.extraOrigins).toEqual([]);
+    expect(
+      (await removeExtraOrigin('https://www.airbnb.com.tr', 'https://a0.muscache.com', db)).ok,
+    ).toBe(false);
+  });
+
+  it('revokes every extra origin when the site is disabled', async () => {
+    const db = await enabled();
+    state.granted.add('https://a0.muscache.com/*');
+    state.granted.add('https://d0a7e.airbnb.com/*');
+    await addExtraOrigins(
+      'https://www.airbnb.com.tr',
+      ['https://a0.muscache.com', 'https://d0a7e.airbnb.com'],
+      db,
+    );
+    const { revoked } = await disableSite('https://www.airbnb.com.tr', true, db);
+    expect(revoked.sort()).toEqual([
+      'https://*.airbnb.com.tr/*',
+      'https://a0.muscache.com/*',
+      'https://d0a7e.airbnb.com/*',
+    ]);
+    expect(state.granted.size).toBe(0);
+    expect(await db.count('jobs')).toBe(0);
+  });
+
+  it('keeps extra origins on re-enable and drops those revoked in Chrome', async () => {
+    const db = await enabled();
+    state.granted.add('https://a0.muscache.com/*');
+    state.granted.add('https://d0a7e.airbnb.com/*');
+    await addExtraOrigins(
+      'https://www.airbnb.com.tr',
+      ['https://a0.muscache.com', 'https://d0a7e.airbnb.com'],
+      db,
+    );
+    await enableSite('https://www.airbnb.com.tr', 'subdomains', db);
+    expect((await db.get('sites', 'https://www.airbnb.com.tr'))?.extraOrigins).toHaveLength(2);
+    state.granted.delete('https://a0.muscache.com/*');
+    expect(await syncSites(db)).toEqual({ disabled: [] });
+    expect((await db.get('sites', 'https://www.airbnb.com.tr'))?.extraOrigins).toEqual([
+      'https://d0a7e.airbnb.com',
+    ]);
   });
 });

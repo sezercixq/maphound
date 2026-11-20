@@ -39,6 +39,20 @@ export function requestSitePermission(origin: string, scope: Scope): Promise<boo
   return browser.permissions.request({ origins: originPatterns(origin, scope) });
 }
 
+/** Exact-origin access, as granted for a site's extra origins. */
+export function hasOriginPermission(origin: string): Promise<boolean> {
+  return browser.permissions.contains({ origins: originPatterns(origin, 'origin') });
+}
+
+/**
+ * Ask for several extra origins in one prompt (side panel, inside a user gesture). Chrome
+ * grants all of them or none.
+ */
+export function requestOriginsPermission(origins: readonly string[]): Promise<boolean> {
+  const patterns = [...new Set(origins.flatMap((origin) => originPatterns(origin, 'origin')))];
+  return browser.permissions.request({ origins: patterns });
+}
+
 /**
  * Revoke host patterns. Callers pass only patterns no other enabled site needs. Never throws:
  * Chrome refuses to remove required (manifest) host permissions, and disabling must still work.

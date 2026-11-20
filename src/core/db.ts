@@ -41,6 +41,11 @@ export interface SiteRecord {
   scope: Scope;
   enabledAt: number;
   settings: SiteSettings;
+  /**
+   * Further origins the user allowed for this site (CDNs, sibling domains such as
+   * `airbnb.com` for `airbnb.com.tr`). Scripts and maps there are fetched and scanned.
+   */
+  extraOrigins?: string[];
 }
 
 export interface ScriptRecord {

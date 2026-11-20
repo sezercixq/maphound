@@ -14,8 +14,11 @@ export default defineConfig({
     minimum_chrome_version: '116',
     permissions: ['sidePanel', 'offscreen', 'scripting', 'alarms', 'activeTab'],
     optional_host_permissions: ['https://*/*', 'http://*/*'],
-    // E2E builds pre-grant the local test server, since a headless test cannot click the prompt.
-    ...(e2e ? { host_permissions: ['http://127.0.0.1/*'] } : {}),
+    // E2E builds pre-grant the local test hosts, since a headless test cannot click the prompt.
+    // The site itself and each third-party origin are still enabled and allowed through the UI.
+    ...(e2e
+      ? { host_permissions: ['http://127.0.0.1/*', 'http://localhost/*', 'http://*.mh.test/*'] }
+      : {}),
     action: { default_title: 'MapHound' },
   },
 });

@@ -38,9 +38,14 @@ export const leaks = {
   ignored: ['sk', 'live', rand(32)].join('_'),
   /** Firebase web config key: public, reported as info. */
   firebase: `AIza${rand(35, `${ALNUM}_-`)}`,
-  /** In the third-party script, which is never scanned. */
+  /** In the third-party script: found only after the user allows its origin. */
   thirdParty: ['sk', 'live', rand(32)].join('_'),
+  /** In the original source of a bundle served from the site's CDN (cdn-a.mh.test). */
+  cdn: makeGithubStyleToken('ghp', rand(30)),
 };
+
+/** Fake hosts that Chromium resolves to the local test server (see `launch`). */
+export const CDN_HOSTS = ['cdn-a.mh.test', 'cdn-b.mh.test'] as const;
 
 /** A map whose sources include a traversal attempt and a vendor module. */
 export const sourceMap = (file: string, firstSource = `export const name = '${file}';`) =>
@@ -61,12 +66,18 @@ const appSource = `export const name = 'app.js';\nexport const githubToken = "${
 export interface TestServer {
   base: string;
   thirdPartyBase: string;
+  /** The site's own CDN, with a source map. */
+  cdnBase: string;
+  /** Another third-party origin without a map. */
+  vendorBase: string;
   close(): void;
 }
 
 /** Test site on 127.0.0.1; the same server as `localhost` plays a third party. */
 export function startServer(): Promise<TestServer> {
   let thirdPartyBase = '';
+  let cdnBase = '';
+  let vendorBase = '';
   const inline = Buffer.from(sourceMap('chunk.js')).toString('base64');
   const server = createServer((req, res) => {
     const path = new URL(req.url ?? '/', 'http://x').pathname;
@@ -82,6 +93,7 @@ export function startServer(): Promise<TestServer> {
       case '/index.html':
         return html(
           `<script src="/app.js"></script><script src="${thirdPartyBase}/tp.js"></script>` +
+            `<script src="${cdnBase}/cdn.js"></script><script src="${vendorBase}/vendor.js"></script>` +
             `<script>setTimeout(() => { const s = document.createElement('script'); s.src = '/chunk.js'; document.body.append(s); import('/lazy.mjs'); }, 2500);</script>`,
         );
       case '/second.html':
@@ -110,6 +122,15 @@ export function startServer(): Promise<TestServer> {
         return send('application/json', sourceMap('lazy.mjs'));
       case '/second.js':
         return js("console.log('second');\n");
+      case '/cdn.js':
+        return js("console.log('cdn bundle');\n//# sourceMappingURL=cdn.js.map\n");
+      case '/cdn.js.map':
+        return send(
+          'application/json',
+          sourceMap('cdn.js', `export const deployToken = "${leaks.cdn}";\n`),
+        );
+      case '/vendor.js':
+        return js("console.log('vendor');\n");
       case '/tp.js':
         return js(`console.log('third party', "${leaks.thirdParty}");\n`);
       default:
@@ -121,7 +142,15 @@ export function startServer(): Promise<TestServer> {
     server.listen(0, '127.0.0.1', () => {
       const { port } = server.address() as AddressInfo;
       thirdPartyBase = `http://localhost:${port}`;
-      done({ base: `http://127.0.0.1:${port}`, thirdPartyBase, close: () => server.close() });
+      cdnBase = `http://${CDN_HOSTS[0]}:${port}`;
+      vendorBase = `http://${CDN_HOSTS[1]}:${port}`;
+      done({
+        base: `http://127.0.0.1:${port}`,
+        thirdPartyBase,
+        cdnBase,
+        vendorBase,
+        close: () => server.close(),
+      });
     });
   });
 }
@@ -134,6 +163,7 @@ export function launch(): Promise<BrowserContext> {
       '--headless=new',
       `--disable-extensions-except=${extensionPath}`,
       `--load-extension=${extensionPath}`,
+      `--host-resolver-rules=${CDN_HOSTS.map((host) => `MAP ${host} 127.0.0.1`).join(', ')}`,
     ],
   });
 }

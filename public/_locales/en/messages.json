@@ -259,5 +259,41 @@
   },
   "includeSecretsWarning": {
     "message": "The archive will contain working credentials. Keep it private."
+  },
+  "sectionThirdParty": {
+    "message": "Third-party origins"
+  },
+  "thirdPartyHint": {
+    "message": "Scripts from these origins were not downloaded or scanned. Large sites often serve their own bundles from a CDN or a sibling domain: allow one to scan it too."
+  },
+  "allowScan": {
+    "message": "Allow & scan"
+  },
+  "allowScanAll": {
+    "message": "Allow & scan all ($1 origins)"
+  },
+  "includeAnalytics": {
+    "message": "Include analytics and tag managers ($1)"
+  },
+  "originScriptsOne": {
+    "message": "1 script"
+  },
+  "originScripts": {
+    "message": "$1 scripts"
+  },
+  "originMapsOne": {
+    "message": "1 map"
+  },
+  "originMaps": {
+    "message": "$1 maps"
+  },
+  "relatedDomain": {
+    "message": "related domain"
+  },
+  "allowedOrigins": {
+    "message": "Also scanned for this site"
+  },
+  "removeOrigin": {
+    "message": "Stop scanning $1"
   }
 }

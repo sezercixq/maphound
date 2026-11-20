@@ -135,3 +135,34 @@ export async function enqueueMapUrl(
   await tx.done;
   return inScope ? 'queued' : 'third-party';
 }
+
+/**
+ * After the user allowed extra origins: put that site's skipped third-party scripts and maps
+ * hosted there back in the queue. Returns how many jobs were requeued.
+ */
+export async function requeueThirdParty(
+  db: MaphoundHandle,
+  siteOrigin: string,
+  origins: readonly string[],
+  now: number = Date.now(),
+): Promise<number> {
+  if (origins.length === 0) return 0;
+  const allowed = new Set(origins);
+  const tx = db.transaction('jobs', 'readwrite');
+  let requeued = 0;
+  for (const job of await tx.store.index('by-origin').getAll(siteOrigin)) {
+    if (job.state !== 'skipped' || job.skipReason !== 'third-party') continue;
+    let origin: string;
+    try {
+      origin = new URL(job.url).origin;
+    } catch {
+      continue;
+    }
+    if (!allowed.has(origin)) continue;
+    const { skipReason: _skip, thirdParty: _kind, error: _error, ...rest } = job;
+    await tx.store.put({ ...rest, state: 'queued', attempts: 0, leasedUntil: 0, updatedAt: now });
+    requeued++;
+  }
+  await tx.done;
+  return requeued;
+}

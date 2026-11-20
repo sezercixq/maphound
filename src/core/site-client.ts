@@ -1,8 +1,8 @@
 import type { Scope, SiteSettings } from './db';
 import { sendMessage } from './messaging';
-import { requestSitePermission } from './permissions';
+import { requestOriginsPermission, requestSitePermission } from './permissions';
 import { effectiveScope, parseOrigin } from './scope';
-import type { EnableResult } from './sites';
+import type { AddOriginsResult, EnableResult } from './sites';
 
 export type EnableFromUiResult = EnableResult | { ok: false; reason: 'permission-denied' };
 
@@ -34,4 +34,22 @@ export function updateSiteSettingsFromUi(origin: string, patch: Partial<SiteSett
 
 export function rescanSiteFromUi(origin: string) {
   return sendMessage('scan:rescan', { origin });
+}
+
+export type AllowOriginsResult = AddOriginsResult | { ok: false; reason: 'permission-denied' };
+
+/**
+ * "Allow & scan" for one or many third-party origins. Call straight from a click handler: the
+ * permission prompt must be the first thing awaited. One prompt covers all origins.
+ */
+export async function allowOriginsFromUi(
+  siteOrigin: string,
+  origins: readonly string[],
+): Promise<AllowOriginsResult> {
+  if (!(await requestOriginsPermission(origins))) return { ok: false, reason: 'permission-denied' };
+  return sendMessage('site:add-origins', { origin: siteOrigin, origins: [...origins] });
+}
+
+export function removeOriginFromUi(siteOrigin: string, extraOrigin: string) {
+  return sendMessage('site:remove-origin', { origin: siteOrigin, extraOrigin });
 }
