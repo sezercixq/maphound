@@ -1,0 +1,19 @@
+id: github-classic-pat
+name: "GitHub personal access token (classic)"
+description: "Classic PAT with the scopes chosen by its owner. The CRC32 checksum is verified offline."
+severity: critical
+confidence: high
+keywords: ["ghp_"]
+regex: "(?<![A-Za-z0-9_])(ghp_[A-Za-z0-9]{36})(?![A-Za-z0-9])"
+secretGroup: 1
+validators: [github-checksum]
+references:
+  - https://github.blog/engineering/platform-security/behind-githubs-new-authentication-token-formats/
+tests:
+  positive:
+    - text: 'const token = "ghp_{{}}LQzUncLhQpq8BpVmiP5ZE9NIvtpuIs1pvcFh";'
+      confidence: verified-format
+  negative:
+    - '"ghp_{{}}x3jZBxowDDJUoIN2J7xUvPIOcayZge33oC7A"'
+    - "ghp_{{}}xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    - "ghp_{{}}short"

@@ -1,4 +1,4 @@
-import type { JobRecord, SkipReason, ThirdPartyKind } from '@/core/db';
+import type { Confidence, JobRecord, Severity, SkipReason, ThirdPartyKind } from '@/core/db';
 import type { MessageKey } from './i18n';
 
 export function formatBytes(bytes: number): string {
@@ -71,9 +71,7 @@ export function statusOf(job: Pick<JobRecord, 'state' | 'skipReason' | 'kind'>):
     case 'fetching':
       return { key: 'stateFetching', tone: 'busy' };
     case 'fetched':
-      return job.kind === 'script'
-        ? { key: 'stateFetched', tone: 'ok' }
-        : { key: 'stateScanning', tone: 'busy' };
+    // Downloaded; waiting for map analysis or the secret scan.
     case 'scanning':
       return { key: 'stateScanning', tone: 'busy' };
     case 'done':
@@ -100,3 +98,22 @@ export const VIA_KEYS: Record<NonNullable<JobRecord['via']>, MessageKey> = {
   'data-uri': 'viaDataUri',
   probe: 'viaProbe',
 };
+
+export const SEVERITY_KEYS: Record<Severity, MessageKey> = {
+  critical: 'severityCritical',
+  high: 'severityHigh',
+  medium: 'severityMedium',
+  low: 'severityLow',
+  info: 'severityInfo',
+};
+
+export const CONFIDENCE_KEYS: Record<Confidence, MessageKey> = {
+  'verified-format': 'confidenceVerified',
+  high: 'confidenceHigh',
+  medium: 'confidenceMedium',
+  low: 'confidenceLow',
+};
+
+export function isUrgent(severity: Severity): boolean {
+  return severity === 'critical' || severity === 'high';
+}

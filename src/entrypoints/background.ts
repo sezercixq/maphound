@@ -8,7 +8,7 @@ import { ensureOffscreen } from '@/core/offscreen';
 import { registeredCollectorIds } from '@/core/permissions';
 import { Processor } from '@/core/processor';
 import { enqueueDiscovered } from '@/core/queue';
-import { disableSite, enableSite, syncSites, updateSiteSettings } from '@/core/sites';
+import { disableSite, enableSite, rescanSite, syncSites, updateSiteSettings } from '@/core/sites';
 
 /** Background to offscreen to worker round trip. */
 export async function pingPipeline(text: string): Promise<PingResult> {
@@ -32,6 +32,10 @@ const processor = new Processor({
   analyze: async (request) => {
     await ensureOffscreen();
     return sendMessage('map:analyze', request);
+  },
+  scan: async (request) => {
+    await ensureOffscreen();
+    return sendMessage('script:scan', request);
   },
   notify: notifyDbChanged,
   schedule: (callback, ms) => setTimeout(callback, ms),
@@ -87,7 +91,11 @@ export default defineBackground(() => {
   );
   onMessage('site:settings', ({ data }) => updateSiteSettings(data.origin, data.patch));
   onMessage('site:disable', ({ data }) => disableSite(data.origin, data.purge));
-  onMessage('scan:rescan', () => ({ queued: 0 }));
+  onMessage('scan:rescan', async ({ data }) => {
+    const result = await rescanSite(data.origin);
+    void processor.pump();
+    return result;
+  });
 
   // End-to-end builds only (VITE_MH_E2E=1): lets a test drive the pipeline from the worker context.
   if (import.meta.env.VITE_MH_E2E === '1') {
@@ -100,6 +108,7 @@ export default defineBackground(() => {
     g.__mhJobs = async () => (await getDb()).getAll('jobs');
     g.__mhScripts = async () => (await getDb()).getAll('scripts');
     g.__mhMaps = async () => (await getDb()).getAll('maps');
+    g.__mhFindings = async () => (await getDb()).getAll('findings');
     g.__mhSetSettings = async (origin: string, patch: Partial<SiteSettings>) => {
       const db = await getDb();
       const site = await db.get('sites', origin);

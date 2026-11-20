@@ -1,7 +1,7 @@
 import 'fake-indexeddb/auto';
 import { openDB } from 'idb';
 import { describe, expect, it, vi } from 'vitest';
-import { analyzeMap, collectGarbage } from '@/core/analyze';
+import { analyzeMap, collectGarbage, type MapAnalysisResult } from '@/core/analyze';
 import { DB_VERSION, type JobRecord, type MaphoundHandle, openMaphoundDb } from '@/core/db';
 import { LEASE_MS, resumeJobs } from '@/core/jobs';
 import { Processor } from '@/core/processor';
@@ -94,12 +94,14 @@ describe('Processor', () => {
     await db.put('jobs', mapJob());
     await db.put('jobs', mapJob({ id: 'script', kind: 'script', url: 'https://example.com/a.js' }));
     const analyze = vi.fn((request) => analyzeMap(db, request));
-    const processor = new Processor({ db: async () => db, analyze });
+    const scan = vi.fn(async () => ({ ok: true as const, findings: 0, hits: 0 }));
+    const processor = new Processor({ db: async () => db, analyze, scan });
     await processor.pump();
     await processor.idle();
     expect(analyze).toHaveBeenCalledTimes(1);
     expect((await db.get('jobs', mapJob().id))?.state).toBe('done');
-    expect((await db.get('jobs', 'script'))?.state).toBe('fetched');
+    expect(scan).toHaveBeenCalledTimes(1);
+    expect((await db.get('jobs', 'script'))?.state).toBe('done');
     expect(await db.count('maps')).toBe(1);
   });
 
@@ -113,6 +115,7 @@ describe('Processor', () => {
       db: async () => db,
       now: () => now,
       schedule,
+      scan: vi.fn(),
       analyze: async ({ jobId }) =>
         jobId === 'invalid'
           ? { ok: false, permanent: true, error: 'invalid JSON' }
@@ -130,6 +133,21 @@ describe('Processor', () => {
       error: 'offscreen document closed',
     });
     expect(schedule).toHaveBeenCalledWith(expect.any(Function), 2_000);
+  });
+
+  it('treats a missing worker response as a transient failure', async () => {
+    const db = await freshDb();
+    await db.put('jobs', mapJob());
+    const processor = new Processor({
+      db: async () => db,
+      analyze: async () => undefined as unknown as MapAnalysisResult,
+      scan: vi.fn(),
+    });
+    await processor.pump();
+    expect(await db.get('jobs', mapJob().id)).toMatchObject({
+      state: 'fetched',
+      error: 'no response from the scan worker',
+    });
   });
 });
 

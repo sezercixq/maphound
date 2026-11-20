@@ -1,0 +1,160 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/sezercixq/maphound/blob/main/rules/_schema.json",
+  "title": "MapHound detection rule",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "name", "severity", "keywords", "regex", "secretGroup", "tests"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+      "maxLength": 64
+    },
+    "name": {
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 80
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 400
+    },
+    "severity": {
+      "$ref": "#/definitions/severity"
+    },
+    "confidence": {
+      "enum": ["high", "medium", "low"],
+      "description": "Before validation. Defaults to medium."
+    },
+    "public": {
+      "type": "boolean",
+      "description": "Meant to be public (publishable keys): reported as info."
+    },
+    "generic": {
+      "type": "boolean",
+      "description": "Catch-all rule: any provider-specific rule matching the same text wins."
+    },
+    "keywords": {
+      "description": "Lowercase literals for the Aho-Corasick prefilter. The regex runs only near them.",
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 16,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 2,
+        "maxLength": 48,
+        "pattern": "^[^A-Z]+$"
+      }
+    },
+    "regex": {
+      "type": "string",
+      "minLength": 4,
+      "maxLength": 1000,
+      "description": "JavaScript RegExp source."
+    },
+    "flags": {
+      "type": "string",
+      "pattern": "^i?$"
+    },
+    "secretGroup": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9
+    },
+    "entropy": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 8,
+      "description": "Minimum Shannon entropy, bits per character."
+    },
+    "validators": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "github-checksum",
+          "github-fine-grained",
+          "jwt",
+          "supabase-service-role",
+          "private-key"
+        ]
+      }
+    },
+    "publicContext": {
+      "type": "string",
+      "maxLength": 400,
+      "description": "Regex; if seen within 200 chars the finding is info."
+    },
+    "requireContext": {
+      "type": "string",
+      "maxLength": 400,
+      "description": "Regex that must be seen within 200 chars."
+    },
+    "window": {
+      "type": "integer",
+      "minimum": 64,
+      "maximum": 20000,
+      "description": "Characters around a keyword the regex may see. Default 300."
+    },
+    "references": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^https://"
+      }
+    },
+    "tests": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["positive", "negative"],
+      "properties": {
+        "positive": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/definitions/sample"
+          }
+        },
+        "negative": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/definitions/sample"
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "severity": {
+      "enum": ["critical", "high", "medium", "low", "info"]
+    },
+    "sample": {
+      "oneOf": [
+        {
+          "type": "string",
+          "minLength": 1
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["text"],
+          "properties": {
+            "text": {
+              "type": "string",
+              "minLength": 1
+            },
+            "severity": {
+              "$ref": "#/definitions/severity"
+            },
+            "confidence": {
+              "enum": ["verified-format", "high", "medium", "low"]
+            }
+          }
+        }
+      ]
+    }
+  }
+}

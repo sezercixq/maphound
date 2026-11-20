@@ -101,9 +101,6 @@
   "stateFetching": {
     "message": "fetching"
   },
-  "stateFetched": {
-    "message": "fetched"
-  },
   "stateScanning": {
     "message": "analysing"
   },
@@ -187,5 +184,80 @@
   },
   "showMore": {
     "message": "Show $1 more"
+  },
+  "sectionFindings": {
+    "message": "Findings"
+  },
+  "findingsNone": {
+    "message": "No secrets found in the scanned scripts."
+  },
+  "findingsScanning": {
+    "message": "Scanning scripts…"
+  },
+  "findingsShowLower": {
+    "message": "Show $1 lower-severity findings"
+  },
+  "findingsHideLower": {
+    "message": "Show only critical and high"
+  },
+  "findingsOnlyLower": {
+    "message": "$1 lower-severity findings, nothing critical or high."
+  },
+  "severityCritical": {
+    "message": "critical"
+  },
+  "severityHigh": {
+    "message": "high"
+  },
+  "severityMedium": {
+    "message": "medium"
+  },
+  "severityLow": {
+    "message": "low"
+  },
+  "severityInfo": {
+    "message": "info"
+  },
+  "confidenceVerified": {
+    "message": "verified format"
+  },
+  "confidenceHigh": {
+    "message": "high confidence"
+  },
+  "confidenceMedium": {
+    "message": "medium confidence"
+  },
+  "confidenceLow": {
+    "message": "low confidence"
+  },
+  "reveal": {
+    "message": "Show value"
+  },
+  "hide": {
+    "message": "Hide value"
+  },
+  "copy": {
+    "message": "Copy value"
+  },
+  "copied": {
+    "message": "Copied"
+  },
+  "locationMapped": {
+    "message": "found in bundle, mapped to source"
+  },
+  "locationBundle": {
+    "message": "found in bundle"
+  },
+  "occurrences": {
+    "message": "$1×"
+  },
+  "rescan": {
+    "message": "Rescan"
+  },
+  "includeSecrets": {
+    "message": "Include raw secret values in findings.json"
+  },
+  "includeSecretsWarning": {
+    "message": "The archive will contain working credentials. Keep it private."
   }
 }

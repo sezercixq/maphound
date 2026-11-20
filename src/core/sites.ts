@@ -132,3 +132,31 @@ export async function syncSites(db?: MaphoundHandle): Promise<{ disabled: string
   if (disabled.length > 0) notifyDbChanged({ store: 'sites' });
   return { disabled };
 }
+
+/**
+ * Scan a site's scripts again (after a rules update): findings are deleted and scanned scripts
+ * go back to `fetched`. Downloads and map analyses are kept.
+ */
+export async function rescanSite(origin: string, db?: MaphoundHandle): Promise<{ queued: number }> {
+  const handle = db ?? (await getDb());
+  const findings = handle.transaction('findings', 'readwrite');
+  for (const key of await findings.store.index('by-origin').getAllKeys(origin))
+    await findings.store.delete(key);
+  await findings.done;
+  const tx = handle.transaction('jobs', 'readwrite');
+  let queued = 0;
+  for (const job of await tx.store.index('by-origin').getAll(origin)) {
+    if (job.kind !== 'script' || job.state !== 'done' || !job.hash) continue;
+    await tx.store.put({
+      ...job,
+      state: 'fetched',
+      attempts: 0,
+      leasedUntil: 0,
+      updatedAt: Date.now(),
+    });
+    queued++;
+  }
+  await tx.done;
+  notifyDbChanged({ store: 'findings', origin });
+  return { queued };
+}

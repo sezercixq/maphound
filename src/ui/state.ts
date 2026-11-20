@@ -2,6 +2,7 @@ import { batch, computed, signal } from '@preact/signals';
 import { browser } from 'wxt/browser';
 import { onDbChanged } from '@/core/channel';
 import {
+  type FindingRecord,
   getDb,
   type JobRecord,
   type MapRecord,
@@ -26,9 +27,12 @@ export const site = computed(() =>
 const jobs = signal<JobRecord[]>([]);
 const scripts = signal<ScriptRecord[]>([]);
 const maps = signal<MapRecord[]>([]);
+const findings = signal<FindingRecord[]>([]);
 export const loaded = signal(false);
 
-export const view = computed(() => buildViewModel(jobs.value, scripts.value, maps.value));
+export const view = computed(() =>
+  buildViewModel(jobs.value, scripts.value, maps.value, findings.value),
+);
 
 /** Re-read everything for the current site. The channel only says "something changed". */
 export async function refresh(): Promise<void> {
@@ -36,18 +40,20 @@ export async function refresh(): Promise<void> {
   const allSites = await db.getAll('sites');
   const current = origin.peek();
   const active = current ? siteForUrl(allSites, current) : undefined;
-  const [siteJobs, siteScripts, siteMaps] = active
+  const [siteJobs, siteScripts, siteMaps, siteFindings] = active
     ? await Promise.all([
         db.getAllFromIndex('jobs', 'by-origin', active.origin),
         db.getAllFromIndex('scripts', 'by-origin', active.origin),
         db.getAllFromIndex('maps', 'by-origin', active.origin),
+        db.getAllFromIndex('findings', 'by-origin', active.origin),
       ])
-    : [[], [], []];
+    : [[], [], [], []];
   batch(() => {
     sites.value = allSites;
     jobs.value = siteJobs;
     scripts.value = siteScripts;
     maps.value = siteMaps;
+    findings.value = siteFindings;
     loaded.value = true;
   });
 }

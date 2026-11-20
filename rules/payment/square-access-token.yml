@@ -1,0 +1,17 @@
+id: square-access-token
+name: "Square access token"
+description: "Square production access token."
+severity: high
+confidence: medium
+keywords: ["eaaa"]
+regex: "(?<![A-Za-z0-9_-])(EAAA[A-Za-z0-9_-]{60})(?![A-Za-z0-9_-])"
+secretGroup: 1
+entropy: 3.5
+references:
+  - https://developer.squareup.com/docs/build-basics/access-tokens
+tests:
+  positive:
+    - 'accessToken: "EAAA{{}}RIidWbxaw-O0Ydm5OvMNnoCohUpX55Wgz7FX1rdHrOOkeM23CpKSafzU_RW8"'
+  negative:
+    - "EAAA{{}}xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    - "EAAA{{}}short"

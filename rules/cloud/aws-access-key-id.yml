@@ -1,0 +1,19 @@
+id: aws-access-key-id
+name: "AWS access key ID"
+description: "Identifies an AWS IAM key pair. Harmless alone, but the secret key is often nearby."
+severity: high
+confidence: high
+keywords: ["akia", "asia", "abia", "acca"]
+regex: "(?<![A-Z0-9])((?:AKIA|ASIA|ABIA|ACCA)[A-Z2-7]{16})(?![A-Z0-9])"
+secretGroup: 1
+entropy: 3.0
+references:
+  - https://docs.aws.amazon.com/IAM/latest/UserGuide/security-creds.html
+tests:
+  positive:
+    - 'const accessKeyId = "AKIA{{}}4YSNI2G3IITN5XVK";'
+    - '{"AccessKeyId":"ASIA{{}}TFTDHWZXUYXXAPWO"}'
+  negative:
+    - 'const id = "AKIA{{}}IOSFODNN7EXAMPLE";'
+    - "AKIA{{}}1234"
+    - "9AKIA{{}}37D2XCU656YRZXA5"

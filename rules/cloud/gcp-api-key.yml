@@ -1,0 +1,20 @@
+id: gcp-api-key
+name: "Google API key"
+description: "Google Cloud API key. Keys in Firebase or Maps web configs are meant to be public and are reported as info; check API restrictions either way."
+severity: medium
+confidence: high
+keywords: ["aiza"]
+regex: "(?<![A-Za-z0-9_-])(AIza[0-9A-Za-z_-]{35})(?![A-Za-z0-9_-])"
+secretGroup: 1
+entropy: 3.5
+publicContext: 'authDomain|firebaseapp\.com|messagingSenderId|storageBucket|maps\.googleapis\.com|recaptcha'
+references:
+  - https://cloud.google.com/docs/authentication/api-keys
+tests:
+  positive:
+    - 'fetch("https://translation.googleapis.com/v2?key=AIza{{}}x1d-xD0YpkO_pKmxdwIN-q0DPWJtswisBo-")'
+    - text: 'const firebaseConfig = { apiKey: "AIza{{}}k9hv6R35k9RiMezgY_OPc155HAsnVDdm5Q_", authDomain: "demo-app.firebaseapp.com" };'
+      severity: info
+  negative:
+    - 'apiKey: "AIza{{}}SyXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"'
+    - "AIza{{}}-short"

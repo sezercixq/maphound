@@ -1,0 +1,16 @@
+id: telegram-bot-token
+name: "Telegram bot token"
+description: "Full control of a Telegram bot."
+severity: high
+confidence: high
+keywords: [":aa"]
+regex: "(?<![0-9])([0-9]{8,10}:AA[A-Za-z0-9_-]{33})(?![A-Za-z0-9_-])"
+secretGroup: 1
+entropy: 3.5
+references:
+  - https://core.telegram.org/bots/api#authorizing-your-bot
+tests:
+  positive:
+    - "https://api.telegram.org/bot7374437817:AA{{}}O4s-148zpwjMcY7c36iTuYx6Et9TMMy9u/sendMessage"
+  negative:
+    - "123456789:AA{{}}xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"

@@ -1,0 +1,18 @@
+id: azure-sas-token
+name: "Azure shared access signature"
+description: "Signed Azure SAS URL. Grants the permissions in `sp` until `se` without further authentication."
+severity: high
+confidence: medium
+keywords: ["sig="]
+regex: "[?&]sig=([A-Za-z0-9%+/]{40,90}?(?:%3D|=){0,2})(?![A-Za-z0-9%+/=])"
+secretGroup: 1
+entropy: 3.5
+requireContext: '[?&]sv=\d{4}-\d{2}-\d{2}|\.windows\.net'
+references:
+  - https://learn.microsoft.com/azure/storage/common/storage-sas-overview
+tests:
+  positive:
+    - "https://demo.blob.core.windows.net/files/a.pdf?sv=2022-11-02&ss=b&srt=o&sp=r&se=2030-01-01&sig=0RNlvCjsBk4Mn8mqBdSO{{}}lQnxivX30SOxYQuNk2WB3Qr%3D"
+  negative:
+    - "https://cdn.example.org/img.png?w=200&sig={{}}XKWWap0g3qTlAZkK2V33V2okghZrpagTL8GCIZtSix4"
+    - "?sv=2022-11-02&sig={{}}abc"

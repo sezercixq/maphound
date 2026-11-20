@@ -1,0 +1,17 @@
+id: slack-bot-token
+name: "Slack bot token"
+description: "Slack bot token: posts and reads messages with the bot's scopes."
+severity: critical
+confidence: high
+keywords: ["xoxb-"]
+regex: "(?<![A-Za-z0-9_-])(xoxb-[0-9]{10,13}-[0-9]{10,13}-[A-Za-z0-9]{24,34})(?![A-Za-z0-9])"
+secretGroup: 1
+entropy: 3.5
+references:
+  - https://api.slack.com/authentication/token-types
+tests:
+  positive:
+    - '"xoxb-842372111948-{{}}6459018837623-xRlpwc38naO8IjhBTQCgnRXT"'
+  negative:
+    - "xoxb-{{}}123-456-abc"
+    - "xoxb-{{}}000000000000-0000000000000-xxxxxxxxxxxxxxxxxxxxxxxx"

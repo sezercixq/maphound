@@ -101,9 +101,6 @@
   "stateFetching": {
     "message": "indiriliyor"
   },
-  "stateFetched": {
-    "message": "indirildi"
-  },
   "stateScanning": {
     "message": "analiz ediliyor"
   },
@@ -187,5 +184,80 @@
   },
   "showMore": {
     "message": "$1 tane daha göster"
+  },
+  "sectionFindings": {
+    "message": "Bulgular"
+  },
+  "findingsNone": {
+    "message": "Taranan betiklerde sır bulunamadı."
+  },
+  "findingsScanning": {
+    "message": "Betikler taranıyor…"
+  },
+  "findingsShowLower": {
+    "message": "$1 düşük önemli bulguyu göster"
+  },
+  "findingsHideLower": {
+    "message": "Yalnızca kritik ve yüksekleri göster"
+  },
+  "findingsOnlyLower": {
+    "message": "$1 düşük önemli bulgu var, kritik veya yüksek yok."
+  },
+  "severityCritical": {
+    "message": "kritik"
+  },
+  "severityHigh": {
+    "message": "yüksek"
+  },
+  "severityMedium": {
+    "message": "orta"
+  },
+  "severityLow": {
+    "message": "düşük"
+  },
+  "severityInfo": {
+    "message": "bilgi"
+  },
+  "confidenceVerified": {
+    "message": "format doğrulandı"
+  },
+  "confidenceHigh": {
+    "message": "yüksek güven"
+  },
+  "confidenceMedium": {
+    "message": "orta güven"
+  },
+  "confidenceLow": {
+    "message": "düşük güven"
+  },
+  "reveal": {
+    "message": "Değeri göster"
+  },
+  "hide": {
+    "message": "Değeri gizle"
+  },
+  "copy": {
+    "message": "Değeri kopyala"
+  },
+  "copied": {
+    "message": "Kopyalandı"
+  },
+  "locationMapped": {
+    "message": "pakette bulundu, kaynağa eşlendi"
+  },
+  "locationBundle": {
+    "message": "pakette bulundu"
+  },
+  "occurrences": {
+    "message": "$1×"
+  },
+  "rescan": {
+    "message": "Yeniden tara"
+  },
+  "includeSecrets": {
+    "message": "Ham sır değerlerini findings.json'a ekle"
+  },
+  "includeSecretsWarning": {
+    "message": "Arşiv çalışan kimlik bilgileri içerecek. Gizli tutun."
   }
 }

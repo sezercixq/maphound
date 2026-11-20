@@ -1,0 +1,17 @@
+id: braintree-access-token
+name: "Braintree production access token"
+description: "Braintree (PayPal) production gateway access token."
+severity: critical
+confidence: high
+keywords: ["access_token$production$"]
+regex: '(access_token\$production\$[0-9a-z]{16}\$[0-9a-f]{32})'
+secretGroup: 1
+entropy: 3.0
+references:
+  - https://developer.paypal.com/braintree/docs/guides/authorization/overview
+tests:
+  positive:
+    - '"access_token$production$5tksjbes5lg59bqt${{}}4f7e7b92c6763da05064fd0c881a3088"'
+  negative:
+    - "access_token$sandbox$abc"
+    - "access_token$production${{}}short$abc"

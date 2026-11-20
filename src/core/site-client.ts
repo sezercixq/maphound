@@ -31,3 +31,7 @@ export function disableSiteFromUi(origin: string, purge: boolean) {
 export function updateSiteSettingsFromUi(origin: string, patch: Partial<SiteSettings>) {
   return sendMessage('site:settings', { origin, patch });
 }
+
+export function rescanSiteFromUi(origin: string) {
+  return sendMessage('scan:rescan', { origin });
+}

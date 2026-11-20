@@ -1,0 +1,21 @@
+id: private-key
+name: "Private key"
+description: "PEM private key (RSA, EC, DSA, OpenSSH, PKCS#8 or PGP). Encrypted keys are reported as high."
+severity: critical
+confidence: high
+keywords: ["private key-----", "private key block-----"]
+regex: '(-----BEGIN (?:RSA |EC |DSA |OPENSSH |ENCRYPTED |PGP )?PRIVATE KEY(?: BLOCK)?-----(?:[A-Za-z0-9+/=\s\\:,.]|-(?!-)){64,10000}?-----END (?:RSA |EC |DSA |OPENSSH |ENCRYPTED |PGP )?PRIVATE KEY(?: BLOCK)?-----)'
+secretGroup: 1
+validators: [private-key]
+window: 12000
+references:
+  - https://www.rfc-editor.org/rfc/rfc7468
+tests:
+  positive:
+    - text: "const key = \"-----BEGIN RSA PRIVATE{{}} KEY-----\\nlpeGwl935oXJzOcH6i9U920+5DL+1BeZTYuz7YL4zKEAa5ZzFZRc0ABH41iO6o53\\nQTxv70AeR4LNALHVglOPH8CEgguWDWZUKigjOq0UrIXxThm/90FX37T66GrguxbQ\\nLwmyaVZZA6en15cIyl0vrMOyt3Cn9ifvHLA3tOEXjCLqMFL5Nv1YdhmHou4+eWEy\\nRMpO0KvuEc2o7c1j7mZVaqipLvVBro58m/LnZMNJxSzYN77ToUYFh5Ocoea/ZxAJ\\nB0brx/E2QGKCALpoQWiZ0FBdx8YgFLwPdmOOf/ewSEwZO/rf32fIcEzJGOAOipVr\\nPYIssv67nQ0PxNtp1C8IwNxfbkCMylkEfFjdGRLiIAzZvXWj5pbuAgxLxTiRcBkT\\np6GHadp6QyJHsCpbJuzj/bP6pGeyBVaVrNb7idHNyXD5HvSGD78F/5D4T8Pp+x+P\\nqA3zhsBuhwxevURUYsdI4C/vziT3kTrxjvJCYlcokqrN9SISnSjV0UPnCYiULsYb\\n67wc7yuBI30To6y3W0ng5zRDMemj1wF0i5oI4vy27xx67xTwQEgHuG6wJYAS3Mii\\nHcLj1kHl6wa2qSbL+x91iuQ37mrdjanbgkj4Ogb43ImQyu2wv/QTvOL+vNxFbBU7\\nvHpvClMQcI2qrKwgnwP3HMPQTjrvmd0b1Chkx9fIeVdGxEwhn+NYWsIbtMct6vWd\\nL2y2g9dVKRv+DThWTEei8jr38dzIk0Cixc/R4iAoTmlvfpDeZ1d0Wpt88SLQJDq7\\nIhpfnhFF8T6Jw18AnKIazGP4tc2cXUuu\\n-----END RSA PRIVATE KEY-----\";"
+      confidence: verified-format
+    - text: "\"-----BEGIN ENCRYPTED PRIVATE{{}} KEY-----\\nHEGTTxQiZ4TqPebv2zJZ0vapLZ+LO0wGekr/0VUUJ3GuDU51jEZgcp51s5rZgy61\\nTV/06LEKJivNknuTvk/CgFYrNrNKMi3bp0HzfNhRsLvNGppwomT3CXqaAodACUND\\nsrnad+zVkyp+foOBfMEhP7+cw7KHBkiNjBHzTK2wcz/S88A3vrbLngE6R/YAec1c\\nXpC+KJR/wPJ2NIT01IFRmfE6dfV+JKnDdUtR0gmH1MeUgf/m1cSf6DDxb9ehe5BK\\nLLMeerdQRwUaAF8EwD1td7Hf35wozFnLtM96AIKCZiHukcBy94IWJh7b0nGooadR\\n/szmMGnqNst8MAume/d4Oy/Esk8uWUbTz2QuymZRXFJsSBVbuuq52NfHI8jHAfnH\\nTbEEhYz5RVJubMdddCJgwl+b/+rJC0RsqDOHdrSIeI4ru8II3WqorDfyOvS2L7+V\\nX/XYc2meuIV0ALxPQ3GDwtDFMe0ArQMswVuBXbOQKCFYryNYZAVXp2UL+HxTbmRN\\n2Gv80eML5GkxF7C6+yJv1puaGucAiw9jbjXZfdHiafASoFznGju55k5RrVDMJ+kU\\nQxCv15KKd74Qbxzu8U7ABw0QdzpC6pOq5ggzHBgpJzyftserU7z9sysT296cQmEA\\nDGdiMRVQrIZoDlgc/cG/sgLpSfSxQkSZCnoEPkJ8BfafAkmADACAziRZ+O+hyeWz\\nFsmcS3/ouXPXQhSlR5D3IjcA0M6OWxkqPMS04an/MjD6M1DJtssXOZhmdmgrZNYE\\n23hknautudpWGnbaJSD14YDbl5Z+fu5u\\n-----END ENCRYPTED PRIVATE KEY-----\""
+      severity: high
+  negative:
+    - "-----BEGIN PRIVATE KEY-----{{}}\\n...\\n-----END PRIVATE KEY-----"
+    - "-----BEGIN PUBLIC KEY-----"

@@ -1,0 +1,17 @@
+id: digitalocean-token
+name: "DigitalOcean token"
+description: "DigitalOcean personal access, OAuth or refresh token."
+severity: critical
+confidence: high
+keywords: ["dop_v1_", "doo_v1_", "dor_v1_"]
+regex: "(?<![A-Za-z0-9_])(do[opr]_v1_[a-f0-9]{64})(?![a-f0-9])"
+secretGroup: 1
+entropy: 3.0
+references:
+  - https://docs.digitalocean.com/reference/api/create-personal-access-token/
+tests:
+  positive:
+    - 'token = "dop_v1_{{}}7ac84538bda72190793fd8e56804a34b7ee839d96c9181bce15e24b26a267b2f"'
+  negative:
+    - "dop_v1_{{}}0000000000000000000000000000000000000000000000000000000000000000"
+    - "dop_v1_{{}}abc"

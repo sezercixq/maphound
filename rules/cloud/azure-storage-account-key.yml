@@ -1,0 +1,17 @@
+id: azure-storage-account-key
+name: "Azure storage account key"
+description: "Azure Storage shared key in a connection string: full access to the storage account."
+severity: critical
+confidence: high
+keywords: ["accountkey="]
+regex: "AccountKey=([A-Za-z0-9+/]{86}==)"
+secretGroup: 1
+entropy: 4.5
+references:
+  - https://learn.microsoft.com/azure/storage/common/storage-account-keys-manage
+tests:
+  positive:
+    - '"DefaultEndpointsProtocol=https;AccountName=demostore;AccountKey=LGFfDFskk45MIrP2WOZ1vfE1wwFWmcnCLAUQbdbs{{}}nJo7w7zuWCezcDFuuO0guAlcmp9qi/GgwBDVX7EdvK9DQg==;EndpointSuffix=core.windows.net"'
+  negative:
+    - "AccountKey={{}}REPLACE_WITH_KEY"
+    - "AccountKey={{}}AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=="

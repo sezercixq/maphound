@@ -1,0 +1,21 @@
+id: json-web-token
+name: "JSON Web Token"
+description: "Signed JWT embedded in code. Header and payload are decoded offline; Supabase anon keys are public."
+severity: medium
+confidence: high
+generic: true
+keywords: ["eyj"]
+regex: '(?<![A-Za-z0-9_-])(eyJ[A-Za-z0-9_-]{10,500}\.eyJ[A-Za-z0-9_-]{10,2000}\.[A-Za-z0-9_-]{20,600})(?![A-Za-z0-9_-])'
+secretGroup: 1
+validators: [jwt]
+references:
+  - https://datatracker.ietf.org/doc/html/rfc7519
+tests:
+  positive:
+    - text: 'headers: { Authorization: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIi{{}}OiIxMjM0NTY3ODkwIiwibmFtZSI6InN2YyIsImlhdCI6MTcwMDAwMDAwMH0.rMbBhMF0Tr-F0_Hm_NZJB35WHkzOpaPfHzRkQZDX-ED" }'
+      confidence: verified-format
+    - text: 'const anon = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3Mi{{}}OiJzdXBhYmFzZSIsInJlZiI6ImFiY2RlZmdoaWprbG1ub3BxcnN0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MDAwMDAwMDB9.JIeJxYvHg-GozpsXX9Gh1d6xSd1rZnW__cej-tbrxlT";'
+      severity: info
+  negative:
+    - "eyJ{{}}hbGciOiJIUzI1NiJ9.notjson.signaturesignaturesignature"
+    - "eyJ{{}}.eyJ.x"

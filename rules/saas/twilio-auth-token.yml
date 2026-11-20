@@ -1,0 +1,17 @@
+id: twilio-auth-token
+name: "Twilio auth token"
+description: "Twilio account auth token: full account access."
+severity: high
+confidence: medium
+keywords: ["twilio"]
+regex: 'twilio[\w.-]{0,30}?(?:auth|token|secret)[\w.-]{0,24}?[''"`]?\s{0,4}[:=]{1,2}>?\s{0,4}[''"`]([0-9a-f]{32})(?![0-9a-f])'
+flags: i
+secretGroup: 1
+entropy: 3.0
+references:
+  - https://www.twilio.com/docs/iam/credentials/api
+tests:
+  positive:
+    - 'const TWILIO_AUTH_TOKEN = "{{}}27039792ba890dda434d3ca44ee7fe3a";'
+  negative:
+    - 'TWILIO{{}}_AUTH_TOKEN = "00000000000000000000000000000000"'

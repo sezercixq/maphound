@@ -4,6 +4,7 @@ import type { ExportMessage, ExportRequest } from '@/workers/export.worker';
 import ExportWorker from '@/workers/export.worker?worker';
 
 export interface ExportOutcome {
+  findings: number;
   files: number;
   maps: number;
   bytes: number;
@@ -26,6 +27,7 @@ export function saveBlob(blob: Blob, name: string): void {
 export function downloadSourcesZip(
   origin: string,
   onProgress: (done: number, total: number) => void,
+  includeSecrets = false,
 ): Promise<ExportOutcome> {
   const worker = new ExportWorker();
   const parts: Uint8Array<ArrayBuffer>[] = [];
@@ -46,7 +48,12 @@ export function downloadSourcesZip(
         case 'done':
           worker.terminate();
           saveBlob(new Blob(parts, { type: 'application/zip' }), exportFileName(origin));
-          resolve({ files: message.files, maps: message.maps, bytes: message.bytes });
+          resolve({
+            files: message.files,
+            maps: message.maps,
+            bytes: message.bytes,
+            findings: message.findings,
+          });
           break;
         case 'error':
           fail(new Error(message.error));
@@ -58,6 +65,7 @@ export function downloadSourcesZip(
       type: 'export',
       origin,
       generator: `MapHound ${browser.runtime.getManifest().version}`,
+      includeSecrets,
     };
     worker.postMessage(request);
   });

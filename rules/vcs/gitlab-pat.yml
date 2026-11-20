@@ -1,0 +1,17 @@
+id: gitlab-pat
+name: "GitLab personal access token"
+description: "GitLab personal, project or group access token."
+severity: critical
+confidence: high
+keywords: ["glpat-"]
+regex: "(?<![A-Za-z0-9_-])(glpat-[A-Za-z0-9_.-]{20,80})(?![A-Za-z0-9_.-])"
+secretGroup: 1
+entropy: 3.5
+references:
+  - https://docs.gitlab.com/security/tokens/
+tests:
+  positive:
+    - "PRIVATE-TOKEN: glpat-{{}}LEfgZjikvYnipYQFRoBy"
+  negative:
+    - "glpat-{{}}xxxxxxxxxxxxxxxxxxxx"
+    - "glpat-{{}}short"

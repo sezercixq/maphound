@@ -1,0 +1,16 @@
+id: slack-user-token
+name: "Slack user, app or refresh token"
+description: "Slack user (xoxp), app-level (xoxa), refresh (xoxr) or legacy (xoxs) token."
+severity: high
+confidence: high
+keywords: ["xoxp-", "xoxa-", "xoxr-", "xoxs-"]
+regex: "(?<![A-Za-z0-9_-])(xox[pars]-[0-9]{10,13}-[0-9A-Za-z-]{10,200})(?![A-Za-z0-9-])"
+secretGroup: 1
+entropy: 3.5
+references:
+  - https://api.slack.com/authentication/token-types
+tests:
+  positive:
+    - "token=xoxp-328680245451-{{}}029445032739-3932331350789-20fd90c10ee934f1691255e3012cc15e"
+  negative:
+    - "xoxp-{{}}short"

@@ -1,0 +1,19 @@
+id: github-app-token
+name: "GitHub OAuth, app or refresh token"
+description: "gho_ (OAuth), ghu_ (user-to-server), ghs_ (server-to-server) or ghr_ (refresh) token. Checksum verified offline."
+severity: high
+confidence: high
+keywords: ["gho_", "ghu_", "ghs_", "ghr_"]
+regex: "(?<![A-Za-z0-9_])(gh[ousr]_[A-Za-z0-9]{36})(?![A-Za-z0-9])"
+secretGroup: 1
+validators: [github-checksum]
+references:
+  - https://github.blog/engineering/platform-security/behind-githubs-new-authentication-token-formats/
+tests:
+  positive:
+    - text: "Authorization: token gho_{{}}znB8ZmeV95Ju7tWExRbf1ioCThdbnj298ql8"
+      confidence: verified-format
+    - text: '"ghs_{{}}p6Gt6AlCjN6V7dd267wIw6qmaM2N8y0luluH"'
+      confidence: verified-format
+  negative:
+    - "ghs_{{}}UzNrVC6v7k9IZ8WmouJdQevT4y7a7U1VoqRA"

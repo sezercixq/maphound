@@ -1,4 +1,5 @@
-import type { JobRecord, MapRecord, ScriptRecord } from '@/core/db';
+import type { FindingRecord, JobRecord, MapRecord, ScriptRecord, Severity } from '@/core/db';
+import { countBySeverity, sortFindings } from '@/engine/zip/findings-report';
 import { fileName, hostOf } from './format';
 
 export interface ScriptRow {
@@ -30,6 +31,11 @@ export interface Stats {
 export interface ViewModel {
   scripts: ScriptRow[];
   maps: MapRow[];
+  /** Most severe first. */
+  findings: FindingRecord[];
+  findingCounts: Record<Severity, number>;
+  /** Scripts still waiting to be downloaded or scanned. */
+  scanning: boolean;
   stats: Stats;
 }
 
@@ -38,6 +44,7 @@ export function buildViewModel(
   jobs: readonly JobRecord[],
   scripts: readonly ScriptRecord[],
   maps: readonly MapRecord[],
+  findings: readonly FindingRecord[] = [],
 ): ViewModel {
   const scriptByHash = new Map(scripts.map((s) => [s.hash, s]));
   const mapById = new Map(maps.map((m) => [m.id, m]));
@@ -77,6 +84,16 @@ export function buildViewModel(
   return {
     scripts: scriptRows,
     maps: mapRows,
+    findings: sortFindings(findings),
+    findingCounts: countBySeverity(findings),
+    scanning: jobs.some(
+      (job) =>
+        job.kind === 'script' &&
+        (job.state === 'queued' ||
+          job.state === 'fetching' ||
+          job.state === 'fetched' ||
+          job.state === 'scanning'),
+    ),
     stats: {
       scripts: scriptRows.filter((row) => !row.thirdParty).length,
       thirdParty: scriptRows.filter((row) => row.thirdParty).length,

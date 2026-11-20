@@ -94,22 +94,52 @@ export interface MapRecord {
   createdAt: number;
 }
 
+export interface FindingLocation {
+  /** Rebuilt source path (`src/...`, `_vendor/...`) or the bundle's file name. */
+  file: string;
+  /** 1-based. */
+  line: number;
+  /** 0-based. */
+  column: number;
+  /**
+   * `source`: found in sourcesContent. `bundle-mapped`: found in the bundle and mapped back
+   * through the source map. `bundle`: found in the bundle, no mapping.
+   */
+  kind: 'source' | 'bundle-mapped' | 'bundle';
+  scriptUrl: string;
+  mapUrl?: string;
+  bundleLine?: number;
+  bundleColumn?: number;
+}
+
+/** One secret found by one rule on one site, with every place it was seen. */
 export interface FindingRecord {
+  /** `${origin}|${ruleId}|${secretHash}` */
   id: string;
   ruleId: string;
+  ruleName: string;
   severity: Severity;
   confidence: Confidence;
   origin: string;
+  /** Script in which it was first seen. */
   scriptHash: string;
+  /** Primary location (the most precise one). */
   file: string;
   line: number;
   column: number;
+  locationKind: FindingLocation['kind'];
   /** Masked preview, e.g. `AKIA…XY12`. */
   preview: string;
+  /** The line around the first match, secret masked. */
+  snippet: string;
   secretHash: string;
-  /** Raw value. Stays local; never exported unless the user opts in. */
-  secret?: string;
+  /** Raw value. Stays in this browser; exported only when the user opts in. */
+  secret: string;
+  occurrences: number;
+  locations: FindingLocation[];
+  references: string[];
   createdAt: number;
+  updatedAt: number;
 }
 
 export interface JobRecord {

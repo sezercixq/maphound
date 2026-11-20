@@ -1,6 +1,7 @@
 import { defineExtensionMessaging } from '@webext-core/messaging';
 import type { MapAnalysisRequest, MapAnalysisResult } from './analyze';
 import type { Scope, SiteSettings } from './db';
+import type { ScriptScanRequest, ScriptScanResult } from './scan-job';
 import type { EnableResult } from './sites';
 
 export interface ScanResult {
@@ -29,6 +30,8 @@ export interface ProtocolMap {
   'scan:request': (data: { jobId: string; blobKey: string; kind: 'script' | 'map' }) => ScanResult;
   /** Background to offscreen: parse a fetched map and store its file index. */
   'map:analyze': (data: MapAnalysisRequest) => MapAnalysisResult;
+  /** Background to offscreen: run the secret scan for a fetched script. */
+  'script:scan': (data: ScriptScanRequest) => ScriptScanResult;
   'scan:rescan': (data: { origin: string }) => { queued: number };
   /** Background to offscreen to worker round trip used to verify the pipeline. */
   'spike:ping': (data: { text: string }) => PingResult;

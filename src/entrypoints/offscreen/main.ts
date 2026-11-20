@@ -56,3 +56,9 @@ onMessage('map:analyze', async ({ data }) => {
   if (result.type !== 'analyze-map') throw new Error('unexpected worker result');
   return result.result;
 });
+
+onMessage('script:scan', async ({ data }) => {
+  const result = await call({ type: 'scan-script', request: data });
+  if (result.type !== 'scan-script') throw new Error('unexpected worker result');
+  return result.result;
+});

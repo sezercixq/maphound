@@ -1,0 +1,16 @@
+id: sendgrid-api-key
+name: "SendGrid API key"
+description: "SendGrid key: send email as the account, often with full access."
+severity: critical
+confidence: high
+keywords: ["sg."]
+regex: '(?<![A-Za-z0-9_-])(SG\.[A-Za-z0-9_-]{22}\.[A-Za-z0-9_-]{43})(?![A-Za-z0-9_-])'
+secretGroup: 1
+entropy: 4.0
+references:
+  - https://www.twilio.com/docs/sendgrid/ui/account-and-settings/api-keys
+tests:
+  positive:
+    - 'sgMail.setApiKey("SG.IewhvCWg1XeXMUJOnvL-Hs.{{}}eDtBgoE3wJAtzZ-6zyXVPGURL5vzNeNjkZ--izoU_8n")'
+  negative:
+    - "SG.{{}}xxxxxxxxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"

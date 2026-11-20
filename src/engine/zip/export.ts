@@ -1,13 +1,15 @@
 import { Zip, ZipDeflate } from 'fflate';
-import type { JobRecord, MapRecord, ScriptRecord, SiteRecord } from '@/core/db';
+import type { FindingRecord, JobRecord, MapRecord, ScriptRecord, SiteRecord } from '@/core/db';
 import { parseSourceMap, rebuildSourceTree } from '@/engine/sourcemap';
 import { PathAllocator, sanitizeSegment } from '@/engine/sourcemap/sanitize-path';
+import { countBySeverity, findingsJson, findingsMarkdown } from './findings-report';
 
 export interface ExportSource {
   site: Pick<SiteRecord, 'origin' | 'scope'>;
   maps: readonly MapRecord[];
   scripts: readonly ScriptRecord[];
   jobs: readonly JobRecord[];
+  findings?: readonly FindingRecord[];
   readBlob(hash: string): Promise<Blob | undefined>;
 }
 
@@ -27,6 +29,8 @@ export interface ExportOptions {
   onProgress?(progress: ExportProgress): void;
   signal?: AbortSignal;
   level?: 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
+  /** Put raw secret values into findings.json (off by default). */
+  includeSecrets?: boolean;
 }
 
 export interface ExportStats {
@@ -34,6 +38,7 @@ export interface ExportStats {
   files: number;
   bytes: number;
   skippedMaps: number;
+  findings: number;
 }
 
 interface ManifestMap {
@@ -79,12 +84,13 @@ function folderFor(scriptUrl: string, folders: PathAllocator): string {
  * Stream a ZIP of every rebuilt source tree of a site:
  *
  *     manifest.json
+ *     FINDINGS.md                         report, secrets always masked
+ *     findings.json                       machine-readable, raw values only if opted in
  *     source/<host>/<script>/src/...      first-party files
  *     source/<host>/<script>/_vendor/...  node_modules and ignoreList files
  *
  * Contents come from the map blobs in IndexedDB and are rebuilt with the same deterministic
  * code that produced the stored index. Every entry name is built from sanitized segments.
- * No secrets or findings are included.
  */
 export async function exportSourceZip(
   source: ExportSource,
@@ -95,7 +101,13 @@ export async function exportSourceZip(
   const scripts = new Map(source.scripts.map((script) => [script.hash, script]));
   const maps = [...source.maps].sort((a, b) => a.url.localeCompare(b.url));
   const folders = new PathAllocator();
-  const stats: ExportStats = { maps: 0, files: 0, bytes: 0, skippedMaps: 0 };
+  const stats: ExportStats = {
+    maps: 0,
+    files: 0,
+    bytes: 0,
+    skippedMaps: 0,
+    findings: source.findings?.length ?? 0,
+  };
   const encoder = new TextEncoder();
 
   let failure: Error | null = null;
@@ -214,11 +226,21 @@ export async function exportSourceZip(
       mapsExported: stats.maps,
       files: stats.files,
       bytes: stats.bytes,
+      findings: { total: stats.findings, bySeverity: countBySeverity(source.findings ?? []) },
     },
     scripts: [...manifestScripts.values()],
     notScanned,
-    note: 'Rebuilt from public source maps. Contains no findings or secrets.',
+    rawSecretsIncluded: options.includeSecrets ?? false,
+    note: 'Rebuilt from publicly served source maps. Findings are in FINDINGS.md and findings.json.',
   };
+  const report = {
+    origin: source.site.origin,
+    generator: options.generator,
+    exportedAt: now.toISOString(),
+    includeSecrets: options.includeSecrets ?? false,
+  };
+  add('FINDINGS.md', encoder.encode(findingsMarkdown(source.findings ?? [], report)));
+  add('findings.json', encoder.encode(findingsJson(source.findings ?? [], report)));
   add('manifest.json', encoder.encode(`${JSON.stringify(manifest, null, 2)}\n`));
   zip.end();
   await done;

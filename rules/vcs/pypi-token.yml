@@ -1,0 +1,16 @@
+id: pypi-token
+name: "PyPI API token"
+description: "PyPI upload token (macaroon)."
+severity: critical
+confidence: high
+keywords: ["pypi-ageichlwas5vcmc"]
+regex: "(pypi-AgEIcHlwaS5vcmc[A-Za-z0-9_-]{50,200})(?![A-Za-z0-9_-])"
+secretGroup: 1
+entropy: 4.0
+references:
+  - https://pypi.org/help/#apitoken
+tests:
+  positive:
+    - "password = pypi-AgEIcHlwaS5vcmc{{}}DE1XpB2mQxxj4qqjYMBfPZt61Ul1J6I-U4GRegu9ciYqFvwM79wzd6snBObQow-AUOq9OVJdvzLDaYjU1PjJMpIhaegM19eGhlaxVAiqsf4dZ7Rb78J3Bdo-"
+  negative:
+    - "pypi-AgEIcHlwaS5vcmc{{}}short"

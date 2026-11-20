@@ -1,9 +1,11 @@
+import { randomInt } from 'node:crypto';
 import { mkdtempSync } from 'node:fs';
 import { createServer } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { type BrowserContext, chromium, type Worker } from '@playwright/test';
+import { makeGithubStyleToken } from '../../src/engine/validators/github-crc32';
 
 // Requires an e2e build (VITE_MH_E2E=1 pnpm build), which pre-grants http://127.0.0.1/*.
 export const extensionPath = resolve('.output/chrome-mv3');
@@ -19,8 +21,29 @@ export interface Job {
   hash?: string;
 }
 
+const ALNUM = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+const rand = (n: number, chars = ALNUM) =>
+  Array.from({ length: n }, () => chars[randomInt(chars.length)]).join('');
+
+/**
+ * Deliberately leaked, randomly generated fake credentials. Built at runtime: the repository
+ * never contains a credential-shaped literal, and none of these was ever valid.
+ */
+export const leaks = {
+  /** In the original source of app.js (src/app.js.ts, line 2). Valid CRC32 checksum. */
+  github: makeGithubStyleToken('ghp', rand(30)),
+  /** Inlined into the app.js bundle at "build time" (line 2); not in any source file. */
+  stripe: ['sk', 'live', rand(32)].join('_'),
+  /** Suppressed with maphound-ignore. */
+  ignored: ['sk', 'live', rand(32)].join('_'),
+  /** Firebase web config key: public, reported as info. */
+  firebase: `AIza${rand(35, `${ALNUM}_-`)}`,
+  /** In the third-party script, which is never scanned. */
+  thirdParty: ['sk', 'live', rand(32)].join('_'),
+};
+
 /** A map whose sources include a traversal attempt and a vendor module. */
-export const sourceMap = (file: string) =>
+export const sourceMap = (file: string, firstSource = `export const name = '${file}';`) =>
   JSON.stringify({
     version: 3,
     file,
@@ -29,9 +52,11 @@ export const sourceMap = (file: string) =>
       '../../../../evil/escape.txt',
       'webpack:///./node_modules/lib/index.js',
     ],
-    sourcesContent: [`export const name = '${file}';`, 'escaped?', 'module.exports = 1;'],
+    sourcesContent: [firstSource, 'escaped?', 'module.exports = 1;'],
     mappings: 'AAAA',
   });
+
+const appSource = `export const name = 'app.js';\nexport const githubToken = "${leaks.github}";\n`;
 
 export interface TestServer {
   base: string;
@@ -62,9 +87,19 @@ export function startServer(): Promise<TestServer> {
       case '/second.html':
         return html('<script src="/second.js"></script>');
       case '/app.js':
-        return js("console.log('app');\n//# sourceMappingURL=app.js.map\n");
+        return js(
+          [
+            "console.log('app');",
+            `const stripeKey = "${leaks.stripe}";`,
+            `const placeholder = "${['sk', 'live', 'x'.repeat(24)].join('_')}";`,
+            `const vetted = "${leaks.ignored}"; // maphound-ignore`,
+            `const firebaseConfig = { apiKey: "${leaks.firebase}", authDomain: "demo-app.firebaseapp.com" };`,
+            '//# sourceMappingURL=app.js.map',
+            '',
+          ].join('\n'),
+        );
       case '/app.js.map':
-        return send('application/json', sourceMap('app.js'));
+        return send('application/json', sourceMap('app.js', appSource));
       case '/chunk.js':
         return js(
           `console.log('chunk');\n//# sourceMappingURL=data:application/json;base64,${inline}`,
@@ -76,7 +111,7 @@ export function startServer(): Promise<TestServer> {
       case '/second.js':
         return js("console.log('second');\n");
       case '/tp.js':
-        return js("console.log('third party');\n");
+        return js(`console.log('third party', "${leaks.thirdParty}");\n`);
       default:
         res.writeHead(404);
         return res.end();

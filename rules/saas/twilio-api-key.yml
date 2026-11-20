@@ -1,0 +1,17 @@
+id: twilio-api-key
+name: "Twilio API key SID"
+description: "Twilio API key SID. Paired with its secret it grants API access."
+severity: high
+confidence: medium
+keywords: ["sk"]
+regex: "(?<![A-Za-z0-9_])(SK[0-9a-f]{32})(?![0-9a-fA-F])"
+secretGroup: 1
+entropy: 3.0
+references:
+  - https://www.twilio.com/docs/iam/api-keys
+tests:
+  positive:
+    - 'apiKeySid: "SK{{}}ff00e8829909a4757dd85c5f37c57c09"'
+  negative:
+    - "SK{{}}00000000000000000000000000000000"
+    - "TASK{{}}1234"

@@ -1,0 +1,17 @@
+id: github-fine-grained-pat
+name: "GitHub fine-grained personal access token"
+description: "Fine-grained PAT. Format and entropy are checked; there is no public checksum."
+severity: critical
+confidence: high
+keywords: ["github_pat_"]
+regex: "(?<![A-Za-z0-9_])(github_pat_[A-Za-z0-9]{22}_[A-Za-z0-9]{59})(?![A-Za-z0-9])"
+secretGroup: 1
+validators: [github-fine-grained]
+references:
+  - https://docs.github.com/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens
+tests:
+  positive:
+    - 'GITHUB_TOKEN="github_pat_cArtdt8mGJFq8fnn8KLJPF_{{}}MpMEHkzMtCMQBFiqp087ZK4F5TkeJqSYCcOaLIT0A7j0aW3kabNsn691PdE"'
+  negative:
+    - "github_pat_{{}}AAAAAAAAAAAAAAAAAAAAAA_BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB"
+    - "github_pat_{{}}short"

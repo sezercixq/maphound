@@ -1,0 +1,18 @@
+id: npm-access-token
+name: "npm access token"
+description: "npm granular or legacy automation token: can publish packages. Uses the GitHub checksum format."
+severity: critical
+confidence: high
+keywords: ["npm_"]
+regex: "(?<![A-Za-z0-9_])(npm_[A-Za-z0-9]{36})(?![A-Za-z0-9])"
+secretGroup: 1
+validators: [github-checksum]
+references:
+  - https://github.blog/changelog/2021-09-23-npm-has-a-new-access-token-format/
+tests:
+  positive:
+    - text: "//registry.npmjs.org/:_authToken=npm_{{}}FoErOao3dZwgZ9G1tGwVIcMAnB79Ms1f6pbb"
+      confidence: verified-format
+  negative:
+    - "npm_{{}}2G2UdXTBooJrBUWVFf5IPx8XCqjrUF0OCDOA"
+    - "npm_{{}}xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"

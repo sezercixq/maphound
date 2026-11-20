@@ -1,5 +1,6 @@
 import { useSignal } from '@preact/signals';
 import { useEffect } from 'preact/hooks';
+import { FindingList } from './components/Findings';
 import { MapList, ScriptList } from './components/Lists';
 import { SiteCard } from './components/SiteCard';
 import { downloadSourcesZip } from './export-client';
@@ -58,13 +59,18 @@ type ExportState =
 
 function ExportBar({ origin, exportable }: { origin: string; exportable: boolean }) {
   const state = useSignal<ExportState>({ kind: 'idle' });
+  const includeSecrets = useSignal(false);
   const current = state.value;
   const run = async () => {
     state.value = { kind: 'busy', done: 0, total: 0 };
     try {
-      const outcome = await downloadSourcesZip(origin, (done, total) => {
-        state.value = { kind: 'busy', done, total };
-      });
+      const outcome = await downloadSourcesZip(
+        origin,
+        (done, total) => {
+          state.value = { kind: 'busy', done, total };
+        },
+        includeSecrets.value,
+      );
       state.value = { kind: 'done', files: outcome.files };
     } catch (error) {
       state.value = {
@@ -75,6 +81,23 @@ function ExportBar({ origin, exportable }: { origin: string; exportable: boolean
   };
   return (
     <div class="sticky bottom-0 -mx-3 border-t border-white/[0.06] bg-[#0b0d11]/95 px-3 py-3 backdrop-blur">
+      <label class="mb-2 flex cursor-pointer items-start gap-2 text-[11px] text-zinc-400">
+        <input
+          type="checkbox"
+          data-testid="include-secrets"
+          class="mt-0.5 accent-red-500"
+          checked={includeSecrets.value}
+          onChange={(event) => {
+            includeSecrets.value = event.currentTarget.checked;
+          }}
+        />
+        <span>
+          {t('includeSecrets')}
+          {includeSecrets.value && (
+            <span class="block text-red-300">{t('includeSecretsWarning')}</span>
+          )}
+        </span>
+      </label>
       <button
         type="button"
         data-testid="download-zip"
@@ -119,6 +142,12 @@ export function App() {
       {enabled && (
         <>
           <StatsRow stats={model.stats} />
+          <FindingList
+            findings={model.findings}
+            counts={model.findingCounts}
+            scanning={model.scanning}
+            origin={enabled.origin}
+          />
           <ScriptList rows={model.scripts} />
           <MapList rows={model.maps} />
           <div class="flex-1" />

@@ -1,7 +1,15 @@
 import { readFileSync } from 'node:fs';
 import { type BrowserContext, expect, type Page, test } from '@playwright/test';
 import { strFromU8, unzipSync } from 'fflate';
-import { hook, jobsByUrl, launch, serviceWorker, startServer, type TestServer } from './fixtures';
+import {
+  hook,
+  jobsByUrl,
+  launch,
+  leaks,
+  serviceWorker,
+  startServer,
+  type TestServer,
+} from './fixtures';
 
 let context: BrowserContext;
 let server: TestServer;
@@ -54,6 +62,26 @@ test('side panel enables a site, lists results live and exports a safe ZIP', asy
   );
   await expect(panel.getByTestId('map-row').first()).toContainText('sources included');
 
+  // Findings: critical and high first; lower severities behind a toggle.
+  await expect(panel.getByTestId('finding-row')).toHaveCount(2, { timeout: 20_000 });
+  await expect(panel.getByTestId('finding-counts')).toContainText('2 critical');
+  await expect(panel.getByTestId('finding-counts')).toContainText('1 info');
+  const github = panel
+    .getByTestId('finding-row')
+    .filter({ hasText: 'GitHub personal access token' });
+  await expect(github).toContainText('verified format');
+  await expect(github.getByTestId('finding-location')).toContainText('app.js.ts:2');
+  await expect(github.getByTestId('finding-secret')).toHaveText(`ghp_…${leaks.github.slice(-4)}`);
+  await github.getByTestId('finding-reveal').click();
+  await expect(github.getByTestId('finding-secret')).toHaveText(leaks.github);
+  await github.getByTestId('finding-reveal').click();
+  await expect(
+    panel.getByTestId('finding-row').filter({ hasText: 'Stripe live secret key' }),
+  ).toContainText('found in bundle');
+  await panel.getByTestId('findings-toggle').click();
+  await expect(panel.getByTestId('finding-row')).toHaveCount(3);
+  await expect(panel.getByTestId('finding-row').last()).toHaveAttribute('data-severity', 'info');
+
   const [download] = await Promise.all([
     panel.waitForEvent('download'),
     panel.getByTestId('download-zip').click(),
@@ -66,6 +94,8 @@ test('side panel enables a site, lists results live and exports a safe ZIP', asy
   const names = Object.keys(files).sort();
   expect(names).toEqual(
     [
+      'FINDINGS.md',
+      'findings.json',
       'manifest.json',
       ...['app.js', 'chunk.js', 'lazy.mjs'].flatMap((script) => [
         `source/${host}/${script}/_vendor/lib/index.js`,
@@ -75,15 +105,44 @@ test('side panel enables a site, lists results live and exports a safe ZIP', asy
     ].sort(),
   );
   for (const name of names) expect(name.split('/')).not.toContain('..');
-  expect(strFromU8(files[`source/${host}/app.js/src/src/app.js.ts`] as Uint8Array)).toBe(
+  expect(strFromU8(files[`source/${host}/app.js/src/src/app.js.ts`] as Uint8Array)).toContain(
     "export const name = 'app.js';",
   );
+
+  // Reports: masked by default.
+  const report = strFromU8(files['FINDINGS.md'] as Uint8Array);
+  expect(report).toContain('**3 findings:** 2 critical, 1 info.');
+  expect(report).toContain(
+    '| GitHub personal access token (classic) | verified-format | `src/src/app.js.ts:2:',
+  );
+  expect(report).toContain(`ghp_…${leaks.github.slice(-4)}`);
+  const masked = strFromU8(files['findings.json'] as Uint8Array);
+  for (const secret of [leaks.github, leaks.stripe, leaks.firebase]) {
+    expect(report).not.toContain(secret);
+    expect(masked).not.toContain(secret);
+  }
+  expect(JSON.parse(masked).rawSecretsIncluded).toBe(false);
   const manifest = JSON.parse(strFromU8(files['manifest.json'] as Uint8Array));
   expect(manifest.site).toEqual({ origin: base, scope: 'origin' });
   expect(manifest.summary).toMatchObject({ maps: 3, mapsExported: 3, files: 9 });
   expect(manifest.notScanned).toEqual([
     { url: `${thirdPartyBase}/tp.js`, kind: 'script', reason: 'third-party', thirdParty: 'other' },
   ]);
+
+  // Opt-in raw values: only findings.json gets them, FINDINGS.md stays masked.
+  await panel.getByTestId('include-secrets').check();
+  await expect(panel.getByText('The archive will contain working credentials.')).toBeVisible();
+  const [rawDownload] = await Promise.all([
+    panel.waitForEvent('download'),
+    panel.getByTestId('download-zip').click(),
+  ]);
+  const rawFiles = unzipSync(readFileSync((await rawDownload.path()) as string));
+  const raw = JSON.parse(strFromU8(rawFiles['findings.json'] as Uint8Array));
+  expect(raw.rawSecretsIncluded).toBe(true);
+  expect(raw.findings.map((f: { secret: string }) => f.secret).sort()).toEqual(
+    [leaks.github, leaks.stripe, leaks.firebase].sort(),
+  );
+  expect(strFromU8(rawFiles['FINDINGS.md'] as Uint8Array)).not.toContain(leaks.github);
 
   // Settings change live while enabled.
   const probing = panel.getByTestId('toggle-probing');

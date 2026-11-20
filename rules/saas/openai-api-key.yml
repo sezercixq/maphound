@@ -1,0 +1,18 @@
+id: openai-api-key
+name: "OpenAI API key"
+description: "OpenAI project, service account, admin or legacy user key. Billed usage and data access."
+severity: critical
+confidence: high
+keywords: ["sk-proj-", "sk-svcacct-", "sk-admin-", "t3blbkfj"]
+regex: "(?<![A-Za-z0-9_-])(sk-(?:proj|svcacct|admin)-[A-Za-z0-9_-]{40,250}|sk-[A-Za-z0-9]{20}T3BlbkFJ[A-Za-z0-9]{20})(?![A-Za-z0-9_-])"
+secretGroup: 1
+entropy: 3.5
+references:
+  - https://platform.openai.com/docs/api-reference/authentication
+tests:
+  positive:
+    - 'new OpenAI({ apiKey: "sk-proj-{{}}xtVE4csx9WPhYkCF2SmqRv905nBtynD8x6TMsKEwOvlGxYZbgj2uIXMg4TeE8VHIpvY5mDIGfiVz_mja1-fZ0nGsXAfsRnYclC1g8NGc5Akr1JPKNsXxqPRzOjQZ0OF-8UuOyw2hnIg-YqmKTCR57UjjN130" })'
+    - '"sk-iMWIBcW8EUXH0sI9QIWLT3Blbk{{}}FJiiudv9cYvdZzLCnlfaDt"'
+  negative:
+    - "sk-proj-{{}}xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    - "sk-ant-api03-short"

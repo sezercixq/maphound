@@ -1,5 +1,9 @@
 import { analyzeMap } from '@/core/analyze';
 import { getDb } from '@/core/db';
+import { scanScript } from '@/core/scan-job';
+import { Scanner } from '@/engine/scan/scanner';
+import type { RuleSet } from '@/engine/scan/types';
+import rules from '@/generated/rules.json';
 import type { WorkerRequest, WorkerResponse } from './protocol';
 
 async function sha256Hex(buffer: ArrayBuffer): Promise<string> {
@@ -7,12 +11,29 @@ async function sha256Hex(buffer: ArrayBuffer): Promise<string> {
   return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
+let scanner: Scanner | undefined;
+/** Rules are compiled at build time; the automaton is built once per worker. */
+const getScanner = () => {
+  scanner ??= new Scanner(rules as RuleSet);
+  return scanner;
+};
+
 async function handle(request: WorkerRequest): Promise<WorkerResponse> {
   try {
     if (request.type === 'ping') {
       return { id: request.id, ok: true, result: { type: 'ping', echo: request.text } };
     }
     const db = await getDb();
+    if (request.type === 'scan-script') {
+      return {
+        id: request.id,
+        ok: true,
+        result: {
+          type: 'scan-script',
+          result: await scanScript(db, getScanner(), request.request),
+        },
+      };
+    }
     if (request.type === 'analyze-map') {
       return {
         id: request.id,

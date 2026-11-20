@@ -1,0 +1,16 @@
+id: discord-webhook-url
+name: "Discord webhook"
+description: "Anyone with the URL can post into the Discord channel."
+severity: high
+confidence: high
+keywords: ["discord.com/api/webhooks/", "discordapp.com/api/webhooks/"]
+regex: '(https://(?:ptb\.|canary\.)?discord(?:app)?\.com/api/webhooks/[0-9]{17,20}/[A-Za-z0-9_-]{60,72})(?![A-Za-z0-9_-])'
+secretGroup: 1
+entropy: 3.5
+references:
+  - https://discord.com/developers/docs/resources/webhook
+tests:
+  positive:
+    - '"https://discord.com/api/webhooks/0448983185152816843/{{}}uqVoI4sgz5LcPK4YJFCxmN95T43o4Nk3E-xJ8-FnGPuezvOdPTLJk_emZZmFCeQCuMTl"'
+  negative:
+    - "https://discord.com/api/webhooks/{{}}123/abc"

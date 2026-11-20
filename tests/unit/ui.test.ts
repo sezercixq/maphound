@@ -1,7 +1,16 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import type { JobRecord, MapRecord, ScriptRecord } from '@/core/db';
-import { fileName, formatBytes, hostOf, statusOf, THIRD_PARTY_KEYS, VIA_KEYS } from '@/ui/format';
+import {
+  CONFIDENCE_KEYS,
+  fileName,
+  formatBytes,
+  hostOf,
+  SEVERITY_KEYS,
+  statusOf,
+  THIRD_PARTY_KEYS,
+  VIA_KEYS,
+} from '@/ui/format';
 import { buildViewModel } from '@/ui/view-model';
 
 const job = (over: Partial<JobRecord>): JobRecord => ({
@@ -33,7 +42,7 @@ describe('format', () => {
     expect(hostOf('http://127.0.0.1:8080/x')).toBe('127.0.0.1:8080');
   });
   it('labels job states', () => {
-    expect(statusOf(job({ state: 'fetched' }))).toEqual({ key: 'stateFetched', tone: 'ok' });
+    expect(statusOf(job({ state: 'fetched' }))).toEqual({ key: 'stateScanning', tone: 'busy' });
     expect(statusOf(job({ state: 'fetched', kind: 'map' }))).toEqual({
       key: 'stateScanning',
       tone: 'busy',
@@ -93,6 +102,7 @@ describe('buildViewModel', () => {
       ['b.js.map', null],
     ]);
     expect(vm.stats).toEqual({ scripts: 2, thirdParty: 1, maps: 1, files: 12, exportable: true });
+    expect(vm.scanning).toBe(true);
   });
 
   it('is not exportable without source content', () => {
@@ -135,7 +145,7 @@ describe('locales', () => {
       }
     };
     walk('src/ui');
-    for (const map of [THIRD_PARTY_KEYS, VIA_KEYS])
+    for (const map of [THIRD_PARTY_KEYS, VIA_KEYS, SEVERITY_KEYS, CONFIDENCE_KEYS])
       for (const key of Object.values(map)) used.add(key);
     for (const state of ['queued', 'fetching', 'fetched', 'scanning', 'done', 'failed'] as const) {
       used.add(statusOf(job({ state })).key);

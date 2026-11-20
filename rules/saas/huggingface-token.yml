@@ -1,0 +1,17 @@
+id: huggingface-token
+name: "Hugging Face access token"
+description: "Hugging Face user access token."
+severity: high
+confidence: high
+keywords: ["hf_"]
+regex: "(?<![A-Za-z0-9_])(hf_[A-Za-z]{34})(?![A-Za-z0-9])"
+secretGroup: 1
+entropy: 3.5
+references:
+  - https://huggingface.co/docs/hub/security-tokens
+tests:
+  positive:
+    - "Authorization: Bearer hf_{{}}oIIpYbQZWLPyAHbjjNioXhgZtPseSshOAw"
+  negative:
+    - "hf_{{}}xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    - "hf_{{}}short"

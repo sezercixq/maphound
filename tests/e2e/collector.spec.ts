@@ -1,5 +1,13 @@
 import { type BrowserContext, expect, test } from '@playwright/test';
-import { hook, jobsByUrl, launch, serviceWorker, startServer, type TestServer } from './fixtures';
+import {
+  hook,
+  jobsByUrl,
+  launch,
+  leaks,
+  serviceWorker,
+  startServer,
+  type TestServer,
+} from './fixtures';
 
 let context: BrowserContext;
 let server: TestServer;
@@ -50,12 +58,12 @@ test('enable site, collect scripts and lazy chunks, discover and analyse maps', 
       { timeout: 20_000, intervals: [250] },
     )
     .toEqual({
-      app: 'fetched',
+      app: 'done',
       appMap: ['done', 'comment'],
       thirdParty: ['skipped', 'third-party'],
-      chunk: 'fetched',
+      chunk: 'done',
       chunkMap: ['done', 'data-uri'],
-      lazy: 'fetched',
+      lazy: 'done',
       lazyMap: ['done', 'header'],
     });
 
@@ -77,6 +85,30 @@ test('enable site, collect scripts and lazy chunks, discover and analyse maps', 
     );
   }
   expect(await hook<string[]>(sw, '__mhRegistered')).toHaveLength(1);
+
+  // Secret scan: original source location, bundle-only inlined value, public key as info.
+  type Finding = {
+    ruleId: string;
+    severity: string;
+    confidence: string;
+    file: string;
+    line: number;
+    locationKind: string;
+    secret: string;
+  };
+  const findings = await hook<Finding[]>(sw, '__mhFindings');
+  const summary = findings
+    .map((f) => [f.ruleId, f.severity, f.confidence, f.file, f.line, f.locationKind])
+    .sort((a, b) => String(a[0]).localeCompare(String(b[0])));
+  expect(summary).toEqual([
+    ['gcp-api-key', 'info', 'high', 'app.js', 5, 'bundle'],
+    ['github-classic-pat', 'critical', 'verified-format', 'src/src/app.js.ts', 2, 'source'],
+    ['stripe-live-secret-key', 'critical', 'high', 'app.js', 2, 'bundle'],
+  ]);
+  const secrets = findings.map((f) => f.secret);
+  expect(secrets).toEqual(expect.arrayContaining([leaks.github, leaks.stripe, leaks.firebase]));
+  expect(secrets).not.toContain(leaks.ignored);
+  expect(secrets).not.toContain(leaks.thirdParty);
 });
 
 test('registered collector runs on new navigations; disable purges', async () => {
@@ -89,11 +121,12 @@ test('registered collector runs on new navigations; disable purges', async () =>
       timeout: 15_000,
       intervals: [250],
     })
-    .toBe('fetched');
+    .toBe('done');
 
   const disabled = await hook<{ ok: boolean }>(sw, '__mhDisableSite', base, true);
   expect(disabled.ok).toBe(true);
   expect(await hook<string[]>(sw, '__mhRegistered')).toEqual([]);
   expect(Object.keys(await jobsByUrl(sw))).toEqual([]);
   expect(await hook<unknown[]>(sw, '__mhMaps')).toEqual([]);
+  expect(await hook<unknown[]>(sw, '__mhFindings')).toEqual([]);
 });

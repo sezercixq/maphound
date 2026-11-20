@@ -1,0 +1,19 @@
+id: basic-auth-url
+name: "Credentials in URL"
+description: "user:password embedded in a connection string or URL."
+severity: high
+confidence: medium
+generic: true
+keywords: ["://"]
+regex: '(?<![A-Za-z0-9+.-])(?:https?|ftp|mongodb(?:\+srv)?|postgres(?:ql)?|mysql|redis|amqps?)://[^\s:@/''"`]{1,64}:([^\s:@/''"`]{6,128})@[A-Za-z0-9.-]{3,253}'
+secretGroup: 1
+entropy: 3.0
+references:
+  - https://owasp.org/www-community/vulnerabilities/Password_in_URL
+tests:
+  positive:
+    - 'const db = "mongodb+srv://app:NiI8Sg{{}}uHPOeiWSuQ6eWY@cluster0.demo.mongodb.net/prod";'
+  negative:
+    - "https://{{}}user:password@example.com"
+    - "postgres://{{}}postgres:postgres@localhost:5432/db"
+    - "https://{{}}example.com/path"

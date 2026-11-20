@@ -1,0 +1,16 @@
+id: firebase-fcm-server-key
+name: "Firebase Cloud Messaging server key"
+description: "Legacy FCM server key: sends push notifications to every user of the app."
+severity: high
+confidence: high
+keywords: [":apa91b"]
+regex: "(AAAA[A-Za-z0-9_-]{7}:APA91b[A-Za-z0-9_-]{134,140})(?![A-Za-z0-9_-])"
+secretGroup: 1
+entropy: 4.0
+references:
+  - https://firebase.google.com/docs/cloud-messaging/auth-server
+tests:
+  positive:
+    - "Authorization: key=AAAAC_U_2BU:APA91b{{}}p1x_reXQlqYAcl6istDrovpFQWJIh4QPD41KOIMaBpAZG-ddu8owN2Rgk8wE9mxr1DvTcqVtClryIdJBjwaP1_ygV4fScfkKDkJ4qCUcqJ0bJ0zrWt8YouQ0ZVy-tqVS25UDVk"
+  negative:
+    - "AAAA1234567:APA91b{{}}short"

@@ -123,6 +123,8 @@ describe('exportSourceZip', () => {
     const { files, stats, finals, progress } = await build();
     expect(Object.keys(files).sort()).toEqual(
       [
+        'FINDINGS.md',
+        'findings.json',
         'manifest.json',
         'source/127.0.0.1_8080/main-2.js/src/src/App.tsx',
         'source/127.0.0.1_8080/main-2.js/_vendor/react/index.js',
@@ -135,7 +137,13 @@ describe('exportSourceZip', () => {
     expect(strFromU8(files['source/127.0.0.1_8080/main-2.js/src/src/App.tsx'] as Uint8Array)).toBe(
       'export default 1;',
     );
-    expect(stats).toEqual({ maps: 2, files: 6, bytes: 17 + 20 + 3 + 4 + 1 + 1, skippedMaps: 2 });
+    expect(stats).toEqual({
+      maps: 2,
+      files: 6,
+      bytes: 17 + 20 + 3 + 4 + 1 + 1,
+      skippedMaps: 2,
+      findings: 0,
+    });
     expect(finals).toBe(1);
     expect(progress).toEqual([0, 1, 2, 3, 4, 5]);
   });
@@ -143,7 +151,9 @@ describe('exportSourceZip', () => {
   it('never produces an entry that could escape the extraction folder', async () => {
     const { files } = await build();
     for (const name of Object.keys(files)) {
-      expect(name).toMatch(/^(manifest\.json|source\/[^/]+\/[^/]+\/(src|_vendor)\/.+)$/);
+      expect(name).toMatch(
+        /^(manifest\.json|FINDINGS\.md|findings\.json|source\/[^/]+\/[^/]+\/(src|_vendor)\/.+)$/,
+      );
       expect(name.split('/')).not.toContain('..');
       expect(name).not.toMatch(/[\\:\u0000]|^\//);
     }

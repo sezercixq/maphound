@@ -1,0 +1,18 @@
+id: stripe-publishable-key
+name: "Stripe publishable key"
+description: "Publishable keys are meant to be embedded in web pages. Listed for inventory only."
+severity: info
+confidence: high
+public: true
+keywords: ["pk_live_"]
+regex: "(?<![A-Za-z0-9_])(pk_live_[0-9a-zA-Z]{24,247})(?![0-9a-zA-Z])"
+secretGroup: 1
+entropy: 3.5
+references:
+  - https://docs.stripe.com/keys
+tests:
+  positive:
+    - text: 'Stripe("pk_live_{{}}DT8iYjtY9cGVOCXFSBIXoiL7RdxIudxrNtLFVO2Q0JphVOTdIM")'
+      severity: info
+  negative:
+    - "pk_live_{{}}xxxxxxxxxxxxxxxxxxxxxxxx"

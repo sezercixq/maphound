@@ -1,0 +1,17 @@
+id: anthropic-api-key
+name: "Anthropic API key"
+description: "Anthropic API or admin key. Billed usage."
+severity: critical
+confidence: high
+keywords: ["sk-ant-"]
+regex: "(?<![A-Za-z0-9_-])(sk-ant-(?:api03|admin01)-[A-Za-z0-9_-]{80,120})(?![A-Za-z0-9_-])"
+secretGroup: 1
+entropy: 3.5
+references:
+  - https://docs.claude.com/en/api/overview
+tests:
+  positive:
+    - "x-api-key: sk-ant-api03-{{}}GEYinsYa8afjHr15cMDZ0X1RsDYLEIDGgwx4LcpzaPOjpODDKyB8fYMVaVOF0WXP1vaQXL05xWGcneNS9AfXKgZi9Y9D4AA"
+  negative:
+    - "sk-ant-{{}}api03-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    - "sk-ant-{{}}api03-short"

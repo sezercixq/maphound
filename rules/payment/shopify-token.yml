@@ -1,0 +1,17 @@
+id: shopify-token
+name: "Shopify access token"
+description: "Shopify Admin API, custom app, private app or shared secret token."
+severity: critical
+confidence: high
+keywords: ["shpat_", "shpca_", "shppa_", "shpss_"]
+regex: "(?<![A-Za-z0-9_])(shp(?:at|ca|pa|ss)_[a-fA-F0-9]{32})(?![a-fA-F0-9])"
+secretGroup: 1
+entropy: 3.0
+references:
+  - https://shopify.dev/docs/apps/build/authentication-authorization/access-tokens
+tests:
+  positive:
+    - "X-Shopify-Access-Token: shpat_{{}}2f58382084e512138d84199ed3e0b4a6"
+  negative:
+    - "shpat_{{}}00000000000000000000000000000000"
+    - "shpat_{{}}abc"

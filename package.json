@@ -6,15 +6,17 @@
   "license": "MIT",
   "type": "module",
   "scripts": {
-    "dev": "wxt",
-    "build": "wxt build",
-    "zip": "wxt zip",
-    "compile": "tsc --noEmit",
+    "dev": "pnpm rules:compile && wxt",
+    "build": "pnpm rules:compile && wxt build",
+    "zip": "pnpm rules:compile && wxt zip",
+    "compile": "pnpm rules:compile && tsc --noEmit",
     "lint": "biome check .",
     "format": "biome format --write .",
-    "test": "vitest run",
+    "test": "pnpm rules:compile && vitest run",
     "test:e2e": "playwright test",
-    "postinstall": "wxt prepare"
+    "rules:compile": "tsx scripts/compile-rules.ts",
+    "rules:check": "tsx scripts/check-rules.ts",
+    "postinstall": "wxt prepare && tsx scripts/compile-rules.ts"
   },
   "dependencies": {
     "@jridgewell/trace-mapping": "^0.3.31",
@@ -32,6 +34,7 @@
     "@types/node": "^26.6.6",
     "ajv": "^8.20.0",
     "fake-indexeddb": "^6.2.8",
+    "recheck": "^4.6.2",
     "tailwindcss": "^4.3.5",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2",

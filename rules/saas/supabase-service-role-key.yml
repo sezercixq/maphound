@@ -1,0 +1,17 @@
+id: supabase-service-role-key
+name: "Supabase service role key"
+description: "Bypasses Row Level Security: full read and write access to the project database. Never ship it to browsers."
+severity: critical
+confidence: high
+keywords: ["eyj"]
+regex: '(?<![A-Za-z0-9_-])(eyJ[A-Za-z0-9_-]{10,500}\.eyJ[A-Za-z0-9_-]{10,2000}\.[A-Za-z0-9_-]{20,600})(?![A-Za-z0-9_-])'
+secretGroup: 1
+validators: [supabase-service-role]
+references:
+  - https://supabase.com/docs/guides/api/api-keys
+tests:
+  positive:
+    - text: 'createClient(url, "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3Mi{{}}OiJzdXBhYmFzZSIsInJlZiI6ImFiY2RlZmdoaWprbG1ub3BxcnN0Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTcwMDAwMDAwMCwiZXhwIjoyMDAwMDAwMDAwfQ.fmt62Bip_c5d9UkGqghdAhEi2X2amsdg1UD6KIBQEd6")'
+      confidence: verified-format
+  negative:
+    - 'createClient(url, "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3Mi{{}}OiJzdXBhYmFzZSIsInJlZiI6ImFiY2RlZmdoaWprbG1ub3BxcnN0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MDAwMDAwMDAsImV4cCI6MjAwMDAwMDAwMH0.cOn-awHMi555Ma2liSQTol_xH1WIarltHB9yQeXoUjW")'
