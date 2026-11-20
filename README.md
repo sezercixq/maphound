@@ -57,8 +57,7 @@ you export everything as a ZIP. No server, no account, no telemetry.
 ### Install a build
 
 1. Open the latest successful [CI run](https://github.com/sezercixq/maphound/actions/workflows/ci.yml)
-   and download the `maphound-chrome-…` artifact, then unzip it (the artifact contains
-   `maphound-<version>-chrome.zip`; unzip that too).
+   (sign in to GitHub), download the `maphound-<version>-chrome.zip` artifact and unzip it.
 2. Go to `chrome://extensions`, turn on **Developer mode** and click **Load unpacked**.
 3. Select the unzipped folder (the one that contains `manifest.json`).
 

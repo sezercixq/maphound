@@ -54,11 +54,13 @@ jobs:
             console.log("permissions:", m.permissions.join(", "));
           '
 
+      # Uploaded as the extension zip itself (no second archive). `.output` is a hidden folder.
       - name: Upload extension package
         uses: actions/upload-artifact@v7
         with:
-          name: maphound-chrome-${{ github.sha }}
-          path: .output/*-chrome.zip
+          path: .output/maphound-*-chrome.zip
+          archive: false
+          include-hidden-files: true
           if-no-files-found: error
           retention-days: 30
 
