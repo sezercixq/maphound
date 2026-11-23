@@ -1,6 +1,6 @@
 # Privacy policy
 
-_Last updated: 20 November 2026 (version 0.2.0)_
+_Last updated: 23 November 2026 (version 0.3.0)_
 
 MapHound is a browser extension that helps developers and security teams find source maps and
 leaked credentials in the JavaScript of websites they choose. **MapHound does not collect, transmit,
@@ -10,11 +10,14 @@ sell or share any user data. All analysis happens locally in your browser.**
 
 On a site you explicitly enable, MapHound:
 
-1. reads the addresses (URLs) of the scripts that the page loads. It does not read page text, form
-   input, cookies, passwords or browsing history;
+1. reads the addresses (URLs) of the scripts that the page loads, and when a Next.js page embeds
+   a `<script id="__NEXT_DATA__">` hydration block, summarizes its SSR prop keys locally (never
+   reading form input, cookies, passwords, or browsing history);
 2. downloads those scripts, and the source maps they declare, from that same site;
-3. rebuilds the original source files from the source maps and scans them for credentials;
-4. shows the results in the side panel and, if you ask, saves them to a ZIP file on your computer.
+3. rebuilds the original source files from the source maps and scans them locally for credentials,
+   internal endpoints/routes, and dangerous static code patterns;
+4. shows the results in the side panel (with local source search and read-only preview) and, if you
+   ask, saves them to a ZIP file on your computer.
 
 ## Data collection and transmission
 

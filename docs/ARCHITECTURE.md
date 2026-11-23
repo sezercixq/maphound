@@ -34,22 +34,25 @@ flowchart LR
 | Service worker     | `src/entrypoints/background.ts`, `src/core/*` | Site lifecycle and permissions, job queue, fetcher (4 requests per origin, 10 s timeout, size caps, no cookies by default), processor. All listeners registered synchronously.                                                                       |
 | Offscreen document | `src/entrypoints/offscreen/`                  | Exists only to host the scan worker: MV3 service workers cannot create workers.                                                                                                                                                                      |
 | Scan worker        | `src/workers/scan.worker.ts`                  | Parses maps, rebuilds the source tree index, runs the secret scanner.                                                                                                                                                                                |
-| Side panel         | `src/entrypoints/sidepanel/`, `src/ui/`       | Reads IndexedDB directly and re-queries when notified. Requests host permission inside the click gesture.                                                                                                                                            |
-| Export worker      | `src/workers/export.worker.ts`                | Builds the ZIP with fflate and streams chunks to the panel, which saves it with `<a download>`.                                                                                                                                                      |
+| Side panel         | `src/entrypoints/sidepanel/`, `src/ui/`       | Reads IndexedDB directly and re-queries when notified. Requests host permission inside the click gesture. Hosts tabs for Overview, Endpoints, Code Hints, Source Search and the read-only Code Viewer.                                               |
+| Search worker      | `src/workers/search.worker.ts`                | Searches rebuilt map sources locally by text or regex and loads files for the in-panel Code Viewer with an LRU cache.                                                                                                                                |
+| Export worker      | `src/workers/export.worker.ts`                | Builds the ZIP with fflate (`FINDINGS.md`, `findings.json`, `ENDPOINTS.md`, `manifest.json` + rebuilt trees) and streams chunks to the panel.                                                                                                        |
 
 ## Data model
 
-IndexedDB is the single source of truth. Messages carry keys (hashes, job ids), never content, and
+IndexedDB (schema v3) is the single source of truth. Messages carry keys (hashes, job ids) or compact summaries, never raw large blobs, and
 the `BroadcastChannel` only says "something changed".
 
-| Store      | Key                         | Contents                                                          |
-| ---------- | --------------------------- | ----------------------------------------------------------------- |
-| `sites`    | origin                      | scope (`origin` or `subdomains`), settings (map probing, cookies) |
-| `jobs`     | `script:<url>`, `map:<url>` | state machine below, attempts, lease, skip reason                 |
-| `blobs`    | SHA-256                     | downloaded scripts and maps, content-addressed and stored once    |
-| `scripts`  | SHA-256                     | URLs, size, source map reference, status                          |
-| `maps`     | job id                      | rebuilt file index (paths, sizes, vendor, omissions), limits hit  |
-| `findings` | `origin                     | rule                                                              | sha256(secret)` | severity, confidence, locations, masked preview, raw value |
+| Store      | Key                         | Contents                                                                    |
+| ---------- | --------------------------- | --------------------------------------------------------------------------- |
+| `sites`    | origin                      | scope (`origin` or `subdomains`), settings (map probing, cookies)           |
+| `jobs`     | `script:<url>`, `map:<url>` | state machine below, attempts, lease, skip reason                           |
+| `blobs`    | SHA-256                     | downloaded scripts and maps, content-addressed and stored once              |
+| `scripts`  | SHA-256                     | URLs, size, source map reference, status                                    |
+| `maps`     | job id                      | rebuilt file index (paths, sizes, vendor, omissions), limits hit            |
+| `findings` | `origin \| rule \| sha256`  | severity, confidence, locations, masked preview, raw value                  |
+| `intel`    | `origin \| scriptHash`      | extracted endpoints, routes, developer comments, first-party static sinks   |
+| `pages`    | `origin \| pathname`        | parsed `__NEXT_DATA__` SSR hydration summary with masked sensitive previews |
 
 Rebuilt file contents are not stored twice: the export rebuilds them from the map blob with the same
 deterministic code that produced the index.
@@ -141,12 +144,14 @@ Details and justifications: [`PRIVACY.md`](PRIVACY.md).
 rules/                 detector YAML and schema
 scripts/               rule compiler and checker
 src/core/              service-worker logic: db, sites, permissions, queue, fetcher, processor, scan job
+src/engine/intel/      linear lexer, endpoint/route/comment extractors, static sinks, __NEXT_DATA__ parser
+src/engine/search/     in-panel source search & file loader
 src/engine/sourcemap/  parse, rebuild, sanitize
 src/engine/scan/       keyword index, regex stage, entropy, suppression, scanner
 src/engine/validators/ checksum and structural validators
-src/engine/zip/        streaming export and findings reports
+src/engine/zip/        streaming export, findings and endpoints reports
 src/entrypoints/       background, collector, offscreen, side panel
-src/ui/                side panel components, state, i18n
-src/workers/           scan and export workers
+src/ui/                side panel components, code viewer, state, i18n
+src/workers/           scan, search and export workers
 tests/unit, tests/e2e  tests
 ```

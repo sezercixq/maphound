@@ -3,6 +3,38 @@
 All notable changes to MapHound. The format follows [Keep a Changelog](https://keepachangelog.com/)
 and the project uses [Semantic Versioning](https://semver.org/).
 
+## [0.3.0] - 2026-11-23
+
+### Added
+
+- **Attack surface & endpoint discovery (`Endpoints` tab + `ENDPOINTS.md`).** Linear-time lexer and
+  extractors surface internal REST/GraphQL/auth/admin/WebSocket API endpoints with inferred HTTP
+  methods, frontend router & file-system routes (React Router, Vue Router, Next.js `pages/` and
+  `app/`, `__BUILD_MANIFEST`, SvelteKit), and developer comments (`TODO`, `FIXME`, `HACK`,
+  `INTERNAL`, `BYPASS`, `SECURITY`). Exportable directly as TXT/JSON or bundled in the ZIP as
+  `ENDPOINTS.md`.
+- **Static code hints & sinks (`Code Hints` tab).** Separate from verified credential findings,
+  flags first-party (`_vendor/` excluded) DOM XSS sinks (`dangerouslySetInnerHTML`, `innerHTML`,
+  `outerHTML`, `insertAdjacentHTML`, `document.write`, `srcdoc`), code injection (`eval`,
+  `new Function`, string timers), unverified `window.addEventListener('message')` handlers and
+  wildcard `postMessage`, open-redirect candidates, and framework-specific sinks (`v-html`,
+  `{@html}`, Angular bypass).
+- **Next.js `__NEXT_DATA__` SSR props summary.** Locally parses `__NEXT_DATA__` on enabled sites
+  into readable `pageProps` outlines, flags privilege/PII/credential-named paths with masked
+  previews, and extracts embedded API paths.
+- **In-panel source search & read-only code viewer (`Search` tab).** Dedicated Web Worker
+  (`search.worker.ts`) searches rebuilt source trees in IndexedDB by plain text or regex with
+  `_vendor/` toggle and opens any match, finding, endpoint, or sink in a read-only line-highlighted
+  code viewer modal.
+- **15 new ReDoS-proven secret detectors (40 → 55 rules).** Added detectors for Hugging Face org
+  tokens, Replicate, Groq, OpenRouter, Perplexity, Cloudflare API tokens & Origin CA keys, Vercel,
+  Heroku, Mailgun, Sentry DSN & auth tokens, Supabase PATs, publishable keys, and Postgres URLs.
+
+### Changed
+
+- **IndexedDB schema v3.** Added `intel` and `pages` object stores with automatic non-destructive
+  upgrade from v2.
+
 ## [0.2.0] - 2026-11-20
 
 ### Added

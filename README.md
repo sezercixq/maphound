@@ -9,7 +9,7 @@
 [![CI](https://github.com/sezercixq/maphound/actions/workflows/ci.yml/badge.svg)](https://github.com/sezercixq/maphound/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-10b981.svg)](LICENSE)
 ![Chrome Manifest V3](https://img.shields.io/badge/Chrome-Manifest%20V3-4285F4?logo=googlechrome&logoColor=white)
-![40 detectors](https://img.shields.io/badge/detectors-40%2C%20ReDoS--proven-10b981)
+![55 detectors](https://img.shields.io/badge/detectors-55%2C%20ReDoS--proven-10b981)
 ![100% local](https://img.shields.io/badge/data-100%25%20local-18181b)
 
 <img src="docs/assets/maphound-preview.png" alt="MapHound rebuilds app.js.map into its original source tree and flags a hard-coded GitHub token with a verified checksum" width="100%">
@@ -40,9 +40,16 @@ you export everything as a ZIP. No server, no account, no telemetry.
 - **Source map reconstruction.** `SourceMap`/`X-SourceMap` headers, `sourceMappingURL` comments,
   inline `data:` maps, index maps with `sections`, XSSI prefixes. `node_modules` and `ignoreList`
   files are separated into `_vendor/`.
-- **40 detectors** for AWS, Google Cloud, Azure, Stripe, GitHub, GitLab, npm, OpenAI, Anthropic,
-  Slack, Supabase, Twilio, SendGrid, private keys and more, written as YAML and compiled into the
-  extension at build time.
+- **55 detectors** for AWS, Google Cloud, Azure, Cloudflare, Vercel, Heroku, Stripe, GitHub,
+  GitLab, npm, OpenAI, Anthropic, Groq, Replicate, Hugging Face, OpenRouter, Perplexity, Slack,
+  Supabase, Sentry, Mailgun, Twilio, SendGrid, private keys and more, written as YAML and compiled
+  into the extension at build time.
+- **Client-side attack surface & static code hints.** Extracts internal API endpoints (with HTTP
+  methods), frontend/file-system routes, developer comments (`BYPASS`, `INTERNAL`, `TODO`),
+  `__NEXT_DATA__` SSR prop summaries, and first-party static sinks (`dangerouslySetInnerHTML`,
+  `innerHTML`, `eval`, unverified `message` listeners, open redirects) in separate tabs.
+- **In-panel code search & viewer.** Search rebuilt source files locally by text or regex inside the
+  side panel and jump straight to the highlighted `file:line` without downloading the ZIP first.
 - **A five-stage scanner** that stays fast on large bundles (about 100 ms for 5 MB): Aho-Corasick
   keyword prefilter, regex only around keyword hits, entropy and placeholder filtering, offline
   validators, context and suppression.
@@ -92,8 +99,9 @@ pnpm build          # output: .output/chrome-mv3, load it as above
 5. **Download sources (ZIP)** exports:
 
    ```
-   FINDINGS.md                          readable report, secrets always masked
+   FINDINGS.md                          readable secret report, secrets always masked
    findings.json                        machine-readable; raw values only if you opt in
+   ENDPOINTS.md                         extracted APIs, routes, dev notes, sinks & __NEXT_DATA__
    manifest.json                        scanned URLs, hashes, what was skipped and why
    source/<host>/<script>/src/...       first-party files
    source/<host>/<script>/_vendor/...   node_modules and ignoreList files
@@ -151,7 +159,7 @@ or open a pull request. Every rule ships with tests, so reviews are quick.
 ```bash
 pnpm lint          # Biome lint and format check
 pnpm typecheck     # TypeScript, strict
-pnpm test          # 199 unit tests (Vitest)
+pnpm test          # 241 unit tests (Vitest)
 pnpm rules:check   # rule schema, samples, ReDoS proof
 VITE_MH_E2E=1 pnpm build && pnpm test:e2e   # real-Chromium end-to-end tests (Playwright)
 ```
