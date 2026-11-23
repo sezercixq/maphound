@@ -1,14 +1,17 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import type {
+  AuditRecord,
   JobRecord,
   MapRecord,
   PageIntelRecord,
   ScriptIntelRecord,
   ScriptRecord,
 } from '@/core/db';
+import type { SiteSnapshotRecord } from '@/engine/diff';
 import { bulkCandidates } from '@/ui/components/ThirdParty';
 import {
+  AUDIT_CATEGORY_KEYS,
   CONFIDENCE_KEYS,
   ENDPOINT_CATEGORY_KEYS,
   fileName,
@@ -17,6 +20,7 @@ import {
   hostOf,
   NEXT_DATA_REASON_KEYS,
   ROUTE_KIND_KEYS,
+  SDK_CATEGORY_KEYS,
   SEVERITY_KEYS,
   SINK_CATEGORY_KEYS,
   statusOf,
@@ -182,9 +186,61 @@ describe('buildViewModel', () => {
         },
       },
     ];
-    const vm = buildViewModel([], [], [], [], null, intel, pages);
+    const audits: AuditRecord[] = [
+      {
+        id: 'https://example.com|/',
+        origin: 'https://example.com',
+        pageUrl: 'https://example.com/',
+        headers: {},
+        matrix: [{ header: 'Content-Security-Policy', status: 'missing', value: null }],
+        findings: [
+          {
+            id: 'headers:csp-missing',
+            category: 'headers',
+            ruleId: 'csp-missing',
+            title: 'Missing CSP',
+            severity: 'high',
+            subject: 'Content-Security-Policy',
+            detail: 'Missing',
+            recommendation: 'Add',
+          },
+        ],
+        storageKeysChecked: 0,
+        cookiesChecked: 0,
+        updatedAt: 0,
+      },
+    ];
+    const snapshots: SiteSnapshotRecord[] = [
+      {
+        id: 'https://example.com|1',
+        origin: 'https://example.com',
+        createdAt: 100,
+        signature: 's1',
+        scriptHashes: [],
+        files: [],
+        endpoints: [],
+        routes: [],
+        findings: [],
+        sinks: [],
+      },
+      {
+        id: 'https://example.com|2',
+        origin: 'https://example.com',
+        createdAt: 200,
+        signature: 's2',
+        scriptHashes: [],
+        files: [],
+        endpoints: ['/api/v1/users'],
+        routes: [],
+        findings: [],
+        sinks: [],
+      },
+    ];
+    const vm = buildViewModel([], [], [], [], null, intel, pages, audits, snapshots);
     expect(vm.endpointCount).toBe(3);
     expect(vm.hintCount).toBe(2);
+    expect(vm.auditCount).toBe(1);
+    expect(vm.diff?.endpoints.added).toEqual(['/api/v1/users']);
   });
 });
 
@@ -231,6 +287,8 @@ describe('locales', () => {
       SINK_CATEGORY_KEYS,
       HINT_LEVEL_KEYS,
       NEXT_DATA_REASON_KEYS,
+      SDK_CATEGORY_KEYS,
+      AUDIT_CATEGORY_KEYS,
     ])
       for (const key of Object.values(map)) used.add(key);
     for (const state of ['queued', 'fetching', 'fetched', 'scanning', 'done', 'failed'] as const) {

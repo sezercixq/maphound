@@ -2,6 +2,7 @@ import { batch, computed, signal } from '@preact/signals';
 import { browser } from 'wxt/browser';
 import { onDbChanged } from '@/core/channel';
 import {
+  type AuditRecord,
   type FindingRecord,
   getDb,
   type JobRecord,
@@ -13,6 +14,7 @@ import {
 } from '@/core/db';
 import { getActiveTabOrigin } from '@/core/permissions';
 import { parseOrigin, siteForUrl } from '@/core/scope';
+import type { SiteSnapshotRecord } from '@/engine/diff';
 import type { FileLoadTarget } from '@/engine/search/source-search';
 import { clearSearchCache } from './search-client';
 import { buildViewModel } from './view-model';
@@ -42,6 +44,8 @@ const maps = signal<MapRecord[]>([]);
 const findings = signal<FindingRecord[]>([]);
 const intel = signal<ScriptIntelRecord[]>([]);
 const pages = signal<PageIntelRecord[]>([]);
+const audits = signal<AuditRecord[]>([]);
+const snapshots = signal<SiteSnapshotRecord[]>([]);
 export const viewerTarget = signal<ViewerTarget | null>(null);
 export const loaded = signal(false);
 
@@ -62,6 +66,8 @@ export const view = computed(() =>
     site.value,
     intel.value,
     pages.value,
+    audits.value,
+    snapshots.value,
   ),
 );
 
@@ -78,7 +84,16 @@ export async function refresh(): Promise<void> {
     viewerTarget.value = null;
     clearSearchCache();
   }
-  const [siteJobs, siteScripts, siteMaps, siteFindings, siteIntel, sitePages] = active
+  const [
+    siteJobs,
+    siteScripts,
+    siteMaps,
+    siteFindings,
+    siteIntel,
+    sitePages,
+    siteAudits,
+    siteSnapshots,
+  ] = active
     ? await Promise.all([
         db.getAllFromIndex('jobs', 'by-origin', active.origin),
         db.getAllFromIndex('scripts', 'by-origin', active.origin),
@@ -86,8 +101,10 @@ export async function refresh(): Promise<void> {
         db.getAllFromIndex('findings', 'by-origin', active.origin),
         db.getAllFromIndex('intel', 'by-origin', active.origin),
         db.getAllFromIndex('pages', 'by-origin', active.origin),
+        db.getAllFromIndex('audits', 'by-origin', active.origin),
+        db.getAllFromIndex('snapshots', 'by-origin', active.origin),
       ])
-    : [[], [], [], [], [], []];
+    : [[], [], [], [], [], [], [], []];
   batch(() => {
     sites.value = allSites;
     jobs.value = siteJobs;
@@ -96,6 +113,8 @@ export async function refresh(): Promise<void> {
     findings.value = siteFindings;
     intel.value = siteIntel;
     pages.value = sitePages;
+    audits.value = siteAudits;
+    snapshots.value = siteSnapshots;
     loaded.value = true;
   });
 }

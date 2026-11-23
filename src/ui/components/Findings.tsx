@@ -1,10 +1,11 @@
 import { useSignal } from '@preact/signals';
 import type { FindingRecord, Severity } from '@/core/db';
 import { rescanSiteFromUi } from '@/core/site-client';
+import { draftSecretReport } from '@/engine/export';
 import { CONFIDENCE_KEYS, isUrgent, SEVERITY_KEYS, type Tone } from '../format';
 import { t } from '../i18n';
 import { openCodeViewer } from '../state';
-import { Badge, Section } from './primitives';
+import { Badge, CopyDraftButton, Section } from './primitives';
 
 const SEVERITY_STYLE: Record<Severity, { bar: string; badge: string }> = {
   critical: { bar: 'bg-red-500', badge: 'bg-red-500/15 text-red-300' },
@@ -91,6 +92,10 @@ function FindingItem({ finding, origin }: { finding: FindingRecord; origin: stri
         >
           {finding.ruleName}
         </p>
+        <CopyDraftButton
+          testId="finding-draft"
+          buildDraft={() => draftSecretReport(finding, origin)}
+        />
       </div>
       <div class="mt-1 flex items-center gap-2">
         <button

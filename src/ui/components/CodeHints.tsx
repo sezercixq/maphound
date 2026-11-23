@@ -1,10 +1,11 @@
 import { useSignal } from '@preact/signals';
 import type { PageIntelRecord } from '@/core/db';
+import { draftSinkReport } from '@/engine/export';
 import type { HintLevel, SinkCategory, SinkHit } from '@/engine/intel';
 import { formatBytes, HINT_LEVEL_KEYS, NEXT_DATA_REASON_KEYS, SINK_CATEGORY_KEYS } from '../format';
 import { t } from '../i18n';
 import { openCodeViewer } from '../state';
-import { Badge, Section } from './primitives';
+import { Badge, CopyDraftButton, Section } from './primitives';
 
 const SINK_CATEGORIES: readonly SinkCategory[] = [
   'dom-xss',
@@ -267,6 +268,10 @@ export function CodeHintsView({
                       <p class="min-w-0 flex-1 truncate text-[12px] font-medium text-zinc-100">
                         {sink.title}
                       </p>
+                      <CopyDraftButton
+                        testId="sink-draft"
+                        buildDraft={() => draftSinkReport(sink, origin)}
+                      />
                     </div>
                     <button
                       type="button"

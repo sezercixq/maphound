@@ -1,5 +1,12 @@
 import type { Confidence, JobRecord, Severity, SkipReason, ThirdPartyKind } from '@/core/db';
-import type { EndpointCategory, HintLevel, RouteKind, SinkCategory } from '@/engine/intel';
+import type { AuditCategory } from '@/engine/audit';
+import type {
+  EndpointCategory,
+  HintLevel,
+  RouteKind,
+  SdkCategory,
+  SinkCategory,
+} from '@/engine/intel';
 import type { MessageKey } from './i18n';
 
 export function formatBytes(bytes: number): string {
@@ -155,4 +162,21 @@ export const NEXT_DATA_REASON_KEYS: Record<'credential' | 'privilege' | 'pii', M
   credential: 'nextDataReasonCredential',
   privilege: 'nextDataReasonPrivilege',
   pii: 'nextDataReasonPii',
+};
+
+export const SDK_CATEGORY_KEYS: Record<SdkCategory, MessageKey> = {
+  payment: 'sdkCatPayment',
+  auth: 'sdkCatAuth',
+  backend: 'sdkCatBackend',
+  monitoring: 'sdkCatMonitoring',
+  analytics: 'sdkCatAnalytics',
+  ai: 'sdkCatAi',
+  realtime: 'sdkCatRealtime',
+  cloud: 'sdkCatCloud',
+};
+
+export const AUDIT_CATEGORY_KEYS: Record<AuditCategory, MessageKey> = {
+  headers: 'auditCatHeaders',
+  cookie: 'auditCatCookie',
+  storage: 'auditCatStorage',
 };

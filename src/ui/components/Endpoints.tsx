@@ -1,4 +1,5 @@
 import { useSignal } from '@preact/signals';
+import { draftEndpointReport } from '@/engine/export';
 import {
   ENDPOINT_CATEGORIES,
   type EndpointCategory,
@@ -11,7 +12,7 @@ import { saveBlob } from '../export-client';
 import { ENDPOINT_CATEGORY_KEYS, HINT_LEVEL_KEYS, ROUTE_KIND_KEYS } from '../format';
 import { t } from '../i18n';
 import { openCodeViewer } from '../state';
-import { Badge, Section } from './primitives';
+import { Badge, CopyDraftButton, Section } from './primitives';
 
 const CATEGORY_TONES: Record<EndpointCategory, string> = {
   admin: 'bg-red-500/15 text-red-300',
@@ -235,6 +236,10 @@ export function EndpointsView({ intel, origin }: { intel: ScriptIntel; origin: s
                         </span>
                       ))}
                       <div class="flex-1" />
+                      <CopyDraftButton
+                        testId="endpoint-draft"
+                        buildDraft={() => draftEndpointReport(ep, origin)}
+                      />
                       <button
                         type="button"
                         data-testid="endpoint-copy"

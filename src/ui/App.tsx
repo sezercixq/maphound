@@ -1,10 +1,14 @@
 import { useSignal } from '@preact/signals';
 import { useEffect } from 'preact/hooks';
+import { ArchitectureView } from './components/Architecture';
 import { CodeHintsView } from './components/CodeHints';
 import { CodeViewer } from './components/CodeViewer';
+import { DiffView } from './components/DiffView';
 import { EndpointsView } from './components/Endpoints';
 import { FindingList } from './components/Findings';
 import { MapList, ScriptList } from './components/Lists';
+import { OsintView } from './components/OsintView';
+import { SecurityAuditView } from './components/SecurityAudit';
 import { SiteCard } from './components/SiteCard';
 import { SourceSearchView } from './components/SourceSearch';
 import { ThirdPartyOrigins } from './components/ThirdParty';
@@ -13,7 +17,15 @@ import { type MessageKey, t } from './i18n';
 import { site, startState, view } from './state';
 import type { Stats } from './view-model';
 
-type TabId = 'overview' | 'endpoints' | 'hints' | 'search';
+type TabId =
+  | 'overview'
+  | 'endpoints'
+  | 'hints'
+  | 'architecture'
+  | 'osint'
+  | 'audit'
+  | 'diff'
+  | 'search';
 
 function Logo() {
   return (
@@ -137,23 +149,33 @@ function TabBar({
   onSelect,
   endpointCount,
   hintCount,
+  osintCount,
+  auditCount,
+  diffCount,
 }: {
   active: TabId;
   onSelect: (tab: TabId) => void;
   endpointCount: number;
   hintCount: number;
+  osintCount: number;
+  auditCount: number;
+  diffCount: number;
 }) {
-  const tabs: { id: TabId; label: MessageKey; count?: number }[] = [
+  const tabs: { id: TabId; label: MessageKey; count?: number; isDiff?: boolean }[] = [
     { id: 'overview', label: 'tabOverview' },
     { id: 'endpoints', label: 'tabEndpoints', count: endpointCount },
     { id: 'hints', label: 'tabHints', count: hintCount },
+    { id: 'architecture', label: 'tabArchitecture' },
+    { id: 'osint', label: 'tabOsint', count: osintCount },
+    { id: 'audit', label: 'tabAudit', count: auditCount },
+    { id: 'diff', label: 'tabDiff', count: diffCount, isDiff: true },
     { id: 'search', label: 'tabSearch' },
   ];
   return (
     <div
       role="tablist"
       data-testid="panel-tabs"
-      class="grid grid-cols-4 gap-1 rounded-lg border border-white/[0.06] bg-white/[0.02] p-1"
+      class="flex flex-wrap gap-1 rounded-lg border border-white/[0.06] bg-white/[0.02] p-1"
     >
       {tabs.map((tab) => {
         const selected = active === tab.id;
@@ -165,7 +187,7 @@ function TabBar({
             aria-selected={selected}
             data-testid={`tab-${tab.id}`}
             onClick={() => onSelect(tab.id)}
-            class={`flex items-center justify-center gap-1 rounded-md px-1.5 py-1 text-[11px] font-medium transition-colors ${
+            class={`flex flex-1 basis-[calc(25%-4px)] items-center justify-center gap-1 rounded-md px-1.5 py-1 text-[11px] font-medium transition-colors ${
               selected
                 ? 'bg-emerald-500/15 text-emerald-300'
                 : 'text-zinc-400 hover:bg-white/[0.04] hover:text-zinc-200'
@@ -174,11 +196,16 @@ function TabBar({
             <span class="truncate">{t(tab.label)}</span>
             {tab.count !== undefined && tab.count > 0 && (
               <span
+                data-testid={tab.isDiff ? 'diff-badge' : undefined}
                 class={`rounded px-1 font-mono text-[9px] tabular-nums ${
-                  selected ? 'bg-emerald-500/20 text-emerald-200' : 'bg-zinc-800 text-zinc-400'
+                  tab.isDiff
+                    ? 'bg-amber-400/20 text-amber-200'
+                    : selected
+                      ? 'bg-emerald-500/20 text-emerald-200'
+                      : 'bg-zinc-800 text-zinc-400'
                 }`}
               >
-                {tab.count}
+                {tab.isDiff ? `+${tab.count}` : tab.count}
               </span>
             )}
           </button>
@@ -213,6 +240,9 @@ export function App() {
             }}
             endpointCount={model.endpointCount}
             hintCount={model.hintCount}
+            osintCount={model.osintCount}
+            auditCount={model.auditCount}
+            diffCount={model.diff?.hasChanges ? model.diff.totalChanges : 0}
           />
           {activeTab.value === 'overview' && (
             <>
@@ -236,6 +266,23 @@ export function App() {
           )}
           {activeTab.value === 'hints' && (
             <CodeHintsView sinks={model.intel.sinks} pages={model.pages} origin={enabled.origin} />
+          )}
+          {activeTab.value === 'architecture' && (
+            <ArchitectureView graph={model.architecture} origin={enabled.origin} />
+          )}
+          {activeTab.value === 'osint' && (
+            <OsintView hits={model.intel.osint ?? []} origin={enabled.origin} />
+          )}
+          {activeTab.value === 'audit' && (
+            <SecurityAuditView
+              audits={model.audits}
+              findings={model.auditFindings}
+              counts={model.auditCounts}
+              origin={enabled.origin}
+            />
+          )}
+          {activeTab.value === 'diff' && (
+            <DiffView snapshots={model.snapshots} diff={model.diff} origin={enabled.origin} />
           )}
           {activeTab.value === 'search' && (
             <SourceSearchView origin={enabled.origin} hasMaps={model.stats.files > 0} />

@@ -1,5 +1,7 @@
+import { useSignal } from '@preact/signals';
 import type { ComponentChildren } from 'preact';
 import type { Tone } from '../format';
+import { t } from '../i18n';
 
 const TONES: Record<Tone, string> = {
   neutral: 'bg-zinc-800 text-zinc-300',
@@ -89,5 +91,36 @@ export function Section({
       </h2>
       {children}
     </section>
+  );
+}
+
+export function CopyDraftButton({
+  buildDraft,
+  testId,
+}: {
+  buildDraft: () => string;
+  testId: string;
+}) {
+  const copied = useSignal(false);
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(buildDraft());
+      copied.value = true;
+      setTimeout(() => {
+        copied.value = false;
+      }, 1500);
+    } catch {
+      // Clipboard may require focus.
+    }
+  };
+  return (
+    <button
+      type="button"
+      data-testid={testId}
+      onClick={() => void copy()}
+      class="shrink-0 rounded border border-white/[0.08] bg-white/[0.03] px-1.5 py-0.5 text-[10px] text-zinc-400 hover:bg-white/[0.07] hover:text-zinc-200"
+    >
+      {copied.value ? t('copied') : t('copyReportDraft')}
+    </button>
   );
 }

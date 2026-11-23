@@ -487,5 +487,221 @@
   },
   "filterAll": {
     "message": "All"
+  },
+  "tabArchitecture": {
+    "message": "Architecture"
+  },
+  "tabAudit": {
+    "message": "Audit"
+  },
+  "tabDiff": {
+    "message": "Diff"
+  },
+  "sdkCatPayment": {
+    "message": "payment"
+  },
+  "sdkCatAuth": {
+    "message": "auth"
+  },
+  "sdkCatBackend": {
+    "message": "backend"
+  },
+  "sdkCatMonitoring": {
+    "message": "monitoring"
+  },
+  "sdkCatAnalytics": {
+    "message": "analytics"
+  },
+  "sdkCatAi": {
+    "message": "AI"
+  },
+  "sdkCatRealtime": {
+    "message": "realtime"
+  },
+  "sdkCatCloud": {
+    "message": "cloud"
+  },
+  "auditCatHeaders": {
+    "message": "Headers"
+  },
+  "auditCatCookie": {
+    "message": "Cookies"
+  },
+  "auditCatStorage": {
+    "message": "Storage"
+  },
+  "copyReportDraft": {
+    "message": "Copy report draft"
+  },
+  "archModules": {
+    "message": "Modules"
+  },
+  "archEdges": {
+    "message": "Internal links"
+  },
+  "archSdks": {
+    "message": "Third-party SDKs"
+  },
+  "archFlows": {
+    "message": "API calls"
+  },
+  "archTreeTitle": {
+    "message": "Module & data-flow tree"
+  },
+  "archEmpty": {
+    "message": "No first-party modules reconstructed yet."
+  },
+  "archImports": {
+    "message": "Imports"
+  },
+  "archExports": {
+    "message": "Exports"
+  },
+  "archUsedBy": {
+    "message": "Imported by"
+  },
+  "archEndpoints": {
+    "message": "Endpoints called"
+  },
+  "archFilesCount": {
+    "message": "$1 files"
+  },
+  "auditHeadersTitle": {
+    "message": "HTTP security headers"
+  },
+  "auditFindingsTitle": {
+    "message": "Security audit findings"
+  },
+  "auditEmpty": {
+    "message": "Visit a page on this site to audit headers, cookies and Web Storage."
+  },
+  "auditNoFindings": {
+    "message": "No header, cookie or storage issues flagged."
+  },
+  "auditStatusOk": {
+    "message": "ok"
+  },
+  "auditStatusWeak": {
+    "message": "weak"
+  },
+  "auditStatusMissing": {
+    "message": "missing"
+  },
+  "auditStatusInfo": {
+    "message": "info"
+  },
+  "auditStorageScanned": {
+    "message": "$1 storage keys, $2 cookies checked"
+  },
+  "diffSnapshotsCount": {
+    "message": "$1 snapshots saved"
+  },
+  "diffSaveSnapshot": {
+    "message": "Save snapshot"
+  },
+  "diffNeedTwo": {
+    "message": "Save a snapshot or rescan after a deployment to compare versions."
+  },
+  "diffNoChanges": {
+    "message": "No differences between the latest two snapshots."
+  },
+  "diffFilesSection": {
+    "message": "Source files"
+  },
+  "diffEndpointsSection": {
+    "message": "Endpoints & routes"
+  },
+  "diffFindingsSection": {
+    "message": "Secret findings"
+  },
+  "diffSinksSection": {
+    "message": "Code hints / sinks"
+  },
+  "diffAddedLabel": {
+    "message": "added"
+  },
+  "diffRemovedLabel": {
+    "message": "removed"
+  },
+  "diffModifiedLabel": {
+    "message": "modified"
+  },
+  "diffResolvedLabel": {
+    "message": "resolved"
+  },
+  "diffComparedLabel": {
+    "message": "Comparing $1 vs $2"
+  },
+  "tabOsint": {
+    "message": "OSINT"
+  },
+  "osintOfflineTitle": {
+    "message": "Offline Passive OSINT"
+  },
+  "osintEmpty": {
+    "message": "No cloud buckets, subdomains, private IPs or telemetry IDs extracted yet."
+  },
+  "osintCatCloud": {
+    "message": "Cloud"
+  },
+  "osintCatSubdomain": {
+    "message": "Subdomains"
+  },
+  "osintCatInternalIp": {
+    "message": "Internal IP"
+  },
+  "osintCatBuildPath": {
+    "message": "Build Paths"
+  },
+  "osintCatAttribution": {
+    "message": "Attribution"
+  },
+  "osintCatTelemetry": {
+    "message": "Telemetry"
+  },
+  "osintLauncherTitle": {
+    "message": "External OSINT & Dork Launcher"
+  },
+  "osintLauncherPrivacy": {
+    "message": "Zero background API requests. Each link opens a new tab only when you click."
+  },
+  "osintReconHeading": {
+    "message": "Passive Archives & Certificates"
+  },
+  "osintDorksHeading": {
+    "message": "Google Dorks (New Tab)"
+  },
+  "osintDomainUnavailable": {
+    "message": "OSINT launcher requires a public domain (unavailable on localhost or raw IP addresses)."
+  },
+  "osintLinkCrtsh": {
+    "message": "crt.sh Certificates"
+  },
+  "osintLinkWayback": {
+    "message": "Wayback Machine"
+  },
+  "osintLinkUrlscan": {
+    "message": "urlscan.io Search"
+  },
+  "osintDorkConfig": {
+    "message": "Exposed Directories & Configs"
+  },
+  "osintDorkApi": {
+    "message": "API Docs & Swagger / GraphQL"
+  },
+  "osintDorkAuth": {
+    "message": "Login & Admin Portals"
+  },
+  "osintDorkDocs": {
+    "message": "Documents, Spreadsheets & Logs"
+  },
+  "osintCopyValue": {
+    "message": "Copy"
+  },
+  "osintCopiedValue": {
+    "message": "Copied"
+  },
+  "osintFilterAll": {
+    "message": "All ($1)"
   }
 }

@@ -1,4 +1,5 @@
 import type {
+  AuditRecord,
   FindingRecord,
   JobRecord,
   MapRecord,
@@ -10,7 +11,9 @@ import type {
   ThirdPartyKind,
 } from '@/core/db';
 import { isRelatedDomain } from '@/core/scope';
-import type { ScriptIntel } from '@/engine/intel';
+import { AUDIT_SEVERITY_ORDER, type AuditFinding } from '@/engine/audit';
+import { diffSnapshots, type SiteSnapshotRecord, type SnapshotDiff } from '@/engine/diff';
+import { type ArchitectureGraph, buildArchitectureGraph, type ScriptIntel } from '@/engine/intel';
 import { combineSiteIntel } from '@/engine/zip/endpoints-report';
 import { countBySeverity, sortFindings } from '@/engine/zip/findings-report';
 import { fileName, hostOf } from './format';
@@ -67,10 +70,21 @@ export interface ViewModel {
   findingCounts: Record<Severity, number>;
   /** Extracted endpoints, routes, developer notes and static code sinks. */
   intel: ScriptIntel;
+  /** Module dependency graph, SDKs and API data flows. */
+  architecture: ArchitectureGraph;
   /** Parsed Next.js `__NEXT_DATA__` summaries per visited page. */
   pages: PageIntelRecord[];
+  /** HTTP header, cookie and Web Storage audits per visited page. */
+  audits: AuditRecord[];
+  auditFindings: AuditFinding[];
+  auditCounts: Record<Severity, number>;
+  /** Version snapshots and latest diff. */
+  snapshots: SiteSnapshotRecord[];
+  diff: SnapshotDiff | null;
   endpointCount: number;
   hintCount: number;
+  osintCount: number;
+  auditCount: number;
   /** Scripts still waiting to be downloaded or scanned. */
   scanning: boolean;
   /** Related domains first, then by script count. */
@@ -88,6 +102,8 @@ export function buildViewModel(
   site: Pick<SiteRecord, 'origin' | 'extraOrigins'> | null = null,
   intelRecords: readonly ScriptIntelRecord[] = [],
   pages: readonly PageIntelRecord[] = [],
+  audits: readonly AuditRecord[] = [],
+  snapshots: readonly SiteSnapshotRecord[] = [],
 ): ViewModel {
   const scriptByHash = new Map(scripts.map((s) => [s.hash, s]));
   const mapById = new Map(maps.map((m) => [m.id, m]));
@@ -162,19 +178,60 @@ export function buildViewModel(
 
   const files = maps.reduce((sum, map) => sum + map.withContent, 0);
   const intel = combineSiteIntel(intelRecords, pages);
+  const architecture = buildArchitectureGraph(intel.modules ?? []);
   const sortedPages = [...pages].sort((a, b) => a.pageUrl.localeCompare(b.pageUrl));
+  const sortedAudits = [...audits].sort((a, b) => a.pageUrl.localeCompare(b.pageUrl));
+  const auditFindingsMap = new Map<string, AuditFinding>();
+  for (const audit of sortedAudits) {
+    for (const f of audit.findings) {
+      if (!auditFindingsMap.has(f.id)) auditFindingsMap.set(f.id, f);
+    }
+  }
+  const auditFindings = [...auditFindingsMap.values()].sort(
+    (a, b) =>
+      AUDIT_SEVERITY_ORDER[b.severity] - AUDIT_SEVERITY_ORDER[a.severity] ||
+      a.category.localeCompare(b.category) ||
+      a.subject.localeCompare(b.subject),
+  );
+  const auditCounts: Record<Severity, number> = {
+    critical: 0,
+    high: 0,
+    medium: 0,
+    low: 0,
+    info: 0,
+  };
+  for (const f of auditFindings) auditCounts[f.severity]++;
+
+  const sortedSnapshots = [...snapshots].sort((a, b) => a.createdAt - b.createdAt);
+  const diff =
+    sortedSnapshots.length >= 2
+      ? diffSnapshots(
+          sortedSnapshots[sortedSnapshots.length - 2]!,
+          sortedSnapshots[sortedSnapshots.length - 1]!,
+        )
+      : null;
+
   const endpointCount = intel.endpoints.length + intel.routes.length;
   const hintCount =
     intel.sinks.length + sortedPages.reduce((sum, p) => sum + p.nextData.sensitive.length, 0);
+  const osintCount = intel.osint?.length ?? 0;
   return {
     scripts: scriptRows,
     maps: mapRows,
     findings: sortFindings(findings),
     findingCounts: countBySeverity(findings),
     intel,
+    architecture,
     pages: sortedPages,
+    audits: sortedAudits,
+    auditFindings,
+    auditCounts,
+    snapshots: sortedSnapshots,
+    diff,
     endpointCount,
     hintCount,
+    osintCount,
+    auditCount: auditFindings.length,
     thirdParty,
     allowedOrigins,
     scanning: jobs.some(

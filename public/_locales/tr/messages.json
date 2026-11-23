@@ -487,5 +487,221 @@
   },
   "filterAll": {
     "message": "Tümü"
+  },
+  "tabArchitecture": {
+    "message": "Mimari"
+  },
+  "tabAudit": {
+    "message": "Denetim"
+  },
+  "tabDiff": {
+    "message": "Fark"
+  },
+  "sdkCatPayment": {
+    "message": "ödeme"
+  },
+  "sdkCatAuth": {
+    "message": "kimlik"
+  },
+  "sdkCatBackend": {
+    "message": "arka uç"
+  },
+  "sdkCatMonitoring": {
+    "message": "izleme"
+  },
+  "sdkCatAnalytics": {
+    "message": "analitik"
+  },
+  "sdkCatAi": {
+    "message": "yapay zeka"
+  },
+  "sdkCatRealtime": {
+    "message": "gerçek zamanlı"
+  },
+  "sdkCatCloud": {
+    "message": "bulut"
+  },
+  "auditCatHeaders": {
+    "message": "Başlıklar"
+  },
+  "auditCatCookie": {
+    "message": "Çerezler"
+  },
+  "auditCatStorage": {
+    "message": "Depolama"
+  },
+  "copyReportDraft": {
+    "message": "Rapor taslağı kopyala"
+  },
+  "archModules": {
+    "message": "Modüller"
+  },
+  "archEdges": {
+    "message": "İç bağlantılar"
+  },
+  "archSdks": {
+    "message": "3. taraf SDK'lar"
+  },
+  "archFlows": {
+    "message": "API çağrıları"
+  },
+  "archTreeTitle": {
+    "message": "Modül ve veri akışı ağacı"
+  },
+  "archEmpty": {
+    "message": "Henüz birinci taraf modül yeniden kurulmadı."
+  },
+  "archImports": {
+    "message": "İçe aktarılanlar"
+  },
+  "archExports": {
+    "message": "Dışa aktarılanlar"
+  },
+  "archUsedBy": {
+    "message": "Kullanan dosyalar"
+  },
+  "archEndpoints": {
+    "message": "Çağrılan uç noktalar"
+  },
+  "archFilesCount": {
+    "message": "$1 dosya"
+  },
+  "auditHeadersTitle": {
+    "message": "HTTP güvenlik başlıkları"
+  },
+  "auditFindingsTitle": {
+    "message": "Güvenlik denetim bulguları"
+  },
+  "auditEmpty": {
+    "message": "Başlıkları, çerezleri ve Web Storage'ı denetlemek için sitede bir sayfa ziyaret edin."
+  },
+  "auditNoFindings": {
+    "message": "Başlık, çerez veya depolama sorunu tespit edilmedi."
+  },
+  "auditStatusOk": {
+    "message": "iyi"
+  },
+  "auditStatusWeak": {
+    "message": "zayıf"
+  },
+  "auditStatusMissing": {
+    "message": "eksik"
+  },
+  "auditStatusInfo": {
+    "message": "bilgi"
+  },
+  "auditStorageScanned": {
+    "message": "$1 depolama anahtarı, $2 çerez denetlendi"
+  },
+  "diffSnapshotsCount": {
+    "message": "$1 anlık görüntü kayıtlı"
+  },
+  "diffSaveSnapshot": {
+    "message": "Anlık görüntü kaydet"
+  },
+  "diffNeedTwo": {
+    "message": "Sürümleri karşılaştırmak için anlık görüntü kaydedin veya dağıtımdan sonra yeniden tarayın."
+  },
+  "diffNoChanges": {
+    "message": "Son iki anlık görüntü arasında fark yok."
+  },
+  "diffFilesSection": {
+    "message": "Kaynak dosyalar"
+  },
+  "diffEndpointsSection": {
+    "message": "Uç noktalar ve rotalar"
+  },
+  "diffFindingsSection": {
+    "message": "Sır bulguları"
+  },
+  "diffSinksSection": {
+    "message": "Kod ipuçları / sink'ler"
+  },
+  "diffAddedLabel": {
+    "message": "eklendi"
+  },
+  "diffRemovedLabel": {
+    "message": "silindi"
+  },
+  "diffModifiedLabel": {
+    "message": "değişti"
+  },
+  "diffResolvedLabel": {
+    "message": "çözüldü"
+  },
+  "diffComparedLabel": {
+    "message": "$1 ile $2 karşılaştırılıyor"
+  },
+  "tabOsint": {
+    "message": "OSINT"
+  },
+  "osintOfflineTitle": {
+    "message": "Çevrimdışı Pasif OSINT"
+  },
+  "osintEmpty": {
+    "message": "Henüz bulut deposu, alt alan adı, özel IP veya telemetri kimliği çıkarılmadı."
+  },
+  "osintCatCloud": {
+    "message": "Bulut"
+  },
+  "osintCatSubdomain": {
+    "message": "Alt Alan Adları"
+  },
+  "osintCatInternalIp": {
+    "message": "Dahili IP"
+  },
+  "osintCatBuildPath": {
+    "message": "Derleme Yolu"
+  },
+  "osintCatAttribution": {
+    "message": "Ekip / Repo"
+  },
+  "osintCatTelemetry": {
+    "message": "Telemetri"
+  },
+  "osintLauncherTitle": {
+    "message": "Tek Tıkla OSINT & Dork Başlatıcı"
+  },
+  "osintLauncherPrivacy": {
+    "message": "Arka planda hiçbir API isteği atılmaz. Bağlantılar yalnızca tıkladığınızda yeni sekmede açılır."
+  },
+  "osintReconHeading": {
+    "message": "Pasif Arşivler & Sertifikalar"
+  },
+  "osintDorksHeading": {
+    "message": "Google Dork'ları (Yeni Sekme)"
+  },
+  "osintDomainUnavailable": {
+    "message": "OSINT başlatıcısı için genel bir alan adı gereklidir (localhost veya ham IP adreslerinde kullanılamaz)."
+  },
+  "osintLinkCrtsh": {
+    "message": "crt.sh Sertifika Şeffaflığı"
+  },
+  "osintLinkWayback": {
+    "message": "Wayback Machine Arşivi"
+  },
+  "osintLinkUrlscan": {
+    "message": "urlscan.io Araması"
+  },
+  "osintDorkConfig": {
+    "message": "Açık Dizin & Yapılandırma Dosyaları"
+  },
+  "osintDorkApi": {
+    "message": "API Dokümantasyonu & Swagger / GraphQL"
+  },
+  "osintDorkAuth": {
+    "message": "Giriş & Yönetim Panelleri"
+  },
+  "osintDorkDocs": {
+    "message": "Belgeler, Tablolar & Log Dosyaları"
+  },
+  "osintCopyValue": {
+    "message": "Kopyala"
+  },
+  "osintCopiedValue": {
+    "message": "Kopyalandı"
+  },
+  "osintFilterAll": {
+    "message": "Tümü ($1)"
   }
 }

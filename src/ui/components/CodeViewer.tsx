@@ -1,5 +1,5 @@
 import { useSignal } from '@preact/signals';
-import { useEffect, useRef } from 'preact/hooks';
+import { useEffect, useLayoutEffect, useRef } from 'preact/hooks';
 import type { LoadedSourceFile } from '@/engine/search/source-search';
 import { formatBytes } from '../format';
 import { t } from '../i18n';
@@ -91,7 +91,7 @@ export function CodeViewer() {
     };
   }, [target]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!target) return;
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
