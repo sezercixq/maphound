@@ -63,6 +63,57 @@ export const sourceMap = (file: string, firstSource = `export const name = '${fi
 
 const appSource = `export const name = 'app.js';\nexport const githubToken = "${leaks.github}";\n`;
 
+const nextPanelSource = [
+  "import React from 'react';",
+  'export async function loadUsers() {',
+  "  return fetch('/api/v1/users');",
+  '}',
+  'export function impersonate(body: unknown) {',
+  "  return axios.post('/internal/admin/impersonate', body);",
+  '}',
+  'export function queryGraph() {',
+  "  return fetch('/graphql', { method: 'POST' });",
+  '}',
+  '// BYPASS: skip RBAC check in staging',
+  'export function AdminPanel({ bio, params }: { bio: string; params: URLSearchParams }) {',
+  "  window.addEventListener('message', (e) => {",
+  '    eval(e.data);',
+  '  });',
+  "  window.location.href = params.get('next') ?? '/';",
+  '  return (',
+  '    <>',
+  '      <Route path="/admin/audit-logs" element={<div />} />',
+  '      <div dangerouslySetInnerHTML={{ __html: bio }} />',
+  '    </>',
+  '  );',
+  '}',
+  '',
+].join('\n');
+
+const nextAppMap = JSON.stringify({
+  version: 3,
+  file: 'next-app.js',
+  sources: ['src/admin/panel.tsx', 'webpack:///./node_modules/vendor-pkg/index.js'],
+  sourcesContent: [nextPanelSource, 'el.innerHTML = raw; // TODO: vendor internal\n'],
+  mappings: 'AAAA',
+});
+
+const nextDataHtml = JSON.stringify({
+  page: '/dashboard',
+  buildId: 'build-v030',
+  gssp: true,
+  props: {
+    pageProps: {
+      user: {
+        email: 'alice@example.test',
+        isAdmin: true,
+        internalToken: 'tok_9f8e7d6c5b4a3210',
+      },
+      apiEndpoint: '/api/v1/billing/summary',
+    },
+  },
+});
+
 export interface TestServer {
   base: string;
   thirdPartyBase: string;
@@ -98,6 +149,15 @@ export function startServer(): Promise<TestServer> {
         );
       case '/second.html':
         return html('<script src="/second.js"></script>');
+      case '/next.html':
+        return html(
+          `<script id="__NEXT_DATA__" type="application/json">${nextDataHtml}</script>` +
+            '<script src="/next-app.js"></script>',
+        );
+      case '/next-app.js':
+        return js("console.log('next-app');\n//# sourceMappingURL=next-app.js.map\n");
+      case '/next-app.js.map':
+        return send('application/json', nextAppMap);
       case '/app.js':
         return js(
           [
@@ -158,9 +218,11 @@ export function startServer(): Promise<TestServer> {
 export function launch(): Promise<BrowserContext> {
   return chromium.launchPersistentContext(join(mkdtempSync(join(tmpdir(), 'mh-')), 'profile'), {
     headless: false,
+    locale: 'en-US',
     acceptDownloads: true,
     args: [
       '--headless=new',
+      '--lang=en-US',
       `--disable-extensions-except=${extensionPath}`,
       `--load-extension=${extensionPath}`,
       `--host-resolver-rules=${CDN_HOSTS.map((host) => `MAP ${host} 127.0.0.1`).join(', ')}`,

@@ -94,6 +94,7 @@ test('side panel enables a site, lists results live and exports a safe ZIP', asy
   const names = Object.keys(files).sort();
   expect(names).toEqual(
     [
+      'ENDPOINTS.md',
       'FINDINGS.md',
       'findings.json',
       'manifest.json',
