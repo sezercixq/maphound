@@ -1,4 +1,5 @@
 import { check } from 'recheck';
+import { INTEL_PATTERNS } from '../src/engine/intel/patterns';
 import { loadRules, runRuleTests } from './rules-lib';
 
 /**
@@ -64,6 +65,47 @@ for (const { file, source } of rules) {
   }
 }
 
+for (const { name, regex } of INTEL_PATTERNS) {
+  for (const randomSeed of RECHECK_SEEDS) {
+    const result = await check(regex.source, regex.flags.replace('g', ''), {
+      timeout: 20_000,
+      randomSeed,
+    });
+    if (result.status === 'vulnerable') {
+      errors.push(
+        `src/engine/intel/patterns.ts: ${name} is vulnerable to ReDoS (${result.complexity.summary}), attack: ${result.attack.pattern}`,
+      );
+      break;
+    }
+    if (result.status === 'unknown') {
+      warnings.push(
+        `src/engine/intel/patterns.ts: ${name} could not be proven safe (${result.error.kind})`,
+      );
+      break;
+    }
+    if (result.checker === 'automaton') break;
+  }
+
+  const probe = new RegExp(
+    regex.source,
+    regex.flags.includes('g') ? regex.flags : `g${regex.flags}`,
+  );
+  const hostile = ['a'.repeat(50_000), '/api/'.repeat(10_000), ' '.repeat(50_000)];
+  for (const input of hostile) {
+    const t = performance.now();
+    probe.lastIndex = 0;
+    while (probe.exec(input) !== null) {
+      // drain
+    }
+    const ms = performance.now() - t;
+    if (ms > 250) {
+      errors.push(
+        `src/engine/intel/patterns.ts: ${name} took ${ms.toFixed(0)} ms on a ${input.length}-char hostile input`,
+      );
+    }
+  }
+}
+
 for (const warning of warnings) console.warn(`warning: ${warning}`);
 if (errors.length > 0) {
   console.error(
@@ -72,5 +114,5 @@ if (errors.length > 0) {
   process.exit(1);
 }
 console.log(
-  `rules:check: ${rules.length} rules, ${tests.samples} samples, ReDoS-safe, ${((Date.now() - started) / 1000).toFixed(1)} s`,
+  `rules:check: ${rules.length} rules, ${tests.samples} samples, ${INTEL_PATTERNS.length} intel patterns, ReDoS-safe, ${((Date.now() - started) / 1000).toFixed(1)} s`,
 );
