@@ -1,0 +1,17 @@
+id: supabase-access-token
+name: "Supabase personal access token"
+description: "Supabase Management API token (sbp_). Manages every project of the account: settings, keys, databases and functions."
+severity: critical
+confidence: high
+keywords: ["sbp_"]
+regex: "(?<![A-Za-z0-9_])(sbp_[a-f0-9]{40})(?![A-Za-z0-9_])"
+secretGroup: 1
+entropy: 3.0
+references:
+  - https://supabase.com/docs/reference/api/introduction
+tests:
+  positive:
+    - 'SUPABASE_ACCESS_TOKEN="sbp_{{}}eeb141a24dad7935594fc3609c8f8c574707a878"'
+  negative:
+    - "sbp_{{}}0000000000000000000000000000000000000000"
+    - "sbp_{{}}eeb141a24dad"

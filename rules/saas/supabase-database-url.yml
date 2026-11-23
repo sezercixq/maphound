@@ -1,0 +1,18 @@
+id: supabase-database-url
+name: "Supabase database connection string"
+description: "Postgres connection string with password for a Supabase database or pooler. Direct database access that bypasses the API and Row Level Security."
+severity: critical
+confidence: high
+keywords: ["supabase.co", "supabase.com"]
+regex: "postgres(?:ql)?://postgres(?:\\.[a-z0-9]{20})?:([^@\\s'\"`/]{8,128})@[a-z0-9.-]{1,100}\\.supabase\\.(?:co|com)"
+secretGroup: 1
+entropy: 3.0
+references:
+  - https://supabase.com/docs/guides/database/connecting-to-postgres
+tests:
+  positive:
+    - 'DATABASE_URL="postgresql://postgres:zj5DANUvhYi0{{}}o6pYts2yJVKY@db.vlpumjcqztshrrnjmree.supabase.co:5432/postgres"'
+    - 'const url = "postgres://postgres.vlpumjcqztshrrnjmree:zj5DANUvhYi0{{}}o6pYts2yJVKY@aws-0-eu-central-1.pooler.supabase.com:6543/postgres";'
+  negative:
+    - "postgresql://postgres:[YOUR-PASSWORD]@db.vlpumjcqztshrrnjmree.supabase.co:5432/postgres"
+    - "postgresql://postgres:password@localhost:5432/postgres"

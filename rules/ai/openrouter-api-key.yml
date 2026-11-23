@@ -1,0 +1,17 @@
+id: openrouter-api-key
+name: "OpenRouter API key"
+description: "OpenRouter API key (sk-or-v1-). Spends the owner's credits on any routed model."
+severity: high
+confidence: high
+keywords: ["sk-or-v1-"]
+regex: "(?<![A-Za-z0-9_-])(sk-or-v1-[a-f0-9]{64})(?![A-Za-z0-9_-])"
+secretGroup: 1
+entropy: 3.0
+references:
+  - https://openrouter.ai/docs/api-reference/authentication
+tests:
+  positive:
+    - 'const key = "sk-or-v1-{{}}d76a68d750e24a3644dd6cbce2a255b68515462bbd5ff672a85feab819a6b49d";'
+  negative:
+    - "sk-or-v1-{{}}0000000000000000000000000000000000000000000000000000000000000000"
+    - "sk-or-v1-{{}}d76a68d750e24a36"

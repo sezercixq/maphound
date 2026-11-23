@@ -1,0 +1,17 @@
+id: cloudflare-origin-ca-key
+name: "Cloudflare Origin CA key"
+description: "Cloudflare Origin CA key (v1.0-). Issues and revokes origin certificates for the account's zones."
+severity: high
+confidence: high
+keywords: ["v1.0-"]
+regex: "(?<![A-Za-z0-9_.-])(v1\\.0-[a-f0-9]{24}-[a-f0-9]{146})(?![A-Za-z0-9_-])"
+secretGroup: 1
+entropy: 3.0
+references:
+  - https://developers.cloudflare.com/fundamentals/api/get-started/ca-keys/
+tests:
+  positive:
+    - 'X-Auth-User-Service-Key: "v1.0-{{}}a69502b6e4f670fb518e60ad-4d0bd522d17a54aaea05dcf8fa9cb13dcafbfd5493188febb59c3f55ec55e62cb2175cb23fb1516a3d764d6244adf60ba912dbdfba1a3b07c0323f40da41cde12552ca139c844e5938"'
+  negative:
+    - "v1.0-{{}}a69502b6e4f670fb518e60ad-4d0bd522"
+    - "version v1.0-{{}}beta"

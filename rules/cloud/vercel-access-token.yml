@@ -1,0 +1,19 @@
+id: vercel-access-token
+name: "Vercel access token"
+description: "24-character Vercel access token assigned to a Vercel-named variable. Deploys, reads environment variables and manages projects."
+severity: critical
+confidence: medium
+keywords: ["vercel"]
+regex: '(?:vercel)[A-Za-z_-]{0,24}?(?:token|key|secret)[''"`]?\s{0,4}[:=]{1,2}>?\s{0,4}[''"`]([A-Za-z0-9]{24})[''"`]'
+flags: i
+secretGroup: 1
+entropy: 3.5
+references:
+  - https://vercel.com/docs/rest-api#creating-an-access-token
+tests:
+  positive:
+    - 'const VERCEL_TOKEN = "mg9iXbXmYM5F{{}}2M517bJ0DJut";'
+    - 'vercelApiToken: "mg9iXbXmYM5F{{}}2M517bJ0DJut"'
+  negative:
+    - 'VERCEL_TOKEN = "aaaaaaaaaaaaaaaaaaaaaaaa"'
+    - 'vercelProjectId: "mg9iXbXmYM5F2M517bJ0DJut"'

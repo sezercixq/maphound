@@ -1,0 +1,18 @@
+id: replicate-api-token
+name: "Replicate API token"
+description: "Replicate API token (r8_). Runs billed model predictions on the owner's account."
+severity: high
+confidence: high
+keywords: ["r8_"]
+regex: "(?<![A-Za-z0-9_])(r8_[A-Za-z0-9]{37})(?![A-Za-z0-9_])"
+secretGroup: 1
+entropy: 3.5
+references:
+  - https://replicate.com/docs/reference/http#authentication
+tests:
+  positive:
+    - 'headers: { Authorization: "Bearer r8_{{}}GyxXkaDmufbHdeNW82CnHdku1CJ73gq6uBaVp" }'
+  negative:
+    - "r8_{{}}0000000000000000000000000000000000000"
+    - "r8_{{}}short"
+    - "var_r8_{{}}GyxXkaDmufbHdeNW82CnHdku1CJ73gq6uBaVp"

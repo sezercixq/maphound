@@ -1,0 +1,19 @@
+id: heroku-api-key
+name: "Heroku API key"
+description: "Heroku Platform API key (UUID) assigned to a Heroku-named variable. Full control of the account's apps, config vars and add-ons."
+severity: critical
+confidence: medium
+keywords: ["heroku"]
+regex: '(?:heroku)[A-Za-z_-]{0,24}?(?:key|token|secret)[''"`]?\s{0,4}[:=]{1,2}>?\s{0,4}[''"`]([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})[''"`]'
+flags: i
+secretGroup: 1
+entropy: 3.0
+references:
+  - https://devcenter.heroku.com/articles/authentication
+tests:
+  positive:
+    - 'HEROKU_API_KEY="01664caa-a43e-{{}}4cb5-806d-45a64215840d"'
+    - 'const herokuToken = "01664caa-a43e-{{}}4cb5-806d-45a64215840d";'
+  negative:
+    - 'HEROKU_API_KEY="00000000-0000-0000-0000-000000000000"'
+    - 'herokuAppId: "01664caa-a43e-4cb5-806d-45a64215840d"'

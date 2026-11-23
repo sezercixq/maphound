@@ -1,0 +1,18 @@
+id: huggingface-org-token
+name: "Hugging Face organization API token"
+description: "Legacy Hugging Face organization token (api_org_). Grants access to the organization's private models, datasets and Spaces."
+severity: high
+confidence: high
+keywords: ["api_org_"]
+regex: "(?<![A-Za-z0-9_])(api_org_[A-Za-z]{34})(?![A-Za-z0-9])"
+secretGroup: 1
+entropy: 3.5
+references:
+  - https://huggingface.co/docs/hub/security-tokens
+tests:
+  positive:
+    - 'const HF_ORG = "api_org_{{}}fVYHMuYcJHPJkajDOUPtIyYmgHDPpBntFf";'
+  negative:
+    - "api_org_{{}}xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    - "api_org_{{}}tooShort"
+    - "my_api_org_{{}}fVYHMuYcJHPJkajDOUPtIyYmgHDPpBntFf"

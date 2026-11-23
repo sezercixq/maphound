@@ -1,0 +1,19 @@
+id: supabase-publishable-key
+name: "Supabase publishable key"
+description: "New-format Supabase publishable key. Public by design; its access is limited by Row Level Security, which is worth reviewing."
+severity: low
+confidence: high
+public: true
+keywords: ["sb_publishable_"]
+regex: "(?<![A-Za-z0-9_-])(sb_publishable_[A-Za-z0-9_-]{20,64})(?![A-Za-z0-9_-])"
+secretGroup: 1
+entropy: 3.0
+references:
+  - https://supabase.com/docs/guides/api/api-keys
+tests:
+  positive:
+    - text: 'createClient(url, "sb_publishable_{{}}PAeWOkmtwC2yv6pz4429dthQoMErTA6")'
+      severity: info
+  negative:
+    - "sb_publishable_{{}}xxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    - "sb_publishable_{{}}short"

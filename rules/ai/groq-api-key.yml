@@ -1,0 +1,17 @@
+id: groq-api-key
+name: "Groq API key"
+description: "Groq Cloud API key (gsk_). Billed LLM inference on the owner's account."
+severity: high
+confidence: high
+keywords: ["gsk_"]
+regex: "(?<![A-Za-z0-9_])(gsk_[A-Za-z0-9]{52})(?![A-Za-z0-9_])"
+secretGroup: 1
+entropy: 3.5
+references:
+  - https://console.groq.com/docs/api-keys
+tests:
+  positive:
+    - 'new Groq({ apiKey: "gsk_{{}}wH9Ojke6JZhUDOI1EYhVHS9IfKL1yLhvgaruOc8iaAWccJw9CXdC" })'
+  negative:
+    - "gsk_{{}}xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    - "gsk_{{}}wH9Ojke6JZhUDOI1EYhVHS9"

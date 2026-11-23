@@ -1,0 +1,21 @@
+id: sentry-dsn
+name: "Sentry DSN"
+description: "Sentry client DSN. Meant to ship to browsers, but reveals the organization and project and lets anyone submit events to it."
+severity: low
+confidence: high
+public: true
+keywords: ["sentry.io"]
+regex: "(https://[a-f0-9]{32}@(?:o[0-9]{1,12}\\.)?ingest\\.(?:[a-z]{2}\\.)?sentry\\.io/[0-9]{1,20})(?![0-9])"
+secretGroup: 1
+entropy: 3.0
+references:
+  - https://docs.sentry.io/concepts/key-terms/dsn-explainer/
+tests:
+  positive:
+    - text: 'Sentry.init({ dsn: "https://d59e706650a75060{{}}f0db6a2c86f6de6c@o123456.ingest.sentry.io/4507982316475093" })'
+      severity: info
+    - text: 'dsn: "https://d59e706650a75060{{}}f0db6a2c86f6de6c@o1.ingest.us.sentry.io/42"'
+      severity: info
+  negative:
+    - "https://sentry.io/organizations/acme/issues/"
+    - "https://00000000000000000000000000000000@o1.ingest.sentry.io/42"

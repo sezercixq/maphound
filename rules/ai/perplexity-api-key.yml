@@ -1,0 +1,17 @@
+id: perplexity-api-key
+name: "Perplexity API key"
+description: "Perplexity API key (pplx-). Billed Sonar API usage on the owner's account."
+severity: high
+confidence: high
+keywords: ["pplx-"]
+regex: "(?<![A-Za-z0-9_-])(pplx-[A-Za-z0-9]{48})(?![A-Za-z0-9_-])"
+secretGroup: 1
+entropy: 3.5
+references:
+  - https://docs.perplexity.ai/guides/getting-started
+tests:
+  positive:
+    - "Authorization: `Bearer pplx-{{}}e9bPXExG7nRGH07CSbkGdtwk3MzGEhxZerjSf9f6UxkCEo4h`"
+  negative:
+    - "pplx-{{}}xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    - "pplx-{{}}e9bPXExG7nRGH07CSbkG"

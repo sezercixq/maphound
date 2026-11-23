@@ -1,0 +1,18 @@
+id: sentry-auth-token
+name: "Sentry auth token"
+description: "Sentry organization (sntrys_) or user (sntryu_) auth token. Uploads releases and source maps, reads issues and event data."
+severity: high
+confidence: high
+keywords: ["sntrys_", "sntryu_"]
+regex: "(?<![A-Za-z0-9_])(sntryu_[a-f0-9]{64}|sntrys_eyJ[A-Za-z0-9+/=]{20,400}_[A-Za-z0-9+/=_-]{43})(?![A-Za-z0-9+/=_-])"
+secretGroup: 1
+entropy: 3.0
+references:
+  - https://docs.sentry.io/account/auth-tokens/
+tests:
+  positive:
+    - 'SENTRY_AUTH_TOKEN="sntryu_{{}}7501fca44d6114fcac01226b764f0ab5a36ef80274cc5b61893b919916412031"'
+    - 'authToken: "sntrys_{{}}eyJpYXQiOjE3MDAwMDAwMDAsInVybCI6Imh0dHBzOi8vc2VudHJ5LmlvIiwicmVnaW9uX3VybCI6Imh0dHBzOi8vdXMuc2VudHJ5LmlvIiwib3JnIjoiYWNtZSJ9_CkVZ0ni5iewJ9Q7UMbnj5x2R4ojzdvjsbJJxvKYrW2y"'
+  negative:
+    - "sntryu_{{}}0000000000000000000000000000000000000000000000000000000000000000"
+    - "sntrys_{{}}notbase64"

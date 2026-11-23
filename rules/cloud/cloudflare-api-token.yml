@@ -1,0 +1,20 @@
+id: cloudflare-api-token
+name: "Cloudflare API token"
+description: "40-character Cloudflare API token assigned to a Cloudflare-named variable. Scoped access to zones, DNS, Workers or the whole account."
+severity: critical
+confidence: medium
+keywords: ["cloudflare", "cf_api", "cf-api", "cfapi", "cf_token"]
+regex: '(?:cloudflare|cf)[A-Za-z_-]{0,24}?(?:token|key)[''"`]?\s{0,4}[:=]{1,2}>?\s{0,4}[''"`]([A-Za-z0-9_-]{40})[''"`]'
+flags: i
+secretGroup: 1
+entropy: 3.8
+references:
+  - https://developers.cloudflare.com/fundamentals/api/get-started/create-token/
+tests:
+  positive:
+    - 'const CLOUDFLARE_API_TOKEN = "p8PsZQav4tYCpxP1{{}}HsAQpic5CNZUni5zL6UnXeS7";'
+    - 'cfApiToken: "p8PsZQav4tYCpxP1{{}}HsAQpic5CNZUni5zL6UnXeS7"'
+  negative:
+    - 'CLOUDFLARE_API_TOKEN = "your_cloudflare_api_token_goes_here_ok"'
+    - 'cloudflareToken: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"'
+    - 'cloudflare_zone = "p8PsZQav4tYCpxP1HsAQpic5CNZUni5zL6UnXeS7"'

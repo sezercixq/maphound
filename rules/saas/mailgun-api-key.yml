@@ -1,0 +1,18 @@
+id: mailgun-api-key
+name: "Mailgun API key"
+description: "Mailgun private API key (key-). Sends email from the account's domains and reads logs and suppressions."
+severity: high
+confidence: medium
+keywords: ["key-"]
+regex: "(?<![A-Za-z0-9_-])(key-[a-f0-9]{32})(?![A-Za-z0-9_-])"
+secretGroup: 1
+entropy: 3.2
+references:
+  - https://documentation.mailgun.com/docs/mailgun/api-reference/authentication
+tests:
+  positive:
+    - 'mailgun({ username: "api", key: "key-{{}}3704a11b2337dbcba5d3acbed8ff1f20" })'
+  negative:
+    - "key-{{}}00000000000000000000000000000000"
+    - "my-key-{{}}3704a11b2337dbcba5d3acbed8ff1f20"
+    - "key-{{}}3704a11b"
