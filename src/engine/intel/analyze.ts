@@ -1,3 +1,4 @@
+import { extractModuleSummary, MAX_MODULES_PER_SITE } from './architecture';
 import {
   extractComments,
   extractEndpoints,
@@ -5,6 +6,7 @@ import {
   extractRoutes,
 } from './endpoints';
 import { LineIndex, lex } from './lexer';
+import { extractOsint, sortOsintHits } from './osint';
 import { extractSinks } from './sinks';
 import {
   type CommentHit,
@@ -13,6 +15,8 @@ import {
   HINT_LEVELS,
   HTTP_METHODS,
   type IntelLocation,
+  type ModuleSummary,
+  type OsintHit,
   type RouteHit,
   type RouteKind,
   type ScriptIntel,
@@ -27,6 +31,8 @@ export interface IntelLimits {
   routes: number;
   comments: number;
   sinks: number;
+  modules: number;
+  osint: number;
   locationsPerItem: number;
 }
 
@@ -35,6 +41,8 @@ export const DEFAULT_INTEL_LIMITS: IntelLimits = {
   routes: 200,
   comments: 150,
   sinks: 200,
+  modules: MAX_MODULES_PER_SITE,
+  osint: 200,
   locationsPerItem: 10,
 };
 
@@ -50,13 +58,15 @@ const EMPTY_INTEL: ScriptIntel = {
   routes: [],
   comments: [],
   sinks: [],
+  modules: [],
+  osint: [],
   truncated: false,
 };
 
 export function analyzeSourceFile(
   content: string,
   location: Omit<IntelLocation, 'line' | 'column'>,
-  options: { vendor?: boolean; isBundle?: boolean } = {},
+  options: { vendor?: boolean; isBundle?: boolean; siteOrigin?: string } = {},
 ): ScriptIntel {
   if (options.vendor) return EMPTY_INTEL;
   const isBundle = options.isBundle ?? false;
@@ -71,6 +81,7 @@ export function analyzeSourceFile(
   const routes = extractRoutes(slice, lexed, lines, location);
   const comments = isBundle ? [] : extractComments(slice, lexed, lines, location);
   const sinks = isBundle ? [] : extractSinks(slice, lexed, lines, location);
+  const osint = extractOsint(slice, lexed, lines, location, { siteOrigin: options.siteOrigin });
 
   if (!isBundle) {
     const fileArtifacts = extractFileArtifacts(location.file, location.scriptUrl, location.mapUrl);
@@ -78,11 +89,15 @@ export function analyzeSourceFile(
     if (fileArtifacts.route) routes.push(fileArtifacts.route);
   }
 
+  const modules = isBundle ? [] : [extractModuleSummary(slice, lexed, lines, location, endpoints)];
+
   return {
     endpoints,
     routes,
     comments,
     sinks,
+    modules,
+    osint,
     truncated,
   };
 }
@@ -124,6 +139,8 @@ export function mergeScriptIntel(
   const routesMap = new Map<string, RouteHit>();
   const commentsMap = new Map<string, CommentHit>();
   const sinksMap = new Map<string, SinkHit>();
+  const modulesMap = new Map<string, ModuleSummary>();
+  const osintMap = new Map<string, OsintHit>();
   let truncated = false;
 
   for (const item of items) {
@@ -180,6 +197,45 @@ export function mergeScriptIntel(
         sinksMap.set(key, sink);
       }
     }
+
+    for (const mod of item.modules ?? []) {
+      const existing = modulesMap.get(mod.file);
+      if (!existing) {
+        modulesMap.set(mod.file, {
+          ...mod,
+          imports: [...mod.imports],
+          exports: [...mod.exports],
+          endpoints: [...mod.endpoints],
+          sdks: [...mod.sdks],
+        });
+      } else {
+        for (const imp of mod.imports)
+          if (!existing.imports.includes(imp)) existing.imports.push(imp);
+        for (const exp of mod.exports)
+          if (!existing.exports.includes(exp)) existing.exports.push(exp);
+        for (const ep of mod.endpoints) {
+          if (!existing.endpoints.some((x) => x.value === ep.value && x.line === ep.line)) {
+            existing.endpoints.push(ep);
+          }
+        }
+        for (const sdk of mod.sdks) {
+          if (!existing.sdks.some((x) => x.name === sdk.name)) existing.sdks.push(sdk);
+        }
+      }
+    }
+
+    for (const hit of item.osint ?? []) {
+      const key = `${hit.category}\u0000${hit.kind}\u0000${hit.value}`;
+      const existing = osintMap.get(key);
+      if (existing) {
+        if (!existing.detail && hit.detail) existing.detail = hit.detail;
+        mergeLocations(existing.locations, hit.locations, limits.locationsPerItem);
+      } else {
+        const copy: OsintHit = { ...hit, locations: [] };
+        mergeLocations(copy.locations, hit.locations, limits.locationsPerItem);
+        osintMap.set(key, copy);
+      }
+    }
   }
 
   const endpoints = [...endpointsMap.values()].sort(
@@ -204,11 +260,16 @@ export function mergeScriptIntel(
       a.location.line - b.location.line,
   );
 
+  const modules = [...modulesMap.values()].sort((a, b) => a.file.localeCompare(b.file));
+  const osint = sortOsintHits([...osintMap.values()]);
+
   if (
     endpoints.length > limits.endpoints ||
     routes.length > limits.routes ||
     comments.length > limits.comments ||
-    sinks.length > limits.sinks
+    sinks.length > limits.sinks ||
+    modules.length > limits.modules ||
+    osint.length > limits.osint
   ) {
     truncated = true;
   }
@@ -218,6 +279,8 @@ export function mergeScriptIntel(
     routes: routes.slice(0, limits.routes),
     comments: comments.slice(0, limits.comments),
     sinks: sinks.slice(0, limits.sinks),
+    modules: modules.slice(0, limits.modules),
+    osint: osint.slice(0, limits.osint),
     truncated,
   };
 }

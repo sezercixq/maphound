@@ -117,6 +117,16 @@ export const NEXT_DATA_PRIVILEGE_KEY =
 export const NEXT_DATA_PII_KEY =
   /(?:^|[_.-])(?:email|phone|mobile|ssn|address|ipaddress|ip[_-]?address|creditcard|billing|stripecustomer|stripe[_-]?customer)(?:$|[_.-])/i;
 
+// ---------------------------------------------------------------- architecture (imports/exports)
+
+export const IMPORT_FROM_BEFORE =
+  /\b(?:import|export)\s{1,4}(?:type\s{1,4})?(?:[^;\n'"]{0,180}\s{1,4}from\s{1,4})?$/;
+export const DYNAMIC_IMPORT_BEFORE = /\b(?:import|require)\s{0,4}\(\s{0,4}$/;
+export const EXPORT_DECLARATION =
+  /\bexport\s{1,4}(?:default\s{1,4})?(?:async\s{1,4})?(?:function\*?|class|const|let|var|type|interface|enum)\s{1,4}([A-Za-z_$][\w$]{0,60})\b/g;
+export const EXPORT_DEFAULT_ANON = /\bexport\s{1,4}default\b/g;
+export const EXPORT_LIST = /\bexport\s{1,4}(?:type\s{1,4})?\{([^}{;\n]{1,300})\}/g;
+
 /** Receiver of `addEventListener` that makes a message listener cross-origin reachable. */
 export const WINDOW_RECEIVER_BEFORE =
   /(?:\b(?:window|self|globalThis|top|parent)\s{0,2}\.\s{0,2}|(?:^|[^\w$.\s])\s{0,4})$/;
@@ -136,6 +146,57 @@ export const DOTTED_BEFORE = /\.\s{0,2}$/;
 /** Receivers whose `location` is the browser's. */
 export const LOCATION_RECEIVER_BEFORE =
   /\b(?:window|document|top|self|parent|globalThis)\s{0,2}\.\s{0,2}$/;
+
+// ---------------------------------------------------------------- passive OSINT
+
+export const OSINT_S3_URL =
+  /^https?:\/\/([a-z0-9.-]{3,63})\.s3(?:[.-][a-z0-9-]{2,20})?\.amazonaws\.com(?:[/?#]|$)/i;
+export const OSINT_S3_PATH_URL =
+  /^https?:\/\/s3(?:[.-][a-z0-9-]{2,20})?\.amazonaws\.com\/([a-z0-9._-]{3,63})(?:[/?#]|$)/i;
+export const OSINT_S3_URI = /^s3:\/\/([a-z0-9.-]{3,63})(?:\/|$)/i;
+export const OSINT_GCS_URL =
+  /^https?:\/\/storage\.(?:cloud\.google\.com|googleapis\.com)\/([a-z0-9._-]{3,63})(?:[/?#]|$)/i;
+export const OSINT_GCS_SUBDOMAIN =
+  /^https?:\/\/([a-z0-9._-]{3,63})\.storage\.googleapis\.com(?:[/?#]|$)/i;
+export const OSINT_FIREBASE_HOST =
+  /(?<![a-z0-9.-])([a-z0-9-]{3,63}\.(?:firebaseio\.com|firebaseapp\.com))(?![a-z0-9.-])/i;
+export const OSINT_AZURE_BLOB =
+  /^https?:\/\/([a-z0-9]{3,24})\.blob\.core\.windows\.net(?:\/([a-z0-9-]{3,63}))?/i;
+export const OSINT_CLOUDFLARE_R2 =
+  /^https?:\/\/([a-z0-9-]{3,63})\.(?:r2\.cloudflarestorage\.com|r2\.dev)(?:\/([a-z0-9._-]{1,63}))?/i;
+
+export const OSINT_HOST_CANDIDATE =
+  /(?<![A-Za-z0-9.-])([a-z0-9-]{1,63}(?:\.[a-z0-9-]{1,63}){1,6})(?![A-Za-z0-9.-])/gi;
+export const OSINT_IPV4 =
+  /(?<![0-9.])((?:10|172|192)\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3})(?::([0-9]{1,5}))?(?![0-9.])/g;
+export const OSINT_INTERNAL_HOST =
+  /(?<![a-z0-9.-])([a-z0-9-]{1,63}(?:\.[a-z0-9-]{1,63}){0,5}\.(?:internal|local|corp|lan|intranet|cluster\.local))(?![a-z0-9.-])/gi;
+
+export const OSINT_LOCAL_BUILD_PATH =
+  /(?:\/Users\/|\/home\/|[A-Za-z]:[/\\]Users[/\\])([A-Za-z0-9._-]{1,64})(?:[/\\]([A-Za-z0-9._-]{1,80}))?/g;
+export const OSINT_EMAIL =
+  /(?<![A-Za-z0-9._%+-])([A-Za-z0-9._%+-]{1,64})@([a-z0-9-]{1,63}(?:\.[a-z0-9-]{1,63}){1,5})(?![A-Za-z0-9.-])/gi;
+export const OSINT_SENTRY_DSN =
+  /^https:\/\/([a-f0-9]{16,64})@([a-z0-9.-]{1,120}\.sentry\.io)\/([0-9]{1,12})(?:[/?#]|$)/i;
+export const OSINT_GIT_REPO =
+  /^https?:\/\/(github\.com|gitlab\.com)\/([A-Za-z0-9._-]{1,39})\/([A-Za-z0-9._-]{1,100})(?:[/?#]|$)/i;
+export const OSINT_ATLASSIAN =
+  /^https?:\/\/([a-z0-9-]{2,50})\.atlassian\.net(?:\/([^?\s#]{1,120}))?/i;
+export const OSINT_LINEAR = /^https?:\/\/linear\.app\/([a-z0-9-]{2,50})(?:\/([^?\s#]{1,120}))?/i;
+
+export const OSINT_GA4 = /(?<![A-Za-z0-9_-])(G-[A-Z0-9]{8,12})(?![A-Za-z0-9_-])/;
+export const OSINT_GTM = /(?<![A-Za-z0-9_-])(GTM-[A-Z0-9]{6,10})(?![A-Za-z0-9_-])/;
+export const OSINT_UA = /(?<![A-Za-z0-9_-])(UA-[0-9]{4,10}-[0-9]{1,4})(?![A-Za-z0-9_-])/;
+export const OSINT_POSTHOG = /(?<![A-Za-z0-9_-])(phc_[A-Za-z0-9]{20,60})(?![A-Za-z0-9_-])/;
+export const OSINT_STRIPE_PK =
+  /(?<![A-Za-z0-9_-])(pk_(?:live|test)_[A-Za-z0-9]{16,99})(?![A-Za-z0-9_-])/;
+export const OSINT_AUTH0_TENANT =
+  /(?<![a-z0-9.-])([a-z0-9-]{3,63}\.(?:(?:us|eu|au|jp|uk)\.)?auth0\.com)(?![a-z0-9.-])/i;
+export const OSINT_CLERK_TENANT =
+  /(?<![a-z0-9.-])([a-z0-9-]{3,63}\.clerk\.accounts\.dev)(?![a-z0-9.-])/i;
+export const OSINT_INTERCOM_BEFORE = /\bapp_id\s{0,4}[:=]\s{0,4}$/i;
+export const OSINT_SEGMENT_BEFORE = /\banalytics\s{0,2}\.\s{0,2}load\s{0,4}\(\s{0,4}$/i;
+export const OSINT_MIXPANEL_BEFORE = /\bmixpanel\s{0,2}\.\s{0,2}init\s{0,4}\(\s{0,4}$/i;
 
 /** For `pnpm rules:check` and the unit tests. */
 export const INTEL_PATTERNS: readonly { name: string; regex: RegExp }[] = Object.entries({
@@ -189,6 +250,11 @@ export const INTEL_PATTERNS: readonly { name: string; regex: RegExp }[] = Object
   NEXT_DATA_CREDENTIAL_KEY,
   NEXT_DATA_PRIVILEGE_KEY,
   NEXT_DATA_PII_KEY,
+  IMPORT_FROM_BEFORE,
+  DYNAMIC_IMPORT_BEFORE,
+  EXPORT_DECLARATION,
+  EXPORT_DEFAULT_ANON,
+  EXPORT_LIST,
   WINDOW_RECEIVER_BEFORE,
   ORIGIN_CHECK,
   WILDCARD_TARGET,
@@ -197,4 +263,31 @@ export const INTEL_PATTERNS: readonly { name: string; regex: RegExp }[] = Object
   DECLARATION_BEFORE,
   DOTTED_BEFORE,
   LOCATION_RECEIVER_BEFORE,
+  OSINT_S3_URL,
+  OSINT_S3_PATH_URL,
+  OSINT_S3_URI,
+  OSINT_GCS_URL,
+  OSINT_GCS_SUBDOMAIN,
+  OSINT_FIREBASE_HOST,
+  OSINT_AZURE_BLOB,
+  OSINT_CLOUDFLARE_R2,
+  OSINT_HOST_CANDIDATE,
+  OSINT_IPV4,
+  OSINT_INTERNAL_HOST,
+  OSINT_LOCAL_BUILD_PATH,
+  OSINT_EMAIL,
+  OSINT_SENTRY_DSN,
+  OSINT_GIT_REPO,
+  OSINT_ATLASSIAN,
+  OSINT_LINEAR,
+  OSINT_GA4,
+  OSINT_GTM,
+  OSINT_UA,
+  OSINT_POSTHOG,
+  OSINT_STRIPE_PK,
+  OSINT_AUTH0_TENANT,
+  OSINT_CLERK_TENANT,
+  OSINT_INTERCOM_BEFORE,
+  OSINT_SEGMENT_BEFORE,
+  OSINT_MIXPANEL_BEFORE,
 }).map(([name, regex]) => ({ name, regex }));

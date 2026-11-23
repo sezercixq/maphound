@@ -45,6 +45,39 @@ export const HINT_LEVELS: readonly HintLevel[] = ['high', 'medium', 'low', 'info
 
 export type SinkCategory = 'dom-xss' | 'code-injection' | 'messaging' | 'redirect' | 'framework';
 
+export type SdkCategory =
+  | 'payment'
+  | 'auth'
+  | 'backend'
+  | 'monitoring'
+  | 'analytics'
+  | 'ai'
+  | 'realtime'
+  | 'cloud';
+
+export interface SdkMatch {
+  name: string;
+  category: SdkCategory;
+  source: 'import' | 'global';
+}
+
+export interface ModuleEndpointRef {
+  value: string;
+  methods: HttpMethod[];
+  category: EndpointCategory;
+  line: number;
+}
+
+export interface ModuleSummary {
+  file: string;
+  scriptUrl: string;
+  mapUrl?: string;
+  imports: string[];
+  exports: string[];
+  endpoints: ModuleEndpointRef[];
+  sdks: SdkMatch[];
+}
+
 export interface IntelLocation {
   /** Rebuilt source path (`src/...`) or the bundle's file name. */
   file: string;
@@ -128,12 +161,39 @@ export interface NextDataSummary {
   endpoints: string[];
 }
 
+export type OsintCategory =
+  | 'cloud'
+  | 'subdomain'
+  | 'internal-ip'
+  | 'build-path'
+  | 'attribution'
+  | 'telemetry';
+
+export const OSINT_CATEGORIES: readonly OsintCategory[] = [
+  'cloud',
+  'subdomain',
+  'internal-ip',
+  'build-path',
+  'attribution',
+  'telemetry',
+];
+
+export interface OsintHit {
+  category: OsintCategory;
+  kind: string;
+  value: string;
+  detail?: string;
+  locations: IntelLocation[];
+}
+
 /** Everything extracted from one script and its source maps (or from one page). */
 export interface ScriptIntel {
   endpoints: EndpointHit[];
   routes: RouteHit[];
   comments: CommentHit[];
   sinks: SinkHit[];
+  modules?: ModuleSummary[];
+  osint?: OsintHit[];
   /** Set when a limit cut the result short. */
   truncated: boolean;
 }

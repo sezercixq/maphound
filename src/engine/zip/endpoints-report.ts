@@ -84,6 +84,8 @@ export function combineSiteIntel(
     routes: record.routes,
     comments: record.comments,
     sinks: record.sinks,
+    modules: record.modules ?? [],
+    osint: record.osint ?? [],
     truncated: record.truncated,
   }));
   const pageEndpoints = endpointsFromPages(pages);

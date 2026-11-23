@@ -5,6 +5,22 @@ export {
   mergeScriptIntel,
 } from './analyze';
 export {
+  type ArchitectureEdge,
+  type ArchitectureGraph,
+  type ArchitectureNode,
+  type ArchitectureTreeNode,
+  architectureMarkdown,
+  buildArchitectureGraph,
+  type DataFlowLink,
+  extractModuleSummary,
+  MAX_EXPORTS_PER_FILE,
+  MAX_IMPORTS_PER_FILE,
+  MAX_MODULES_PER_SITE,
+  resolveInternalImport,
+  SDK_CATALOG,
+  type SdkUsageSummary,
+} from './architecture';
+export {
   classifyPath,
   extractComments,
   extractEndpoints,
@@ -24,6 +40,20 @@ export {
   type StringToken,
 } from './lexer';
 export { MAX_NEXT_DATA_BYTES, parseNextData } from './next-data';
+export {
+  extractOsint,
+  extractSourcePathLeaks,
+  MAX_OSINT_PER_FILE,
+  type OsintExtractOptions,
+  osintMarkdown,
+  sortOsintHits,
+} from './osint';
+export {
+  buildOsintLinks,
+  type OsintLauncherSet,
+  type OsintLink,
+  type OsintLinkId,
+} from './osint-links';
 export { INTEL_PATTERNS } from './patterns';
 export { extractSinks, MAX_SINKS_PER_FILE } from './sinks';
 export {
@@ -36,12 +66,19 @@ export {
   HTTP_METHODS,
   type HttpMethod,
   type IntelLocation,
+  type ModuleEndpointRef,
+  type ModuleSummary,
   type NextDataEntry,
   type NextDataSensitive,
   type NextDataSummary,
+  OSINT_CATEGORIES,
+  type OsintCategory,
+  type OsintHit,
   type RouteHit,
   type RouteKind,
   type ScriptIntel,
+  type SdkCategory,
+  type SdkMatch,
   type SinkCategory,
   type SinkHit,
 } from './types';
