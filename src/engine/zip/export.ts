@@ -1,5 +1,6 @@
 import { Zip, ZipDeflate } from 'fflate';
 import type {
+  AuditRecord,
   FindingRecord,
   JobRecord,
   MapRecord,
@@ -8,6 +9,10 @@ import type {
   ScriptRecord,
   SiteRecord,
 } from '@/core/db';
+import { auditMarkdown } from '@/engine/audit';
+import { diffMarkdown, diffSnapshots, type SiteSnapshotRecord } from '@/engine/diff';
+import { sarifJson } from '@/engine/export';
+import { architectureMarkdown, buildArchitectureGraph, osintMarkdown } from '@/engine/intel';
 import { parseSourceMap, rebuildSourceTree } from '@/engine/sourcemap';
 import { PathAllocator, sanitizeSegment } from '@/engine/sourcemap/sanitize-path';
 import { combineSiteIntel, endpointsMarkdown } from './endpoints-report';
@@ -21,6 +26,8 @@ export interface ExportSource {
   findings?: readonly FindingRecord[];
   intel?: readonly ScriptIntelRecord[];
   pages?: readonly PageIntelRecord[];
+  audits?: readonly AuditRecord[];
+  snapshots?: readonly SiteSnapshotRecord[];
   readBlob(hash: string): Promise<Blob | undefined>;
 }
 
@@ -228,6 +235,16 @@ export async function exportSourceZip(
     }));
 
   const mergedIntel = combineSiteIntel(source.intel ?? [], source.pages ?? []);
+  const archGraph = buildArchitectureGraph(mergedIntel.modules ?? []);
+  const sortedSnapshots = [...(source.snapshots ?? [])].sort((a, b) => a.createdAt - b.createdAt);
+  const latestDiff =
+    sortedSnapshots.length >= 2
+      ? diffSnapshots(
+          sortedSnapshots[sortedSnapshots.length - 2]!,
+          sortedSnapshots[sortedSnapshots.length - 1]!,
+        )
+      : null;
+  const auditFindingsCount = (source.audits ?? []).reduce((n, a) => n + a.findings.length, 0);
 
   const manifest = {
     generator: options.generator,
@@ -243,11 +260,16 @@ export async function exportSourceZip(
       endpoints: mergedIntel.endpoints.length,
       routes: mergedIntel.routes.length,
       sinks: mergedIntel.sinks.length,
+      modules: archGraph.nodes.length,
+      osint: mergedIntel.osint?.length ?? 0,
+      auditFindings: auditFindingsCount,
+      snapshots: sortedSnapshots.length,
+      hasDiff: Boolean(latestDiff?.hasChanges),
     },
     scripts: [...manifestScripts.values()],
     notScanned,
     rawSecretsIncluded: options.includeSecrets ?? false,
-    note: 'Rebuilt from publicly served source maps. Findings are in FINDINGS.md / findings.json; endpoints and code hints are in ENDPOINTS.md.',
+    note: 'Rebuilt from publicly served source maps. Reports: FINDINGS.md, findings.json, results.sarif, ENDPOINTS.md, ARCHITECTURE.md, OSINT.md, AUDIT.md, and DIFF.md (when snapshot changes exist).',
   };
   const report = {
     origin: source.site.origin,
@@ -255,9 +277,27 @@ export async function exportSourceZip(
     exportedAt: now.toISOString(),
     includeSecrets: options.includeSecrets ?? false,
   };
+  const toolVersion = options.generator.replace(/^MapHound\s*/i, '').trim() || '0.4.0';
   add('FINDINGS.md', encoder.encode(findingsMarkdown(source.findings ?? [], report)));
   add('findings.json', encoder.encode(findingsJson(source.findings ?? [], report)));
   add('ENDPOINTS.md', encoder.encode(endpointsMarkdown(mergedIntel, source.pages ?? [], report)));
+  add('ARCHITECTURE.md', encoder.encode(architectureMarkdown(archGraph, report)));
+  add('OSINT.md', encoder.encode(osintMarkdown(mergedIntel.osint ?? [], report)));
+  add('AUDIT.md', encoder.encode(auditMarkdown(source.audits ?? [], report)));
+  add(
+    'results.sarif',
+    encoder.encode(
+      sarifJson({
+        findings: source.findings ?? [],
+        sinks: mergedIntel.sinks,
+        origin: source.site.origin,
+        version: toolVersion,
+      }),
+    ),
+  );
+  if (latestDiff?.hasChanges) {
+    add('DIFF.md', encoder.encode(diffMarkdown(latestDiff, report)));
+  }
   add('manifest.json', encoder.encode(`${JSON.stringify(manifest, null, 2)}\n`));
   zip.end();
   await done;

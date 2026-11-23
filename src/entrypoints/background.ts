@@ -18,6 +18,8 @@ import {
   syncSites,
   updateSiteSettings,
 } from '@/core/sites';
+import { auditHeaders, auditSetCookieHeaders, mergeAuditFindings } from '@/engine/audit';
+import { recordSiteSnapshot } from '@/engine/diff';
 
 /** Background to offscreen to worker round trip. */
 export async function pingPipeline(text: string): Promise<PingResult> {
@@ -48,6 +50,14 @@ const processor = new Processor({
   },
   notify: notifyDbChanged,
   schedule: (callback, ms) => setTimeout(callback, ms),
+  onOriginSettled: async (origin) => {
+    try {
+      const snap = await recordSiteSnapshot(await getDb(), origin);
+      if (snap) notifyDbChanged({ store: 'snapshots', origin });
+    } catch {
+      // Snapshot capture must never fail job completion.
+    }
+  },
 });
 
 const fetcher = new Fetcher({
@@ -123,6 +133,88 @@ export default defineBackground(() => {
     notifyDbChanged({ store: 'pages', origin: active.origin });
   });
 
+  onMessage('page:audit', async ({ data, sender }) => {
+    const pageUrl = sender.tab ? (sender.url ?? sender.tab.url) : undefined;
+    if (!pageUrl) return;
+    const db = await getDb();
+    const active = siteForUrl(await db.getAll('sites'), pageUrl);
+    if (!active) return;
+    let pathname = '/';
+    try {
+      pathname = new URL(pageUrl).pathname;
+    } catch {
+      return;
+    }
+    const id = `${active.origin}|${pathname}`;
+    const existing = await db.get('audits', id);
+    if (!existing) {
+      const count = await db.countFromIndex('audits', 'by-origin', active.origin);
+      if (count >= 50) return;
+    }
+
+    let headerSummary: Record<string, string | null> = {};
+    let matrix: ReturnType<typeof auditHeaders>['matrix'] = [];
+    let headerFindings: ReturnType<typeof auditHeaders>['findings'] = [];
+    let setCookieFindings: ReturnType<typeof auditSetCookieHeaders> = [];
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 5_000);
+    try {
+      const response = await fetch(pageUrl, {
+        credentials: active.settings.useCredentials ? 'include' : 'omit',
+        signal: controller.signal,
+        redirect: 'follow',
+      });
+      const headerOut = auditHeaders(response.headers, pageUrl);
+      headerSummary = headerOut.summary;
+      matrix = headerOut.matrix;
+      headerFindings = headerOut.findings;
+
+      const withGetSetCookie = response.headers as Headers & { getSetCookie?: () => string[] };
+      const setCookies =
+        typeof withGetSetCookie.getSetCookie === 'function'
+          ? withGetSetCookie.getSetCookie()
+          : response.headers.get('set-cookie')
+            ? [response.headers.get('set-cookie') as string]
+            : [];
+      setCookieFindings = auditSetCookieHeaders(setCookies, pageUrl);
+      void response.body?.cancel().catch(() => {});
+    } catch {
+      // Network failure during header probe: still store client storage/cookie findings.
+    } finally {
+      clearTimeout(timer);
+    }
+
+    const findings = mergeAuditFindings(
+      headerFindings,
+      setCookieFindings,
+      data.cookieFindings ?? [],
+      data.storageFindings ?? [],
+    );
+
+    await db.put('audits', {
+      id,
+      origin: active.origin,
+      pageUrl,
+      headers: headerSummary,
+      matrix,
+      findings,
+      storageKeysChecked: data.storageKeysChecked ?? 0,
+      cookiesChecked: data.cookiesChecked ?? 0,
+      updatedAt: Date.now(),
+    });
+    notifyDbChanged({ store: 'audits', origin: active.origin });
+  });
+
+  onMessage('snapshot:capture', async ({ data }) => {
+    const snap = await recordSiteSnapshot(await getDb(), data.origin, { forceNew: true });
+    if (snap) {
+      notifyDbChanged({ store: 'snapshots', origin: data.origin });
+      return { ok: true, id: snap.id };
+    }
+    return { ok: false };
+  });
+
   onMessage('site:enable', ({ data }) =>
     enableSite(data.origin, data.scope, undefined, data.settings),
   );
@@ -155,6 +247,10 @@ export default defineBackground(() => {
     g.__mhFindings = async () => (await getDb()).getAll('findings');
     g.__mhIntel = async () => (await getDb()).getAll('intel');
     g.__mhPages = async () => (await getDb()).getAll('pages');
+    g.__mhAudits = async () => (await getDb()).getAll('audits');
+    g.__mhSnapshots = async () => (await getDb()).getAll('snapshots');
+    g.__mhCaptureSnapshot = async (origin: string) =>
+      recordSiteSnapshot(await getDb(), origin, { forceNew: true });
     g.__mhSetSettings = async (origin: string, patch: Partial<SiteSettings>) => {
       const db = await getDb();
       const site = await db.get('sites', origin);

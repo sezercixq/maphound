@@ -1,3 +1,4 @@
+import { recordSiteSnapshot } from '@/engine/diff';
 import { collectGarbage } from './analyze';
 import { notifyDbChanged } from './channel';
 import { getDb, type MaphoundHandle, type Scope, type SiteRecord, type SiteSettings } from './db';
@@ -63,7 +64,16 @@ export async function enableSite(
 }
 
 async function purgeOrigin(handle: MaphoundHandle, origin: string): Promise<void> {
-  for (const store of ['scripts', 'maps', 'findings', 'intel', 'pages', 'jobs'] as const) {
+  for (const store of [
+    'scripts',
+    'maps',
+    'findings',
+    'intel',
+    'pages',
+    'audits',
+    'snapshots',
+    'jobs',
+  ] as const) {
     const tx = handle.transaction(store, 'readwrite');
     for (const key of await tx.store.index('by-origin').getAllKeys(origin)) {
       await tx.store.delete(key);
@@ -153,6 +163,7 @@ export async function syncSites(db?: MaphoundHandle): Promise<{ disabled: string
  */
 export async function rescanSite(origin: string, db?: MaphoundHandle): Promise<{ queued: number }> {
   const handle = db ?? (await getDb());
+  await recordSiteSnapshot(handle, origin, { freezeLatest: true });
   for (const store of ['findings', 'intel'] as const) {
     const tx = handle.transaction(store, 'readwrite');
     for (const key of await tx.store.index('by-origin').getAllKeys(origin))

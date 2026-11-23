@@ -125,10 +125,14 @@ describe('findings report', () => {
     }
     const files = unzipSync(zip);
     expect(Object.keys(files).sort()).toEqual([
+      'ARCHITECTURE.md',
+      'AUDIT.md',
       'ENDPOINTS.md',
       'FINDINGS.md',
+      'OSINT.md',
       'findings.json',
       'manifest.json',
+      'results.sarif',
     ]);
     expect(JSON.parse(strFromU8(files['findings.json'] as Uint8Array)).findings[0].secret).toBe(
       SECRET,

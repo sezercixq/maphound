@@ -1,5 +1,6 @@
 import { createUrlBatcher, isScriptResource, normalizeScriptUrl } from '@/core/collect';
 import { sendMessage } from '@/core/messaging';
+import { auditCookies, auditStorageEntries, type ClientCookieInput } from '@/engine/audit';
 import { parseNextData } from '@/engine/intel/next-data';
 
 const INSTALLED = Symbol.for('maphound.collector');
@@ -62,6 +63,8 @@ export default defineContentScript({
       if (summary) sendMessage('page:next-data', { pageUrl, summary }).catch(() => {});
     }
 
+    void collectClientAudit(pageUrl);
+
     // Lazy chunks: dynamic import(), injected <script> tags and preloads.
     const perf = new PerformanceObserver((list) => batcher.add(fromEntries(list.getEntries())));
     perf.observe({ type: 'resource', buffered: true });
@@ -94,3 +97,101 @@ export default defineContentScript({
     });
   },
 });
+
+function readStorageEntries(storage: Storage): { key: string; value: string }[] {
+  const entries: { key: string; value: string }[] = [];
+  for (let i = 0; i < storage.length && i < 200; i++) {
+    const key = storage.key(i);
+    if (!key) continue;
+    const value = storage.getItem(key);
+    if (value !== null) entries.push({ key, value });
+  }
+  return entries;
+}
+
+async function collectClientAudit(pageUrl: string): Promise<void> {
+  let localEntries: { key: string; value: string }[] = [];
+  let sessionEntries: { key: string; value: string }[] = [];
+  try {
+    localEntries = readStorageEntries(localStorage);
+  } catch {
+    // Storage access denied.
+  }
+  try {
+    sessionEntries = readStorageEntries(sessionStorage);
+  } catch {
+    // Storage access denied.
+  }
+  const storageFindings = [
+    ...auditStorageEntries(localEntries, 'localStorage'),
+    ...auditStorageEntries(sessionEntries, 'sessionStorage'),
+  ];
+
+  const cookieInputs: ClientCookieInput[] = [];
+  const seenNames = new Set<string>();
+  const store = (
+    globalThis as {
+      cookieStore?: {
+        getAll?: () => Promise<
+          Array<{
+            name: string;
+            value?: string;
+            sameSite?: string;
+            domain?: string | null;
+            path?: string;
+          }>
+        >;
+      };
+    }
+  ).cookieStore;
+  if (store && typeof store.getAll === 'function') {
+    try {
+      const list = await store.getAll();
+      for (const c of list.slice(0, 150)) {
+        if (!c.name) continue;
+        seenNames.add(c.name);
+        cookieInputs.push({
+          name: c.name,
+          value: c.value,
+          httpOnly: false,
+          sameSite: c.sameSite,
+          domain: c.domain ?? undefined,
+          path: c.path,
+          fromDocumentCookie: false,
+        });
+      }
+    } catch {
+      // cookieStore unavailable.
+    }
+  }
+  try {
+    const raw = document.cookie;
+    if (raw) {
+      for (const part of raw.split(';')) {
+        const trimmed = part.trim();
+        const eq = trimmed.indexOf('=');
+        const name = (eq < 0 ? trimmed : trimmed.slice(0, eq)).trim();
+        const value = eq < 0 ? '' : trimmed.slice(eq + 1).trim();
+        if (!name || seenNames.has(name)) continue;
+        seenNames.add(name);
+        cookieInputs.push({
+          name,
+          value,
+          httpOnly: false,
+          fromDocumentCookie: true,
+        });
+      }
+    }
+  } catch {
+    // document.cookie unavailable.
+  }
+
+  const cookieFindings = auditCookies(cookieInputs, pageUrl);
+  await sendMessage('page:audit', {
+    pageUrl,
+    storageFindings,
+    cookieFindings,
+    storageKeysChecked: localEntries.length + sessionEntries.length,
+    cookiesChecked: cookieInputs.length,
+  }).catch(() => {});
+}

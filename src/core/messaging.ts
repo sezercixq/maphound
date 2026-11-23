@@ -1,4 +1,5 @@
 import { defineExtensionMessaging } from '@webext-core/messaging';
+import type { ClientAuditPayload } from '@/engine/audit';
 import type { NextDataSummary } from '@/engine/intel';
 import type { MapAnalysisRequest, MapAnalysisResult } from './analyze';
 import type { Scope, SiteSettings } from './db';
@@ -21,6 +22,8 @@ export interface PingResult {
 export interface ProtocolMap {
   'scripts:discovered': (data: { pageUrl: string; urls: string[] }) => void;
   'page:next-data': (data: { pageUrl: string; summary: NextDataSummary }) => void;
+  'page:audit': (data: ClientAuditPayload) => void;
+  'snapshot:capture': (data: { origin: string }) => { ok: boolean; id?: string };
   /** Sent by the side panel after `permissions.request` succeeded. */
   'site:enable': (data: {
     origin: string;

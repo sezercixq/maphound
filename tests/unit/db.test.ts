@@ -24,7 +24,18 @@ describe('schema', () => {
   it('creates all stores and indexes', async () => {
     const db = await freshDb();
     expect([...db.objectStoreNames].sort()).toEqual(
-      ['blobs', 'findings', 'intel', 'jobs', 'maps', 'pages', 'scripts', 'sites'].sort(),
+      [
+        'audits',
+        'blobs',
+        'findings',
+        'intel',
+        'jobs',
+        'maps',
+        'pages',
+        'scripts',
+        'sites',
+        'snapshots',
+      ].sort(),
     );
     expect([...db.transaction('findings').store.indexNames].sort()).toEqual(
       ['by-origin', 'by-scriptHash', 'by-secretHash'].sort(),
@@ -34,7 +45,34 @@ describe('schema', () => {
       'by-scriptHash',
     ]);
     expect([...db.transaction('pages').store.indexNames]).toEqual(['by-origin']);
+    expect([...db.transaction('audits').store.indexNames]).toEqual(['by-origin']);
+    expect([...db.transaction('snapshots').store.indexNames]).toEqual(['by-origin']);
     expect([...db.transaction('jobs').store.indexNames].sort()).toEqual(['by-origin', 'by-state']);
+  });
+
+  it('upgrades a v3 database to v4 preserving existing records', async () => {
+    const name = `migrate-v3-${counter++}`;
+    const v3 = await openDB(name, 3, {
+      upgrade(db) {
+        db.createObjectStore('sites', { keyPath: 'origin' });
+        db.createObjectStore('scripts', { keyPath: 'hash' }).createIndex('by-origin', 'origin');
+        db.createObjectStore('blobs', { keyPath: 'hash' });
+        db.createObjectStore('maps', { keyPath: 'id' }).createIndex('by-origin', 'origin');
+        db.createObjectStore('findings', { keyPath: 'id' }).createIndex('by-origin', 'origin');
+        db.createObjectStore('intel', { keyPath: 'id' }).createIndex('by-origin', 'origin');
+        db.createObjectStore('pages', { keyPath: 'id' }).createIndex('by-origin', 'origin');
+        db.createObjectStore('jobs', { keyPath: 'id' }).createIndex('by-origin', 'origin');
+      },
+    });
+    await v3.put('sites', { origin: 'https://example.com' });
+    v3.close();
+
+    const db = await openMaphoundDb(name);
+    expect(db.version).toBe(DB_VERSION);
+    expect(await db.get('sites', 'https://example.com')).toEqual({
+      origin: 'https://example.com',
+    });
+    expect([...db.objectStoreNames]).toEqual(expect.arrayContaining(['audits', 'snapshots']));
   });
 
   it('upgrades a v2 database to v3 preserving existing records', async () => {

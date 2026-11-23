@@ -194,11 +194,37 @@ describe('disableSite', () => {
       updatedAt: 0,
     });
 
+    await db.put('audits', {
+      id: 'http://localhost:3000|/',
+      origin: 'http://localhost:3000',
+      pageUrl: 'http://localhost:3000/',
+      headers: {},
+      matrix: [],
+      findings: [],
+      storageKeysChecked: 0,
+      cookiesChecked: 0,
+      updatedAt: 0,
+    });
+    await db.put('snapshots', {
+      id: 'http://localhost:3000|1',
+      origin: 'http://localhost:3000',
+      createdAt: 1,
+      signature: 'sig',
+      scriptHashes: [],
+      files: [],
+      endpoints: [],
+      routes: [],
+      findings: [],
+      sinks: [],
+    });
+
     expect((await disableSite('http://localhost:3000', true, db)).revoked).toEqual([]);
     expect(state.granted.has('http://localhost/*')).toBe(true);
     expect(await db.count('jobs')).toBe(0);
     expect(await db.count('intel')).toBe(0);
     expect(await db.count('pages')).toBe(0);
+    expect(await db.count('audits')).toBe(0);
+    expect(await db.count('snapshots')).toBe(0);
     expect(state.registered.has(collectorScriptId('http://localhost:3000'))).toBe(false);
 
     expect((await disableSite('http://localhost:4000', false, db)).revoked).toEqual([

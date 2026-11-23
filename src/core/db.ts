@@ -1,9 +1,19 @@
 import { type DBSchema, type IDBPDatabase, openDB } from 'idb';
-import type { CommentHit, EndpointHit, NextDataSummary, RouteHit, SinkHit } from '@/engine/intel';
+import type { AuditFinding, HeaderMatrixEntry } from '@/engine/audit';
+import type { SiteSnapshotRecord } from '@/engine/diff';
+import type {
+  CommentHit,
+  EndpointHit,
+  ModuleSummary,
+  NextDataSummary,
+  OsintHit,
+  RouteHit,
+  SinkHit,
+} from '@/engine/intel';
 
 export const DB_NAME = 'maphound';
-/** v3: `intel` (endpoints, routes, comments, sinks) and `pages` (`__NEXT_DATA__`). */
-export const DB_VERSION = 3;
+/** v4: `audits` (headers, cookies, storage) and `snapshots` (version diffing). */
+export const DB_VERSION = 4;
 
 export type Scope = 'origin' | 'subdomains';
 export type JobState =
@@ -159,6 +169,8 @@ export interface ScriptIntelRecord {
   routes: RouteHit[];
   comments: CommentHit[];
   sinks: SinkHit[];
+  modules?: ModuleSummary[];
+  osint?: OsintHit[];
   truncated: boolean;
   updatedAt: number;
 }
@@ -170,6 +182,20 @@ export interface PageIntelRecord {
   origin: string;
   pageUrl: string;
   nextData: NextDataSummary;
+  updatedAt: number;
+}
+
+/** HTTP header, cookie and Web Storage security audit for one visited page. */
+export interface AuditRecord {
+  /** `${origin}|${pathname}` */
+  id: string;
+  origin: string;
+  pageUrl: string;
+  headers: Record<string, string | null>;
+  matrix: HeaderMatrixEntry[];
+  findings: AuditFinding[];
+  storageKeysChecked: number;
+  cookiesChecked: number;
   updatedAt: number;
 }
 
@@ -232,6 +258,16 @@ export interface MaphoundDB extends DBSchema {
     value: PageIntelRecord;
     indexes: { 'by-origin': string };
   };
+  audits: {
+    key: string;
+    value: AuditRecord;
+    indexes: { 'by-origin': string };
+  };
+  snapshots: {
+    key: string;
+    value: SiteSnapshotRecord;
+    indexes: { 'by-origin': string };
+  };
   jobs: {
     key: string;
     value: JobRecord;
@@ -279,6 +315,13 @@ export function openMaphoundDb(name: string = DB_NAME): Promise<MaphoundHandle> 
 
         const pages = db.createObjectStore('pages', { keyPath: 'id' });
         pages.createIndex('by-origin', 'origin');
+      }
+      if (oldVersion < 4) {
+        const audits = db.createObjectStore('audits', { keyPath: 'id' });
+        audits.createIndex('by-origin', 'origin');
+
+        const snapshots = db.createObjectStore('snapshots', { keyPath: 'id' });
+        snapshots.createIndex('by-origin', 'origin');
       }
     },
   });

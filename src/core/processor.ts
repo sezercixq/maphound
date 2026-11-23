@@ -15,6 +15,8 @@ export interface ProcessorDeps {
   now?: () => number;
   notify?: (message: DbChanged) => void;
   schedule?: (callback: () => void, ms: number) => void;
+  /** Called once a site's queued/fetching/fetched/scanning jobs have all settled. */
+  onOriginSettled?: (origin: string) => void | Promise<void>;
 }
 
 /**
@@ -133,6 +135,17 @@ export class Processor {
       await tx.store.put({ ...current, leasedUntil: 0, ...patch, updatedAt: this.now() });
     await tx.done;
     this.deps.notify?.({ store: 'jobs', origin: job.origin });
+    if ((patch.state === 'done' || patch.state === 'failed') && this.deps.onOriginSettled) {
+      const siteJobs = await db.getAllFromIndex('jobs', 'by-origin', job.origin);
+      const pending = siteJobs.some(
+        (j) =>
+          j.state === 'queued' ||
+          j.state === 'fetching' ||
+          j.state === 'fetched' ||
+          j.state === 'scanning',
+      );
+      if (!pending) await this.deps.onOriginSettled(job.origin);
+    }
   }
 
   private async run(db: MaphoundHandle, job: JobRecord): Promise<void> {

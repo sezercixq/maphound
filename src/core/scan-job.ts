@@ -1,6 +1,7 @@
 import {
   analyzeSourceFile,
   extractFileArtifacts,
+  extractSourcePathLeaks,
   mergeScriptIntel,
   type ScriptIntel,
 } from '@/engine/intel';
@@ -86,6 +87,19 @@ export async function scanScript(
     } catch {
       continue;
     }
+    const rawSources = parsed.sections.flatMap((section) => section.map.sources);
+    const pathLeaks = extractSourcePathLeaks(rawSources, request.url, map.url);
+    if (pathLeaks.length > 0) {
+      intelParts.push({
+        endpoints: [],
+        routes: [],
+        comments: [],
+        sinks: [],
+        modules: [],
+        osint: pathLeaks,
+        truncated: false,
+      });
+    }
     const rebuilt = rebuildSourceTree(parsed, { includeContent: true });
     for (const file of rebuilt.files) {
       if (file.content === undefined) {
@@ -113,7 +127,7 @@ export async function scanScript(
               scriptUrl: request.url,
               mapUrl: map.url,
             },
-            { vendor: false, isBundle: false },
+            { vendor: false, isBundle: false, siteOrigin: request.origin },
           ),
         );
       }
@@ -142,7 +156,7 @@ export async function scanScript(
     analyzeSourceFile(
       bundle,
       { file: bundleFileName(request.url), kind: 'bundle', scriptUrl: request.url },
-      { vendor: false, isBundle: true },
+      { vendor: false, isBundle: true, siteOrigin: request.origin },
     ),
   );
   for (const hit of scanner.scan(bundle)) {

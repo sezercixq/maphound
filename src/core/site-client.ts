@@ -36,6 +36,10 @@ export function rescanSiteFromUi(origin: string) {
   return sendMessage('scan:rescan', { origin });
 }
 
+export function captureSnapshotFromUi(origin: string) {
+  return sendMessage('snapshot:capture', { origin });
+}
+
 export type AllowOriginsResult = AddOriginsResult | { ok: false; reason: 'permission-denied' };
 
 /**

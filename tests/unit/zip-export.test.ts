@@ -123,10 +123,14 @@ describe('exportSourceZip', () => {
     const { files, stats, finals, progress } = await build();
     expect(Object.keys(files).sort()).toEqual(
       [
+        'ARCHITECTURE.md',
+        'AUDIT.md',
         'ENDPOINTS.md',
         'FINDINGS.md',
+        'OSINT.md',
         'findings.json',
         'manifest.json',
+        'results.sarif',
         'source/127.0.0.1_8080/main-2.js/src/src/App.tsx',
         'source/127.0.0.1_8080/main-2.js/_vendor/react/index.js',
         'source/127.0.0.1_8080/main-2.js/src/etc/cron.d/evil',
@@ -153,7 +157,7 @@ describe('exportSourceZip', () => {
     const { files } = await build();
     for (const name of Object.keys(files)) {
       expect(name).toMatch(
-        /^(manifest\.json|ENDPOINTS\.md|FINDINGS\.md|findings\.json|source\/[^/]+\/[^/]+\/(src|_vendor)\/.+)$/,
+        /^(manifest\.json|ARCHITECTURE\.md|AUDIT\.md|DIFF\.md|ENDPOINTS\.md|FINDINGS\.md|OSINT\.md|findings\.json|results\.sarif|source\/[^/]+\/[^/]+\/(src|_vendor)\/.+)$/,
       );
       expect(name.split('/')).not.toContain('..');
       expect(name).not.toMatch(/[\\:\u0000]|^\//);
@@ -250,6 +254,107 @@ describe('exportSourceZip', () => {
     const endpointsMd = strFromU8(files['ENDPOINTS.md'] as Uint8Array);
     expect(endpointsMd).toContain('/internal/admin/users');
     expect(endpointsMd).toContain('POST');
+    expect(files['DIFF.md']).toBeUndefined();
+    const sarif = JSON.parse(strFromU8(files['results.sarif'] as Uint8Array));
+    expect(sarif.version).toBe('2.1.0');
+  });
+
+  it('includes ARCHITECTURE.md (Mermaid), AUDIT.md and conditional DIFF.md', async () => {
+    const chunks: Uint8Array[] = [];
+    await exportSourceZip(
+      {
+        site: { origin: ORIGIN, scope: 'origin' },
+        maps: [],
+        scripts: [],
+        jobs: [],
+        intel: [
+          {
+            id: `${ORIGIN}|s1`,
+            origin: ORIGIN,
+            scriptHash: 's1',
+            scriptUrl: `${ORIGIN}/app.js`,
+            endpoints: [],
+            routes: [],
+            comments: [],
+            sinks: [],
+            modules: [
+              {
+                file: 'src/billing.ts',
+                scriptUrl: `${ORIGIN}/app.js`,
+                imports: ['@stripe/stripe-js'],
+                exports: ['pay'],
+                endpoints: [{ value: '/api/pay', methods: ['POST'], category: 'api', line: 3 }],
+                sdks: [{ name: 'Stripe', category: 'payment', source: 'import' }],
+              },
+            ],
+            truncated: false,
+            updatedAt: 0,
+          },
+        ],
+        audits: [
+          {
+            id: `${ORIGIN}|/`,
+            origin: ORIGIN,
+            pageUrl: `${ORIGIN}/`,
+            headers: {},
+            matrix: [{ header: 'Content-Security-Policy', status: 'missing', value: null }],
+            findings: [
+              {
+                id: 'headers:csp-missing',
+                category: 'headers',
+                ruleId: 'csp-missing',
+                title: 'Missing Content-Security-Policy header',
+                severity: 'high',
+                subject: 'Content-Security-Policy',
+                detail: 'No CSP.',
+                recommendation: 'Add CSP.',
+              },
+            ],
+            storageKeysChecked: 1,
+            cookiesChecked: 0,
+            updatedAt: 0,
+          },
+        ],
+        snapshots: [
+          {
+            id: `${ORIGIN}|1`,
+            origin: ORIGIN,
+            createdAt: 1000,
+            signature: 'sig1',
+            scriptHashes: ['s1'],
+            files: [],
+            endpoints: [],
+            routes: [],
+            findings: [],
+            sinks: [],
+          },
+          {
+            id: `${ORIGIN}|2`,
+            origin: ORIGIN,
+            createdAt: 2000,
+            signature: 'sig2',
+            scriptHashes: ['s2'],
+            files: [{ path: 'src/billing.ts', hash: 'h:10', size: 10 }],
+            endpoints: ['/api/pay'],
+            routes: [],
+            findings: [],
+            sinks: [],
+          },
+        ],
+        readBlob: async () => undefined,
+      },
+      { generator: 'MapHound test', onData: (chunk) => chunks.push(chunk) },
+    );
+    const zip = new Uint8Array(chunks.reduce((n, c) => n + c.byteLength, 0));
+    let offset = 0;
+    for (const chunk of chunks) {
+      zip.set(chunk, offset);
+      offset += chunk.byteLength;
+    }
+    const files = unzipSync(zip);
+    expect(strFromU8(files['ARCHITECTURE.md'] as Uint8Array)).toContain('flowchart LR');
+    expect(strFromU8(files['AUDIT.md'] as Uint8Array)).toContain('Missing Content-Security-Policy');
+    expect(strFromU8(files['DIFF.md'] as Uint8Array)).toContain('`/api/pay`');
   });
 
   it('stops when aborted', async () => {
