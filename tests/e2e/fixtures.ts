@@ -114,6 +114,58 @@ const nextDataHtml = JSON.stringify({
   },
 });
 
+const b64u = (v: unknown) => Buffer.from(JSON.stringify(v)).toString('base64url');
+export const v040Jwt = `${b64u({ alg: 'HS256', typ: 'JWT' })}.${b64u({
+  sub: 'u_e2e',
+  role: 'admin',
+  exp: 1900000000,
+})}.${rand(24)}`;
+
+const v040CheckoutSource = [
+  "import { loadStripe } from '@stripe/stripe-js';",
+  "import { submitOrder } from './api';",
+  'export function checkout() {',
+  "  return axios.post('/api/v1/checkout', {});",
+  '}',
+  '',
+].join('\n');
+
+const v040ApiSource = [
+  "import { createClient } from '@supabase/supabase-js';",
+  '// Built at /Users/alice/checkout-web',
+  'const uploadsBucket = "https://acme-uploads.s3.amazonaws.com/receipts";',
+  'const internalHealth = "http://10.24.8.15:8080/health";',
+  'const analyticsId = "G-MAPHOUND01";',
+  'export function submitOrder(payload: string) {',
+  '  return eval(payload);',
+  '}',
+  '',
+].join('\n');
+
+const v040V1Map = JSON.stringify({
+  version: 3,
+  file: 'v040-v1.js',
+  sources: ['src/billing/checkout.tsx', 'src/billing/api.ts'],
+  sourcesContent: [v040CheckoutSource, v040ApiSource],
+  mappings: 'AAAA',
+});
+
+const v040V2Source = [
+  'export function exportData(html: string) {',
+  '  document.write(html);',
+  "  return fetch('/internal/admin/export');",
+  '}',
+  '',
+].join('\n');
+
+const v040V2Map = JSON.stringify({
+  version: 3,
+  file: 'v040-v2.js',
+  sources: ['src/admin/export.ts'],
+  sourcesContent: [v040V2Source],
+  mappings: 'AAAA',
+});
+
 export interface TestServer {
   base: string;
   thirdPartyBase: string;
@@ -158,6 +210,26 @@ export function startServer(): Promise<TestServer> {
         return js("console.log('next-app');\n//# sourceMappingURL=next-app.js.map\n");
       case '/next-app.js.map':
         return send('application/json', nextAppMap);
+      case '/v040.html':
+        return send(
+          'text/html',
+          `<!doctype html><html><body><script>localStorage.setItem('auth_token', '${v040Jwt}');</script><script src="/v040-v1.js"></script></body></html>`,
+          {
+            'Content-Security-Policy': "default-src * 'unsafe-inline' 'unsafe-eval'",
+            'Access-Control-Allow-Origin': '*',
+            'Set-Cookie': 'session_id=e2e_session_val; Path=/',
+          },
+        );
+      case '/v040-v1.js':
+        return js("console.log('v040-v1');\n//# sourceMappingURL=v040-v1.js.map\n");
+      case '/v040-v1.js.map':
+        return send('application/json', v040V1Map);
+      case '/v040-update.html':
+        return html('<script src="/v040-v2.js"></script>');
+      case '/v040-v2.js':
+        return js("console.log('v040-v2');\n//# sourceMappingURL=v040-v2.js.map\n");
+      case '/v040-v2.js.map':
+        return send('application/json', v040V2Map);
       case '/app.js':
         return js(
           [

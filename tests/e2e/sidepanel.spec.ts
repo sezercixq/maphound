@@ -94,10 +94,14 @@ test('side panel enables a site, lists results live and exports a safe ZIP', asy
   const names = Object.keys(files).sort();
   expect(names).toEqual(
     [
+      'ARCHITECTURE.md',
+      'AUDIT.md',
       'ENDPOINTS.md',
       'FINDINGS.md',
+      'OSINT.md',
       'findings.json',
       'manifest.json',
+      'results.sarif',
       ...['app.js', 'chunk.js', 'lazy.mjs'].flatMap((script) => [
         `source/${host}/${script}/_vendor/lib/index.js`,
         `source/${host}/${script}/src/evil/escape.txt`,
