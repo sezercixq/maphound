@@ -12,7 +12,7 @@
 ![55 detectors](https://img.shields.io/badge/detectors-55%2C%20ReDoS--proven-10b981)
 ![100% local](https://img.shields.io/badge/data-100%25%20local-18181b)
 
-<img src="docs/assets/maphound-preview.png" alt="MapHound rebuilds app.js.map into its original source tree and flags a hard-coded GitHub token with a verified checksum" width="100%">
+<img src="docs/assets/maphound-preview.png" alt="MapHound v0.4.0 rebuilds app.js.map into its original source tree, audits secrets, internal endpoints, passive OSINT, headers and exports SARIF v2.1.0" width="100%">
 
 </div>
 
@@ -76,6 +76,10 @@ you export everything as a ZIP. No server, no account, no telemetry.
 - **Private by construction.** Optional per-site host permissions only, no `webRequest`, no remote
   code, no outbound requests except to the site you enabled. See [`docs/PRIVACY.md`](docs/PRIVACY.md).
 
+## Attack Surface, OSINT & Security Audit
+
+<img src="docs/assets/maphound-intel-preview.png" alt="MapHound v0.4.0 live Side Panel showing Endpoints & Frontend Routes, Offline Passive OSINT with 1-Click crt.sh/Wayback/urlscan/Google Dorks launcher, and HTTP Headers, Cookies & Web Storage Security Audit" width="100%">
+
 ## Quick start
 
 ### Install a build
@@ -118,6 +122,7 @@ pnpm build          # output: .output/chrome-mv3, load it as above
    results.sarif                        SARIF v2.1.0 for GitHub Code Scanning / VS Code
    ENDPOINTS.md                         extracted APIs, routes, dev notes, sinks & __NEXT_DATA__
    ARCHITECTURE.md                      Mermaid dependency diagram, SDK map & module inventory
+   OSINT.md                             offline cloud buckets, subdomains, private IPs, masked paths & telemetry
    AUDIT.md                             HTTP security headers, cookie flags & Web Storage audit
    DIFF.md                              snapshot diff report (included when changes exist)
    manifest.json                        scanned URLs, hashes, what was skipped and why
@@ -177,8 +182,9 @@ or open a pull request. Every rule ships with tests, so reviews are quick.
 ```bash
 pnpm lint          # Biome lint and format check
 pnpm typecheck     # TypeScript, strict
-pnpm test          # 254 unit tests (Vitest)
+pnpm test          # 257 unit tests (Vitest)
 pnpm rules:check   # rule schema, samples, ReDoS proof
+pnpm preview:images # regenerate docs/assets/maphound*-preview.png from live UI
 VITE_MH_E2E=1 pnpm build && pnpm test:e2e   # real-Chromium end-to-end tests (Playwright)
 ```
 

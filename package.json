@@ -20,6 +20,7 @@
     "test:e2e": "playwright test",
     "rules:compile": "tsx scripts/compile-rules.ts",
     "rules:check": "tsx scripts/check-rules.ts",
+    "preview:images": "tsx scripts/generate-preview.ts",
     "postinstall": "wxt prepare && tsx scripts/compile-rules.ts"
   },
   "dependencies": {
