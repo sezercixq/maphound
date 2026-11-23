@@ -11,7 +11,12 @@ import type {
   ThirdPartyKind,
 } from '@/core/db';
 import { isRelatedDomain } from '@/core/scope';
-import { AUDIT_SEVERITY_ORDER, type AuditFinding } from '@/engine/audit';
+import {
+  AUDIT_SEVERITY_ORDER,
+  type AuditFinding,
+  extractStackHints,
+  type StackHint,
+} from '@/engine/audit';
 import { diffSnapshots, type SiteSnapshotRecord, type SnapshotDiff } from '@/engine/diff';
 import { type ArchitectureGraph, buildArchitectureGraph, type ScriptIntel } from '@/engine/intel';
 import { combineSiteIntel } from '@/engine/zip/endpoints-report';
@@ -78,6 +83,8 @@ export interface ViewModel {
   audits: AuditRecord[];
   auditFindings: AuditFinding[];
   auditCounts: Record<Severity, number>;
+  /** Passive server, runtime, cloud, database & build-OS hints. */
+  stackHints: StackHint[];
   /** Version snapshots and latest diff. */
   snapshots: SiteSnapshotRecord[];
   diff: SnapshotDiff | null;
@@ -215,6 +222,7 @@ export function buildViewModel(
   const hintCount =
     intel.sinks.length + sortedPages.reduce((sum, p) => sum + p.nextData.sensitive.length, 0);
   const osintCount = intel.osint?.length ?? 0;
+  const stackHints = extractStackHints({ audits: sortedAudits, intel, architecture });
   return {
     scripts: scriptRows,
     maps: mapRows,
@@ -226,6 +234,7 @@ export function buildViewModel(
     audits: sortedAudits,
     auditFindings,
     auditCounts,
+    stackHints,
     snapshots: sortedSnapshots,
     diff,
     endpointCount,

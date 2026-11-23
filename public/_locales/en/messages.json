@@ -703,5 +703,26 @@
   },
   "osintFilterAll": {
     "message": "All ($1)"
+  },
+  "stackHintsTitle": {
+    "message": "Detected Stack & Server Hints"
+  },
+  "stackCatServer": {
+    "message": "Server"
+  },
+  "stackCatRuntime": {
+    "message": "Runtime"
+  },
+  "stackCatDatabase": {
+    "message": "Database"
+  },
+  "stackCatCloud": {
+    "message": "Cloud"
+  },
+  "stackCatApi": {
+    "message": "API"
+  },
+  "stackCatBuildOs": {
+    "message": "Build OS"
   }
 }

@@ -156,6 +156,7 @@ export default defineBackground(() => {
     let matrix: ReturnType<typeof auditHeaders>['matrix'] = [];
     let headerFindings: ReturnType<typeof auditHeaders>['findings'] = [];
     let setCookieFindings: ReturnType<typeof auditSetCookieHeaders> = [];
+    const headerCookieNames: string[] = [];
 
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 5_000);
@@ -177,6 +178,11 @@ export default defineBackground(() => {
           : response.headers.get('set-cookie')
             ? [response.headers.get('set-cookie') as string]
             : [];
+      for (const rawCookie of setCookies) {
+        const eq = rawCookie.indexOf('=');
+        const name = eq > 0 ? rawCookie.slice(0, eq).trim() : '';
+        if (name) headerCookieNames.push(name);
+      }
       setCookieFindings = auditSetCookieHeaders(setCookies, pageUrl);
       void response.body?.cancel().catch(() => {});
     } catch {
@@ -191,6 +197,9 @@ export default defineBackground(() => {
       data.cookieFindings ?? [],
       data.storageFindings ?? [],
     );
+    const cookieNames = [
+      ...new Set([...(data.cookieNames ?? []), ...headerCookieNames].filter(Boolean)),
+    ].slice(0, 150);
 
     await db.put('audits', {
       id,
@@ -199,8 +208,9 @@ export default defineBackground(() => {
       headers: headerSummary,
       matrix,
       findings,
+      cookieNames,
       storageKeysChecked: data.storageKeysChecked ?? 0,
-      cookiesChecked: data.cookiesChecked ?? 0,
+      cookiesChecked: Math.max(data.cookiesChecked ?? 0, cookieNames.length),
       updatedAt: Date.now(),
     });
     notifyDbChanged({ store: 'audits', origin: active.origin });

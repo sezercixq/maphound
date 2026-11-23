@@ -9,7 +9,7 @@ import type {
   ScriptRecord,
   SiteRecord,
 } from '@/core/db';
-import { auditMarkdown } from '@/engine/audit';
+import { auditMarkdown, extractStackHints, stackHintsMarkdownLines } from '@/engine/audit';
 import { diffMarkdown, diffSnapshots, type SiteSnapshotRecord } from '@/engine/diff';
 import { sarifJson } from '@/engine/export';
 import { architectureMarkdown, buildArchitectureGraph, osintMarkdown } from '@/engine/intel';
@@ -236,6 +236,12 @@ export async function exportSourceZip(
 
   const mergedIntel = combineSiteIntel(source.intel ?? [], source.pages ?? []);
   const archGraph = buildArchitectureGraph(mergedIntel.modules ?? []);
+  const stackHints = extractStackHints({
+    audits: source.audits ?? [],
+    intel: mergedIntel,
+    architecture: archGraph,
+  });
+  const stackMdLines = stackHintsMarkdownLines(stackHints);
   const sortedSnapshots = [...(source.snapshots ?? [])].sort((a, b) => a.createdAt - b.createdAt);
   const latestDiff =
     sortedSnapshots.length >= 2
@@ -282,8 +288,8 @@ export async function exportSourceZip(
   add('findings.json', encoder.encode(findingsJson(source.findings ?? [], report)));
   add('ENDPOINTS.md', encoder.encode(endpointsMarkdown(mergedIntel, source.pages ?? [], report)));
   add('ARCHITECTURE.md', encoder.encode(architectureMarkdown(archGraph, report)));
-  add('OSINT.md', encoder.encode(osintMarkdown(mergedIntel.osint ?? [], report)));
-  add('AUDIT.md', encoder.encode(auditMarkdown(source.audits ?? [], report)));
+  add('OSINT.md', encoder.encode(osintMarkdown(mergedIntel.osint ?? [], report, stackMdLines)));
+  add('AUDIT.md', encoder.encode(auditMarkdown(source.audits ?? [], report, stackHints)));
   add(
     'results.sarif',
     encoder.encode(

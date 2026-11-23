@@ -46,6 +46,8 @@ export interface ClientAuditPayload {
   pageUrl: string;
   storageFindings: AuditFinding[];
   cookieFindings: AuditFinding[];
+  /** Cookie names only (never values), for passive backend stack fingerprinting. */
+  cookieNames?: string[];
   storageKeysChecked: number;
   cookiesChecked: number;
 }

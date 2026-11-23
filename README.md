@@ -51,9 +51,10 @@ you export everything as a ZIP. No server, no account, no telemetry.
 - **Client-side architecture & data-flow map.** Reconstructs module imports/exports, third-party
   SDK usage (Stripe, Firebase, Sentry, Auth0, Supabase, PostHog, etc.) and file → API calls into
   an interactive tree and a Mermaid diagram in `ARCHITECTURE.md`.
-- **HTTP headers, cookie & Web Storage audit.** Inspects CSP, HSTS, `X-Frame-Options`, CORS,
-  `localStorage`/`sessionStorage` tokens (always masked) and cookie security flags (`HttpOnly`,
-  `Secure`, `SameSite`) locally on enabled sites (`AUDIT.md`).
+- **HTTP headers, cookie, Web Storage & stack audit.** Inspects CSP, HSTS, `X-Frame-Options`, CORS,
+  server/runtime banner leaks, session cookie framework fingerprints (`JSESSIONID`, `PHPSESSID`,
+  `connect.sid`, Django/Laravel/Rails/.NET), `localStorage`/`sessionStorage` tokens (always masked)
+  and cookie security flags (`HttpOnly`, `Secure`, `SameSite`) locally on enabled sites (`AUDIT.md`).
 - **Snapshot & Diff tracking.** Compares deployments and rescans across files, endpoints, routes,
   secrets and code sinks (`DIFF.md`).
 - **SARIF v2.1.0 & 1-click disclosure drafts.** Exports `results.sarif` alongside Markdown/JSON
@@ -182,7 +183,7 @@ or open a pull request. Every rule ships with tests, so reviews are quick.
 ```bash
 pnpm lint          # Biome lint and format check
 pnpm typecheck     # TypeScript, strict
-pnpm test          # 257 unit tests (Vitest)
+pnpm test          # 261 unit tests (Vitest)
 pnpm rules:check   # rule schema, samples, ReDoS proof
 pnpm preview:images # regenerate docs/assets/maphound*-preview.png from live UI
 VITE_MH_E2E=1 pnpm build && pnpm test:e2e   # real-Chromium end-to-end tests (Playwright)

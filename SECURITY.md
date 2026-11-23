@@ -9,7 +9,7 @@ MapHound is in early development. Security fixes go into the latest release and 
 
 | Version | Supported |
 | ------- | --------- |
-| 0.1.x   | Yes       |
+| 0.4.x   | Yes       |
 | older   | No        |
 
 ## Reporting a vulnerability

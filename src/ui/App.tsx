@@ -278,6 +278,7 @@ export function App() {
               audits={model.audits}
               findings={model.auditFindings}
               counts={model.auditCounts}
+              stackHints={model.stackHints}
               origin={enabled.origin}
             />
           )}

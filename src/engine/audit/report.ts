@@ -1,4 +1,5 @@
 import type { AuditRecord } from '@/core/db';
+import { type StackHint, stackHintsMarkdownLines } from './stack-hints';
 import { AUDIT_SEVERITY_ORDER, type AuditSeverity } from './types';
 
 function code(value: string): string {
@@ -15,6 +16,7 @@ const SEVERITIES: AuditSeverity[] = ['critical', 'high', 'medium', 'low', 'info'
 export function auditMarkdown(
   audits: readonly AuditRecord[],
   context: { origin: string; generator: string; exportedAt: string },
+  stackHints: readonly StackHint[] = [],
 ): string {
   const allFindings = audits
     .flatMap((audit) => audit.findings)
@@ -32,8 +34,13 @@ export function auditMarkdown(
     '',
     `- **Audited pages:** ${audits.length}`,
     `- **Audit findings:** ${allFindings.length}`,
+    ...(stackHints.length > 0 ? [`- **Detected stack hints:** ${stackHints.length}`] : []),
     '',
   ];
+
+  if (stackHints.length > 0) {
+    lines.push(...stackHintsMarkdownLines(stackHints));
+  }
 
   if (audits.length === 0) {
     lines.push(

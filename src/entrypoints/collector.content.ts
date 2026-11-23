@@ -191,6 +191,7 @@ async function collectClientAudit(pageUrl: string): Promise<void> {
     pageUrl,
     storageFindings,
     cookieFindings,
+    cookieNames: [...seenNames],
     storageKeysChecked: localEntries.length + sessionEntries.length,
     cookiesChecked: cookieInputs.length,
   }).catch(() => {});

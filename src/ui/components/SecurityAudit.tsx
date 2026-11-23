@@ -1,10 +1,34 @@
 import { useSignal } from '@preact/signals';
 import type { AuditRecord, Severity } from '@/core/db';
-import type { AuditCategory, AuditFinding, HeaderStatus } from '@/engine/audit';
+import type {
+  AuditCategory,
+  AuditFinding,
+  HeaderStatus,
+  StackHint,
+  StackHintCategory,
+} from '@/engine/audit';
 import { draftAuditReport } from '@/engine/export';
 import { AUDIT_CATEGORY_KEYS, SEVERITY_KEYS } from '../format';
-import { t } from '../i18n';
+import { type MessageKey, t } from '../i18n';
 import { Badge, CopyDraftButton, Section } from './primitives';
+
+const STACK_CATEGORY_KEYS: Record<StackHintCategory, MessageKey> = {
+  server: 'stackCatServer',
+  runtime: 'stackCatRuntime',
+  database: 'stackCatDatabase',
+  cloud: 'stackCatCloud',
+  api: 'stackCatApi',
+  'build-os': 'stackCatBuildOs',
+};
+
+const STACK_CATEGORY_TONES: Record<StackHintCategory, string> = {
+  server: 'bg-sky-500/15 text-sky-300',
+  runtime: 'bg-violet-500/15 text-violet-300',
+  database: 'bg-emerald-500/15 text-emerald-300',
+  cloud: 'bg-cyan-500/15 text-cyan-300',
+  api: 'bg-amber-500/15 text-amber-200',
+  'build-os': 'bg-zinc-800 text-zinc-300',
+};
 
 const SEVERITY_STYLE: Record<Severity, { bar: string; badge: string }> = {
   critical: { bar: 'bg-red-500', badge: 'bg-red-500/15 text-red-300' },
@@ -37,21 +61,23 @@ export function SecurityAuditView({
   audits,
   findings,
   counts,
+  stackHints = [],
   origin,
 }: {
   audits: AuditRecord[];
   findings: AuditFinding[];
   counts: Record<Severity, number>;
+  stackHints?: readonly StackHint[];
   origin: string;
 }) {
   const activeCategory = useSignal<AuditCategory | 'all'>('all');
   const selectedAuditId = useSignal<string | null>(null);
 
-  if (audits.length === 0) {
+  if (audits.length === 0 && stackHints.length === 0) {
     return <p class="px-1 text-[12px] text-zinc-500">{t('auditEmpty')}</p>;
   }
 
-  const currentAudit = audits.find((a) => a.id === selectedAuditId.value) ?? audits[0]!;
+  const currentAudit = audits.find((a) => a.id === selectedAuditId.value) ?? audits[0];
   const filtered =
     activeCategory.value === 'all'
       ? findings
@@ -59,45 +85,82 @@ export function SecurityAuditView({
 
   return (
     <div class="space-y-4">
-      <Section title={t('auditHeadersTitle')} count={audits.length}>
-        {audits.length > 1 && (
-          <select
-            value={currentAudit.id}
-            onChange={(event) => {
-              selectedAuditId.value = event.currentTarget.value;
-            }}
-            class="w-full rounded-md border border-zinc-700 bg-zinc-900 px-2 py-1 font-mono text-[11px] text-zinc-200"
+      {stackHints.length > 0 && (
+        <Section title={t('stackHintsTitle')} count={stackHints.length}>
+          <ul
+            data-testid="stack-hints-card"
+            class="divide-y divide-white/[0.05] overflow-hidden rounded-lg border border-white/[0.06] bg-white/[0.02]"
           >
-            {audits.map((a) => (
-              <option key={a.id} value={a.id}>
-                {a.pageUrl}
-              </option>
+            {stackHints.map((hint) => (
+              <li
+                key={`${hint.category}:${hint.name}`}
+                data-testid="stack-hint-row"
+                class="flex flex-wrap items-center justify-between gap-1.5 px-2.5 py-2"
+              >
+                <div class="flex min-w-0 items-center gap-1.5">
+                  <span
+                    class={`shrink-0 rounded px-1.5 py-0.5 text-[9px] font-semibold uppercase ${STACK_CATEGORY_TONES[hint.category]}`}
+                  >
+                    {t(STACK_CATEGORY_KEYS[hint.category])}
+                  </span>
+                  <span class="truncate text-[12px] font-medium text-zinc-100">{hint.name}</span>
+                  {hint.version && (
+                    <span class="rounded bg-amber-400/15 px-1 font-mono text-[10px] text-amber-200">
+                      {hint.version}
+                    </span>
+                  )}
+                </div>
+                <Badge tone="neutral">{hint.evidence}</Badge>
+              </li>
             ))}
-          </select>
-        )}
+          </ul>
+        </Section>
+      )}
+      {currentAudit && (
+        <Section title={t('auditHeadersTitle')} count={audits.length}>
+          {audits.length > 1 && (
+            <select
+              value={currentAudit.id}
+              onChange={(event) => {
+                selectedAuditId.value = event.currentTarget.value;
+              }}
+              class="w-full rounded-md border border-zinc-700 bg-zinc-900 px-2 py-1 font-mono text-[11px] text-zinc-200"
+            >
+              {audits.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.pageUrl}
+                </option>
+              ))}
+            </select>
+          )}
 
-        <div
-          data-testid="audit-headers"
-          class="divide-y divide-white/[0.04] overflow-hidden rounded-lg border border-white/[0.06]"
-        >
-          {currentAudit.matrix.map((row) => (
-            <div key={row.header} class="flex items-center gap-2 px-2.5 py-1.5">
-              <div class="min-w-0 flex-1">
-                <p class="truncate font-mono text-[11px] text-zinc-200">{row.header}</p>
-                {row.value && (
-                  <p class="truncate font-mono text-[10px] text-zinc-500" title={row.value}>
-                    {row.value}
-                  </p>
-                )}
+          <div
+            data-testid="audit-headers"
+            class="divide-y divide-white/[0.04] overflow-hidden rounded-lg border border-white/[0.06]"
+          >
+            {currentAudit.matrix.map((row) => (
+              <div key={row.header} class="flex items-center gap-2 px-2.5 py-1.5">
+                <div class="min-w-0 flex-1">
+                  <p class="truncate font-mono text-[11px] text-zinc-200">{row.header}</p>
+                  {row.value && (
+                    <p class="truncate font-mono text-[10px] text-zinc-500" title={row.value}>
+                      {row.value}
+                    </p>
+                  )}
+                </div>
+                <Badge tone={MATRIX_TONE[row.status]}>{t(MATRIX_KEY[row.status])}</Badge>
               </div>
-              <Badge tone={MATRIX_TONE[row.status]}>{t(MATRIX_KEY[row.status])}</Badge>
-            </div>
-          ))}
-          <p class="bg-white/[0.01] px-2.5 py-1 text-[10px] text-zinc-500">
-            {t('auditStorageScanned', currentAudit.storageKeysChecked, currentAudit.cookiesChecked)}
-          </p>
-        </div>
-      </Section>
+            ))}
+            <p class="bg-white/[0.01] px-2.5 py-1 text-[10px] text-zinc-500">
+              {t(
+                'auditStorageScanned',
+                currentAudit.storageKeysChecked,
+                currentAudit.cookiesChecked,
+              )}
+            </p>
+          </div>
+        </Section>
+      )}
 
       <Section title={t('auditFindingsTitle')} count={filtered.length}>
         <div class="flex flex-wrap items-center gap-1 px-0.5">

@@ -703,5 +703,26 @@
   },
   "osintFilterAll": {
     "message": "Tümü ($1)"
+  },
+  "stackHintsTitle": {
+    "message": "Tespit Edilen Sunucu & Teknoloji İpuçları"
+  },
+  "stackCatServer": {
+    "message": "Sunucu"
+  },
+  "stackCatRuntime": {
+    "message": "Çalışma Zamanı"
+  },
+  "stackCatDatabase": {
+    "message": "Veritabanı"
+  },
+  "stackCatCloud": {
+    "message": "Bulut"
+  },
+  "stackCatApi": {
+    "message": "API"
+  },
+  "stackCatBuildOs": {
+    "message": "Derleme OS"
   }
 }

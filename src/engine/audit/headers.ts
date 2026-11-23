@@ -1,3 +1,4 @@
+import { hasBannerVersion } from './stack-hints';
 import type { AuditFinding, HeaderMatrixEntry } from './types';
 
 export const SECURITY_HEADER_NAMES = [
@@ -10,6 +11,15 @@ export const SECURITY_HEADER_NAMES = [
   'access-control-allow-origin',
   'access-control-allow-credentials',
   'permissions-policy',
+] as const;
+
+export const STACK_HEADER_NAMES = [
+  'server',
+  'x-powered-by',
+  'via',
+  'x-aspnet-version',
+  'x-aspnetmvc-version',
+  'x-generator',
 ] as const;
 
 function normalizeHeaders(input: Headers | Record<string, string>): Map<string, string> {
@@ -57,6 +67,10 @@ export function auditHeaders(
   const summary: Record<string, string | null> = {};
   for (const name of SECURITY_HEADER_NAMES) {
     summary[name] = map.get(name) ?? null;
+  }
+  for (const name of STACK_HEADER_NAMES) {
+    const val = map.get(name);
+    if (val) summary[name] = val;
   }
 
   let parsedUrl: URL | null = null;
@@ -351,6 +365,33 @@ export function auditHeaders(
     }
   } else {
     matrix.push({ header: 'Access-Control-Allow-Origin', status: 'ok', value: 'same-origin' });
+  }
+
+  // 7. Server & runtime banner version disclosure
+  const bannerHeaders: readonly [string, string][] = [
+    ['server', 'Server'],
+    ['x-powered-by', 'X-Powered-By'],
+    ['x-aspnet-version', 'X-AspNet-Version'],
+    ['x-aspnetmvc-version', 'X-AspNetMvc-Version'],
+    ['x-generator', 'X-Generator'],
+  ];
+  for (const [key, display] of bannerHeaders) {
+    const value = map.get(key)?.trim();
+    if (!value) continue;
+    const leaksVersion = hasBannerVersion(value);
+    if (!leaksVersion && key === 'server') continue;
+    findings.push({
+      id: `headers:banner-${key}`,
+      category: 'headers',
+      ruleId: 'server-banner-disclosure',
+      title: leaksVersion
+        ? `${display} header discloses software version`
+        : `${display} header discloses backend technology`,
+      severity: leaksVersion ? 'low' : 'info',
+      subject: display,
+      detail: `${display}: ${value.slice(0, 120)}`,
+      recommendation: `Suppress or strip the ${display} response header to reduce server fingerprinting.`,
+    });
   }
 
   return { summary, matrix, findings };

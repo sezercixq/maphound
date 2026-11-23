@@ -478,6 +478,7 @@ function mdCode(value: string): string {
 export function osintMarkdown(
   hits: readonly OsintHit[],
   context: { origin: string; generator: string; exportedAt: string },
+  stackSectionLines: readonly string[] = [],
 ): string {
   const lines: string[] = [
     `# MapHound passive OSINT: ${context.origin}`,
@@ -492,6 +493,10 @@ export function osintMarkdown(
     if (count > 0) lines.push(`- **${CATEGORY_TITLES[cat]}:** ${count}`);
   }
   lines.push('');
+
+  if (stackSectionLines.length > 0) {
+    lines.push(...stackSectionLines);
+  }
 
   if (hits.length === 0) {
     lines.push('No passive OSINT indicators extracted from the scanned files.', '');

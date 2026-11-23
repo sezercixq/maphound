@@ -3,6 +3,27 @@
 All notable changes to MapHound. The format follows [Keep a Changelog](https://keepachangelog.com/)
 and the project uses [Semantic Versioning](https://semver.org/).
 
+## [0.4.1] - 2026-11-23
+
+### Added
+
+- **Passive Backend & Technology Stack Hints (`src/engine/audit/stack-hints.ts`).** Purely local,
+  zero-extra-request technology fingerprinting that aggregates signals already collected by MapHound:
+  - **Web server & reverse proxy banner detection** from `Server`, `X-Powered-By`, `Via`,
+    `X-AspNet-Version`, `X-AspNetMvc-Version` and `X-Generator` headers (nginx, Apache, Cloudflare,
+    CloudFront, Express, Next.js, PHP, ASP.NET, Tomcat, Jetty, etc.), with `low`/`info` findings
+    when response headers disclose backend versions.
+  - **Session cookie name fingerprinting** (names only, never values): `JSESSIONID` (Java/Spring/Tomcat),
+    `PHPSESSID` (PHP), `ASP.NET_SessionId` / `.AspNetCore.*` (.NET), `connect.sid` (Node.js/Express),
+    `csrftoken` + `sessionid` (Django), `_rails_session` (Ruby on Rails), and `XSRF-TOKEN` +
+    `laravel_session` (Laravel).
+  - **Cloud, BaaS/database, API layer & build-OS summary** uniting OSINT cloud buckets (S3, GCS,
+    Azure Blob, R2), SDKs (`Supabase / PostgreSQL`, `Firebase / Firestore`), GraphQL/REST/WebSocket
+    endpoints, and source-map build host OS (`Windows`, `macOS`, `Linux`).
+- **Detected Stack & Server Hints UI & reports.** Added a top-level **Detected Stack & Server Hints**
+  card in the **Audit** tab with provenance badges (`Header: ...`, `Cookie: ...`, `SDK: ...`,
+  `OSINT: ...`) and included the summary table in both **`AUDIT.md`** and **`OSINT.md`**.
+
 ## [0.4.0] - 2026-11-23
 
 ### Added

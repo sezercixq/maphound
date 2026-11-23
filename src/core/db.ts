@@ -194,6 +194,8 @@ export interface AuditRecord {
   headers: Record<string, string | null>;
   matrix: HeaderMatrixEntry[];
   findings: AuditFinding[];
+  /** Deduplicated cookie names only (never values), for passive backend stack hints. */
+  cookieNames?: string[];
   storageKeysChecked: number;
   cookiesChecked: number;
   updatedAt: number;
