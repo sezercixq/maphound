@@ -6,12 +6,24 @@ import {
   getDb,
   type JobRecord,
   type MapRecord,
+  type PageIntelRecord,
+  type ScriptIntelRecord,
   type ScriptRecord,
   type SiteRecord,
 } from '@/core/db';
 import { getActiveTabOrigin } from '@/core/permissions';
 import { parseOrigin, siteForUrl } from '@/core/scope';
+import type { FileLoadTarget } from '@/engine/search/source-search';
+import { clearSearchCache } from './search-client';
 import { buildViewModel } from './view-model';
+
+export interface ViewerTarget extends FileLoadTarget {
+  origin: string;
+  line: number;
+  column?: number;
+  length?: number;
+  label?: string;
+}
 
 /** Origin of the active tab, when Chrome lets us read it. */
 export const tabOrigin = signal<string | null>(null);
@@ -28,11 +40,32 @@ const jobs = signal<JobRecord[]>([]);
 const scripts = signal<ScriptRecord[]>([]);
 const maps = signal<MapRecord[]>([]);
 const findings = signal<FindingRecord[]>([]);
+const intel = signal<ScriptIntelRecord[]>([]);
+const pages = signal<PageIntelRecord[]>([]);
+export const viewerTarget = signal<ViewerTarget | null>(null);
 export const loaded = signal(false);
 
+export function openCodeViewer(target: ViewerTarget): void {
+  viewerTarget.value = target;
+}
+
+export function closeCodeViewer(): void {
+  viewerTarget.value = null;
+}
+
 export const view = computed(() =>
-  buildViewModel(jobs.value, scripts.value, maps.value, findings.value, site.value),
+  buildViewModel(
+    jobs.value,
+    scripts.value,
+    maps.value,
+    findings.value,
+    site.value,
+    intel.value,
+    pages.value,
+  ),
 );
+
+let lastActiveOrigin: string | undefined;
 
 /** Re-read everything for the current site. The channel only says "something changed". */
 export async function refresh(): Promise<void> {
@@ -40,20 +73,29 @@ export async function refresh(): Promise<void> {
   const allSites = await db.getAll('sites');
   const current = origin.peek();
   const active = current ? siteForUrl(allSites, current) : undefined;
-  const [siteJobs, siteScripts, siteMaps, siteFindings] = active
+  if (active?.origin !== lastActiveOrigin) {
+    lastActiveOrigin = active?.origin;
+    viewerTarget.value = null;
+    clearSearchCache();
+  }
+  const [siteJobs, siteScripts, siteMaps, siteFindings, siteIntel, sitePages] = active
     ? await Promise.all([
         db.getAllFromIndex('jobs', 'by-origin', active.origin),
         db.getAllFromIndex('scripts', 'by-origin', active.origin),
         db.getAllFromIndex('maps', 'by-origin', active.origin),
         db.getAllFromIndex('findings', 'by-origin', active.origin),
+        db.getAllFromIndex('intel', 'by-origin', active.origin),
+        db.getAllFromIndex('pages', 'by-origin', active.origin),
       ])
-    : [[], [], [], []];
+    : [[], [], [], [], [], []];
   batch(() => {
     sites.value = allSites;
     jobs.value = siteJobs;
     scripts.value = siteScripts;
     maps.value = siteMaps;
     findings.value = siteFindings;
+    intel.value = siteIntel;
+    pages.value = sitePages;
     loaded.value = true;
   });
 }

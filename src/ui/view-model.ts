@@ -2,12 +2,16 @@ import type {
   FindingRecord,
   JobRecord,
   MapRecord,
+  PageIntelRecord,
+  ScriptIntelRecord,
   ScriptRecord,
   Severity,
   SiteRecord,
   ThirdPartyKind,
 } from '@/core/db';
 import { isRelatedDomain } from '@/core/scope';
+import type { ScriptIntel } from '@/engine/intel';
+import { combineSiteIntel } from '@/engine/zip/endpoints-report';
 import { countBySeverity, sortFindings } from '@/engine/zip/findings-report';
 import { fileName, hostOf } from './format';
 
@@ -61,6 +65,12 @@ export interface ViewModel {
   /** Most severe first. */
   findings: FindingRecord[];
   findingCounts: Record<Severity, number>;
+  /** Extracted endpoints, routes, developer notes and static code sinks. */
+  intel: ScriptIntel;
+  /** Parsed Next.js `__NEXT_DATA__` summaries per visited page. */
+  pages: PageIntelRecord[];
+  endpointCount: number;
+  hintCount: number;
   /** Scripts still waiting to be downloaded or scanned. */
   scanning: boolean;
   /** Related domains first, then by script count. */
@@ -76,6 +86,8 @@ export function buildViewModel(
   maps: readonly MapRecord[],
   findings: readonly FindingRecord[] = [],
   site: Pick<SiteRecord, 'origin' | 'extraOrigins'> | null = null,
+  intelRecords: readonly ScriptIntelRecord[] = [],
+  pages: readonly PageIntelRecord[] = [],
 ): ViewModel {
   const scriptByHash = new Map(scripts.map((s) => [s.hash, s]));
   const mapById = new Map(maps.map((m) => [m.id, m]));
@@ -149,11 +161,20 @@ export function buildViewModel(
   }));
 
   const files = maps.reduce((sum, map) => sum + map.withContent, 0);
+  const intel = combineSiteIntel(intelRecords, pages);
+  const sortedPages = [...pages].sort((a, b) => a.pageUrl.localeCompare(b.pageUrl));
+  const endpointCount = intel.endpoints.length + intel.routes.length;
+  const hintCount =
+    intel.sinks.length + sortedPages.reduce((sum, p) => sum + p.nextData.sensitive.length, 0);
   return {
     scripts: scriptRows,
     maps: mapRows,
     findings: sortFindings(findings),
     findingCounts: countBySeverity(findings),
+    intel,
+    pages: sortedPages,
+    endpointCount,
+    hintCount,
     thirdParty,
     allowedOrigins,
     scanning: jobs.some(

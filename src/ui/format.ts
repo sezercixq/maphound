@@ -1,4 +1,5 @@
 import type { Confidence, JobRecord, Severity, SkipReason, ThirdPartyKind } from '@/core/db';
+import type { EndpointCategory, HintLevel, RouteKind, SinkCategory } from '@/engine/intel';
 import type { MessageKey } from './i18n';
 
 export function formatBytes(bytes: number): string {
@@ -117,3 +118,41 @@ export const CONFIDENCE_KEYS: Record<Confidence, MessageKey> = {
 export function isUrgent(severity: Severity): boolean {
   return severity === 'critical' || severity === 'high';
 }
+
+export const ENDPOINT_CATEGORY_KEYS: Record<EndpointCategory, MessageKey> = {
+  admin: 'endpointCatAdmin',
+  graphql: 'endpointCatGraphql',
+  auth: 'endpointCatAuth',
+  api: 'endpointCatApi',
+  'next-data': 'endpointCatNextData',
+  websocket: 'endpointCatWebsocket',
+  external: 'endpointCatExternal',
+};
+
+export const ROUTE_KIND_KEYS: Record<RouteKind, MessageKey> = {
+  definition: 'routeKindDefinition',
+  file: 'routeKindFile',
+  manifest: 'routeKindManifest',
+  navigation: 'routeKindNavigation',
+};
+
+export const SINK_CATEGORY_KEYS: Record<SinkCategory, MessageKey> = {
+  'dom-xss': 'sinkCatDomXss',
+  'code-injection': 'sinkCatCodeInjection',
+  messaging: 'sinkCatMessaging',
+  redirect: 'sinkCatRedirect',
+  framework: 'sinkCatFramework',
+};
+
+export const HINT_LEVEL_KEYS: Record<HintLevel, MessageKey> = {
+  high: 'hintLevelHigh',
+  medium: 'hintLevelMedium',
+  low: 'hintLevelLow',
+  info: 'hintLevelInfo',
+};
+
+export const NEXT_DATA_REASON_KEYS: Record<'credential' | 'privilege' | 'pii', MessageKey> = {
+  credential: 'nextDataReasonCredential',
+  privilege: 'nextDataReasonPrivilege',
+  pii: 'nextDataReasonPii',
+};

@@ -295,5 +295,197 @@
   },
   "removeOrigin": {
     "message": "Stop scanning $1"
+  },
+  "tabOverview": {
+    "message": "Overview"
+  },
+  "tabEndpoints": {
+    "message": "Endpoints"
+  },
+  "tabHints": {
+    "message": "Code Hints"
+  },
+  "tabSearch": {
+    "message": "Search"
+  },
+  "endpointCatAdmin": {
+    "message": "Admin / Internal"
+  },
+  "endpointCatGraphql": {
+    "message": "GraphQL"
+  },
+  "endpointCatAuth": {
+    "message": "Auth"
+  },
+  "endpointCatApi": {
+    "message": "API"
+  },
+  "endpointCatNextData": {
+    "message": "Next Data"
+  },
+  "endpointCatWebsocket": {
+    "message": "WebSocket"
+  },
+  "endpointCatExternal": {
+    "message": "External"
+  },
+  "routeKindDefinition": {
+    "message": "router"
+  },
+  "routeKindFile": {
+    "message": "page file"
+  },
+  "routeKindManifest": {
+    "message": "manifest"
+  },
+  "routeKindNavigation": {
+    "message": "navigation"
+  },
+  "sinkCatDomXss": {
+    "message": "DOM XSS"
+  },
+  "sinkCatCodeInjection": {
+    "message": "Code Injection"
+  },
+  "sinkCatMessaging": {
+    "message": "Messaging"
+  },
+  "sinkCatRedirect": {
+    "message": "Open Redirect"
+  },
+  "sinkCatFramework": {
+    "message": "Framework"
+  },
+  "hintLevelHigh": {
+    "message": "high"
+  },
+  "hintLevelMedium": {
+    "message": "medium"
+  },
+  "hintLevelLow": {
+    "message": "low"
+  },
+  "hintLevelInfo": {
+    "message": "info"
+  },
+  "nextDataReasonCredential": {
+    "message": "credential"
+  },
+  "nextDataReasonPrivilege": {
+    "message": "privilege"
+  },
+  "nextDataReasonPii": {
+    "message": "personal data"
+  },
+  "endpointsCopyAll": {
+    "message": "Copy all"
+  },
+  "endpointsExportTxt": {
+    "message": "TXT"
+  },
+  "endpointsExportJson": {
+    "message": "JSON"
+  },
+  "endpointsSectionApi": {
+    "message": "API & internal endpoints"
+  },
+  "endpointsSectionRoutes": {
+    "message": "Frontend routes"
+  },
+  "endpointsSectionComments": {
+    "message": "Developer notes"
+  },
+  "endpointsEmpty": {
+    "message": "No endpoints or routes extracted yet."
+  },
+  "endpointsNoNotes": {
+    "message": "No flagged developer notes."
+  },
+  "copyEndpoint": {
+    "message": "Copy endpoint"
+  },
+  "copyPath": {
+    "message": "Copy path"
+  },
+  "hintsNotice": {
+    "message": "Static code review hints and sinks (separate from verified credential findings)."
+  },
+  "hintsSectionSinks": {
+    "message": "Dangerous sinks & patterns"
+  },
+  "hintsEmpty": {
+    "message": "No dangerous sinks flagged in first-party sources."
+  },
+  "nextDataSection": {
+    "message": "Next.js __NEXT_DATA__ SSR props"
+  },
+  "nextDataBuild": {
+    "message": "Build $1"
+  },
+  "nextDataPageProps": {
+    "message": "pageProps keys"
+  },
+  "nextDataSensitive": {
+    "message": "Flagged fields ($1)"
+  },
+  "nextDataOutline": {
+    "message": "Show payload outline ($1)"
+  },
+  "nextDataHideOutline": {
+    "message": "Hide payload outline"
+  },
+  "searchPlaceholder": {
+    "message": "Search in rebuilt sources…"
+  },
+  "searchRegex": {
+    "message": "Regex"
+  },
+  "searchCase": {
+    "message": "Aa"
+  },
+  "searchIncludeVendor": {
+    "message": "Include _vendor/"
+  },
+  "searchNoMaps": {
+    "message": "No source maps with content available to search yet."
+  },
+  "searchPrompt": {
+    "message": "Type a term or pattern to search original source files locally."
+  },
+  "searchStats": {
+    "message": "$1 matches across $2 of $3 files"
+  },
+  "searchTruncated": {
+    "message": "Showing first $1 matches."
+  },
+  "searchEmpty": {
+    "message": "No matches found."
+  },
+  "searchSearching": {
+    "message": "Searching…"
+  },
+  "viewerLoading": {
+    "message": "Loading source file…"
+  },
+  "viewerNotFound": {
+    "message": "Could not load source content for this file."
+  },
+  "viewerClose": {
+    "message": "Close preview"
+  },
+  "viewerShowBefore": {
+    "message": "Show $1 earlier lines"
+  },
+  "viewerShowAfter": {
+    "message": "Show $1 later lines"
+  },
+  "viewerBundleNote": {
+    "message": "Served bundle (no original source map)"
+  },
+  "openInViewer": {
+    "message": "Open in code viewer"
+  },
+  "filterAll": {
+    "message": "All"
   }
 }

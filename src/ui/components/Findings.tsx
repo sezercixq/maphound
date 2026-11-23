@@ -3,6 +3,7 @@ import type { FindingRecord, Severity } from '@/core/db';
 import { rescanSiteFromUi } from '@/core/site-client';
 import { CONFIDENCE_KEYS, isUrgent, SEVERITY_KEYS, type Tone } from '../format';
 import { t } from '../i18n';
+import { openCodeViewer } from '../state';
 import { Badge, Section } from './primitives';
 
 const SEVERITY_STYLE: Record<Severity, { bar: string; badge: string }> = {
@@ -55,7 +56,7 @@ function IconButton({
   );
 }
 
-function FindingItem({ finding }: { finding: FindingRecord }) {
+function FindingItem({ finding, origin }: { finding: FindingRecord; origin: string }) {
   const revealed = useSignal(false);
   const copied = useSignal(false);
   const fileName = finding.file.split('/').pop() ?? finding.file;
@@ -92,14 +93,28 @@ function FindingItem({ finding }: { finding: FindingRecord }) {
         </p>
       </div>
       <div class="mt-1 flex items-center gap-2">
-        <p
-          class="min-w-0 flex-1 truncate font-mono text-[11px] text-zinc-400"
-          title={`${finding.file}:${finding.line}:${finding.column + 1}${location ? `\n${location.scriptUrl}` : ''}`}
+        <button
+          type="button"
+          class="min-w-0 flex-1 truncate text-left font-mono text-[11px] text-zinc-400 hover:text-emerald-300"
+          title={`${t('openInViewer')}: ${finding.file}:${finding.line}:${finding.column + 1}${location ? `\n${location.scriptUrl}` : ''}`}
           data-testid="finding-location"
+          onClick={() =>
+            openCodeViewer({
+              origin,
+              file: finding.file,
+              line: finding.line,
+              column: finding.column,
+              length: finding.secret.length,
+              scriptUrl: location?.scriptUrl,
+              mapUrl: location?.mapUrl,
+              kind: finding.locationKind === 'bundle' ? 'bundle' : 'source',
+              label: finding.ruleName,
+            })
+          }
         >
           <span class="text-zinc-200">{fileName}</span>:{finding.line}
           <span class="text-zinc-600"> · {finding.file}</span>
-        </p>
+        </button>
         <Badge tone={CONFIDENCE_TONE[finding.confidence]}>
           {t(CONFIDENCE_KEYS[finding.confidence])}
         </Badge>
@@ -215,7 +230,7 @@ export function FindingList({
           {visible.length > 0 ? (
             <ul class="divide-y divide-white/[0.04]" data-testid="finding-list">
               {visible.map((finding) => (
-                <FindingItem key={finding.id} finding={finding} />
+                <FindingItem key={finding.id} finding={finding} origin={origin} />
               ))}
             </ul>
           ) : (

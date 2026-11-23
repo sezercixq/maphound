@@ -295,5 +295,197 @@
   },
   "removeOrigin": {
     "message": "$1 taramasını durdur"
+  },
+  "tabOverview": {
+    "message": "Genel Bakış"
+  },
+  "tabEndpoints": {
+    "message": "Uç Noktalar"
+  },
+  "tabHints": {
+    "message": "Kod İpuçları"
+  },
+  "tabSearch": {
+    "message": "Ara"
+  },
+  "endpointCatAdmin": {
+    "message": "Yönetim / Dahili"
+  },
+  "endpointCatGraphql": {
+    "message": "GraphQL"
+  },
+  "endpointCatAuth": {
+    "message": "Kimlik Doğrulama"
+  },
+  "endpointCatApi": {
+    "message": "API"
+  },
+  "endpointCatNextData": {
+    "message": "Next Data"
+  },
+  "endpointCatWebsocket": {
+    "message": "WebSocket"
+  },
+  "endpointCatExternal": {
+    "message": "Harici"
+  },
+  "routeKindDefinition": {
+    "message": "yönlendirici"
+  },
+  "routeKindFile": {
+    "message": "sayfa dosyası"
+  },
+  "routeKindManifest": {
+    "message": "manifest"
+  },
+  "routeKindNavigation": {
+    "message": "gezinme"
+  },
+  "sinkCatDomXss": {
+    "message": "DOM XSS"
+  },
+  "sinkCatCodeInjection": {
+    "message": "Kod Enjeksiyonu"
+  },
+  "sinkCatMessaging": {
+    "message": "Mesajlaşma"
+  },
+  "sinkCatRedirect": {
+    "message": "Açık Yönlendirme"
+  },
+  "sinkCatFramework": {
+    "message": "Çatı / SSR"
+  },
+  "hintLevelHigh": {
+    "message": "yüksek"
+  },
+  "hintLevelMedium": {
+    "message": "orta"
+  },
+  "hintLevelLow": {
+    "message": "düşük"
+  },
+  "hintLevelInfo": {
+    "message": "bilgi"
+  },
+  "nextDataReasonCredential": {
+    "message": "kimlik bilgisi"
+  },
+  "nextDataReasonPrivilege": {
+    "message": "yetki"
+  },
+  "nextDataReasonPii": {
+    "message": "kişisel veri"
+  },
+  "endpointsCopyAll": {
+    "message": "Tümünü kopyala"
+  },
+  "endpointsExportTxt": {
+    "message": "TXT"
+  },
+  "endpointsExportJson": {
+    "message": "JSON"
+  },
+  "endpointsSectionApi": {
+    "message": "API ve dahili uç noktalar"
+  },
+  "endpointsSectionRoutes": {
+    "message": "Ön yüz rotaları"
+  },
+  "endpointsSectionComments": {
+    "message": "Geliştirici notları"
+  },
+  "endpointsEmpty": {
+    "message": "Henüz uç nokta veya rota çıkarılmadı."
+  },
+  "endpointsNoNotes": {
+    "message": "İşaretlenen geliştirici notu yok."
+  },
+  "copyEndpoint": {
+    "message": "Uç noktayı kopyala"
+  },
+  "copyPath": {
+    "message": "Yolu kopyala"
+  },
+  "hintsNotice": {
+    "message": "Statik kod inceleme ipuçları ve tehlikeli sink'ler (kimlik bilgisi bulgularından ayrıdır)."
+  },
+  "hintsSectionSinks": {
+    "message": "Tehlikeli kod desenleri (Sinks)"
+  },
+  "hintsEmpty": {
+    "message": "Birinci taraf kaynak kodlarda tehlikeli desen bulunamadı."
+  },
+  "nextDataSection": {
+    "message": "Next.js __NEXT_DATA__ SSR verileri"
+  },
+  "nextDataBuild": {
+    "message": "Derleme $1"
+  },
+  "nextDataPageProps": {
+    "message": "pageProps anahtarları"
+  },
+  "nextDataSensitive": {
+    "message": "Dikkat çeken alanlar ($1)"
+  },
+  "nextDataOutline": {
+    "message": "Veri yapısını göster ($1)"
+  },
+  "nextDataHideOutline": {
+    "message": "Veri yapısını gizle"
+  },
+  "searchPlaceholder": {
+    "message": "Yeniden kurulan kaynak kodlarda ara…"
+  },
+  "searchRegex": {
+    "message": "Regex"
+  },
+  "searchCase": {
+    "message": "Aa"
+  },
+  "searchIncludeVendor": {
+    "message": "_vendor/ dahil et"
+  },
+  "searchNoMaps": {
+    "message": "Aranacak kaynak kod içeren source map henüz yok."
+  },
+  "searchPrompt": {
+    "message": "Orijinal kaynak dosyalarda yerel arama yapmak için bir metin veya desen yazın."
+  },
+  "searchStats": {
+    "message": "$3 dosyadan $2 tanesinde $1 eşleşme"
+  },
+  "searchTruncated": {
+    "message": "İlk $1 eşleşme gösteriliyor."
+  },
+  "searchEmpty": {
+    "message": "Eşleşme bulunamadı."
+  },
+  "searchSearching": {
+    "message": "Aranıyor…"
+  },
+  "viewerLoading": {
+    "message": "Kaynak dosya yükleniyor…"
+  },
+  "viewerNotFound": {
+    "message": "Bu dosya için kaynak kod içeriği yüklenemedi."
+  },
+  "viewerClose": {
+    "message": "Önizlemeyi kapat"
+  },
+  "viewerShowBefore": {
+    "message": "Önceki $1 satırı göster"
+  },
+  "viewerShowAfter": {
+    "message": "Sonraki $1 satırı göster"
+  },
+  "viewerBundleNote": {
+    "message": "Sunulan paket dosyası (orijinal source map yok)"
+  },
+  "openInViewer": {
+    "message": "Kod önizleyicide aç"
+  },
+  "filterAll": {
+    "message": "Tümü"
   }
 }

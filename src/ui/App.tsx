@@ -1,13 +1,19 @@
 import { useSignal } from '@preact/signals';
 import { useEffect } from 'preact/hooks';
+import { CodeHintsView } from './components/CodeHints';
+import { CodeViewer } from './components/CodeViewer';
+import { EndpointsView } from './components/Endpoints';
 import { FindingList } from './components/Findings';
 import { MapList, ScriptList } from './components/Lists';
 import { SiteCard } from './components/SiteCard';
+import { SourceSearchView } from './components/SourceSearch';
 import { ThirdPartyOrigins } from './components/ThirdParty';
 import { downloadSourcesZip } from './export-client';
-import { t } from './i18n';
+import { type MessageKey, t } from './i18n';
 import { site, startState, view } from './state';
 import type { Stats } from './view-model';
+
+type TabId = 'overview' | 'endpoints' | 'hints' | 'search';
 
 function Logo() {
   return (
@@ -126,8 +132,65 @@ function ExportBar({ origin, exportable }: { origin: string; exportable: boolean
   );
 }
 
+function TabBar({
+  active,
+  onSelect,
+  endpointCount,
+  hintCount,
+}: {
+  active: TabId;
+  onSelect: (tab: TabId) => void;
+  endpointCount: number;
+  hintCount: number;
+}) {
+  const tabs: { id: TabId; label: MessageKey; count?: number }[] = [
+    { id: 'overview', label: 'tabOverview' },
+    { id: 'endpoints', label: 'tabEndpoints', count: endpointCount },
+    { id: 'hints', label: 'tabHints', count: hintCount },
+    { id: 'search', label: 'tabSearch' },
+  ];
+  return (
+    <div
+      role="tablist"
+      data-testid="panel-tabs"
+      class="grid grid-cols-4 gap-1 rounded-lg border border-white/[0.06] bg-white/[0.02] p-1"
+    >
+      {tabs.map((tab) => {
+        const selected = active === tab.id;
+        return (
+          <button
+            key={tab.id}
+            type="button"
+            role="tab"
+            aria-selected={selected}
+            data-testid={`tab-${tab.id}`}
+            onClick={() => onSelect(tab.id)}
+            class={`flex items-center justify-center gap-1 rounded-md px-1.5 py-1 text-[11px] font-medium transition-colors ${
+              selected
+                ? 'bg-emerald-500/15 text-emerald-300'
+                : 'text-zinc-400 hover:bg-white/[0.04] hover:text-zinc-200'
+            }`}
+          >
+            <span class="truncate">{t(tab.label)}</span>
+            {tab.count !== undefined && tab.count > 0 && (
+              <span
+                class={`rounded px-1 font-mono text-[9px] tabular-nums ${
+                  selected ? 'bg-emerald-500/20 text-emerald-200' : 'bg-zinc-800 text-zinc-400'
+                }`}
+              >
+                {tab.count}
+              </span>
+            )}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 export function App() {
   useEffect(() => startState(), []);
+  const activeTab = useSignal<TabId>('overview');
   const enabled = site.value;
   const model = view.value;
   return (
@@ -143,23 +206,45 @@ export function App() {
       {enabled && (
         <>
           <StatsRow stats={model.stats} />
-          <FindingList
-            findings={model.findings}
-            counts={model.findingCounts}
-            scanning={model.scanning}
-            origin={enabled.origin}
+          <TabBar
+            active={activeTab.value}
+            onSelect={(tab) => {
+              activeTab.value = tab;
+            }}
+            endpointCount={model.endpointCount}
+            hintCount={model.hintCount}
           />
-          <ThirdPartyOrigins
-            siteOrigin={enabled.origin}
-            groups={model.thirdParty}
-            allowed={model.allowedOrigins}
-          />
-          <ScriptList rows={model.scripts} />
-          <MapList rows={model.maps} />
+          {activeTab.value === 'overview' && (
+            <>
+              <FindingList
+                findings={model.findings}
+                counts={model.findingCounts}
+                scanning={model.scanning}
+                origin={enabled.origin}
+              />
+              <ThirdPartyOrigins
+                siteOrigin={enabled.origin}
+                groups={model.thirdParty}
+                allowed={model.allowedOrigins}
+              />
+              <ScriptList rows={model.scripts} />
+              <MapList rows={model.maps} />
+            </>
+          )}
+          {activeTab.value === 'endpoints' && (
+            <EndpointsView intel={model.intel} origin={enabled.origin} />
+          )}
+          {activeTab.value === 'hints' && (
+            <CodeHintsView sinks={model.intel.sinks} pages={model.pages} origin={enabled.origin} />
+          )}
+          {activeTab.value === 'search' && (
+            <SourceSearchView origin={enabled.origin} hasMaps={model.stats.files > 0} />
+          )}
           <div class="flex-1" />
           <ExportBar origin={enabled.origin} exportable={model.stats.exportable} />
         </>
       )}
+      <CodeViewer />
     </div>
   );
 }

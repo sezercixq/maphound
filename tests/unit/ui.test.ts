@@ -1,13 +1,24 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import type { JobRecord, MapRecord, ScriptRecord } from '@/core/db';
+import type {
+  JobRecord,
+  MapRecord,
+  PageIntelRecord,
+  ScriptIntelRecord,
+  ScriptRecord,
+} from '@/core/db';
 import { bulkCandidates } from '@/ui/components/ThirdParty';
 import {
   CONFIDENCE_KEYS,
+  ENDPOINT_CATEGORY_KEYS,
   fileName,
   formatBytes,
+  HINT_LEVEL_KEYS,
   hostOf,
+  NEXT_DATA_REASON_KEYS,
+  ROUTE_KIND_KEYS,
   SEVERITY_KEYS,
+  SINK_CATEGORY_KEYS,
   statusOf,
   THIRD_PARTY_KEYS,
   VIA_KEYS,
@@ -111,6 +122,70 @@ describe('buildViewModel', () => {
       buildViewModel([], [], [{ id: 'm', withContent: 0 } as MapRecord]).stats.exportable,
     ).toBe(false);
   });
+
+  it('merges script intel and page __NEXT_DATA__ into endpointCount and hintCount', () => {
+    const intel: ScriptIntelRecord[] = [
+      {
+        id: 'https://example.com|s1',
+        origin: 'https://example.com',
+        scriptHash: 's1',
+        scriptUrl: 'https://example.com/a.js',
+        endpoints: [
+          {
+            value: '/api/v1/users',
+            category: 'api',
+            methods: ['GET'],
+            dynamic: false,
+            locations: [],
+          },
+        ],
+        routes: [{ path: '/admin', kind: 'definition', locations: [] }],
+        comments: [],
+        sinks: [
+          {
+            ruleId: 'code-eval',
+            title: 'Dynamic eval() call',
+            category: 'code-injection',
+            level: 'high',
+            snippet: 'eval(x)',
+            location: {
+              file: 'src/a.ts',
+              line: 2,
+              column: 0,
+              kind: 'source',
+              scriptUrl: 'https://example.com/a.js',
+            },
+          },
+        ],
+        truncated: false,
+        updatedAt: 0,
+      },
+    ];
+    const pages: PageIntelRecord[] = [
+      {
+        id: 'https://example.com|/',
+        origin: 'https://example.com',
+        pageUrl: 'https://example.com/',
+        updatedAt: 0,
+        nextData: {
+          bytes: 100,
+          query: {},
+          dataFetching: ['getServerSideProps'],
+          hasRuntimeConfig: false,
+          pageProps: ['user'],
+          keyCount: 2,
+          sensitive: [
+            { path: 'props.pageProps.user.isAdmin', reason: 'privilege', type: 'boolean' },
+          ],
+          outline: [],
+          endpoints: ['/api/v1/billing'],
+        },
+      },
+    ];
+    const vm = buildViewModel([], [], [], [], null, intel, pages);
+    expect(vm.endpointCount).toBe(3);
+    expect(vm.hintCount).toBe(2);
+  });
 });
 
 describe('locales', () => {
@@ -146,7 +221,17 @@ describe('locales', () => {
       }
     };
     walk('src/ui');
-    for (const map of [THIRD_PARTY_KEYS, VIA_KEYS, SEVERITY_KEYS, CONFIDENCE_KEYS])
+    for (const map of [
+      THIRD_PARTY_KEYS,
+      VIA_KEYS,
+      SEVERITY_KEYS,
+      CONFIDENCE_KEYS,
+      ENDPOINT_CATEGORY_KEYS,
+      ROUTE_KIND_KEYS,
+      SINK_CATEGORY_KEYS,
+      HINT_LEVEL_KEYS,
+      NEXT_DATA_REASON_KEYS,
+    ])
       for (const key of Object.values(map)) used.add(key);
     for (const state of ['queued', 'fetching', 'fetched', 'scanning', 'done', 'failed'] as const) {
       used.add(statusOf(job({ state })).key);
