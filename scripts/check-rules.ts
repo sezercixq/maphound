@@ -1,4 +1,5 @@
 import { check } from 'recheck';
+import { AUDIT_PATTERNS } from '../src/engine/audit/patterns';
 import { INTEL_PATTERNS } from '../src/engine/intel/patterns';
 import { loadRules, runRuleTests } from './rules-lib';
 
@@ -65,46 +66,52 @@ for (const { file, source } of rules) {
   }
 }
 
-for (const { name, regex } of INTEL_PATTERNS) {
-  for (const randomSeed of RECHECK_SEEDS) {
-    const result = await check(regex.source, regex.flags.replace('g', ''), {
-      timeout: 20_000,
-      randomSeed,
-    });
-    if (result.status === 'vulnerable') {
-      errors.push(
-        `src/engine/intel/patterns.ts: ${name} is vulnerable to ReDoS (${result.complexity.summary}), attack: ${result.attack.pattern}`,
-      );
-      break;
+async function checkStaticPatterns(
+  sourceFile: string,
+  patterns: readonly { name: string; regex: RegExp }[],
+): Promise<void> {
+  for (const { name, regex } of patterns) {
+    for (const randomSeed of RECHECK_SEEDS) {
+      const result = await check(regex.source, regex.flags.replace('g', ''), {
+        timeout: 20_000,
+        randomSeed,
+      });
+      if (result.status === 'vulnerable') {
+        errors.push(
+          `${sourceFile}: ${name} is vulnerable to ReDoS (${result.complexity.summary}), attack: ${result.attack.pattern}`,
+        );
+        break;
+      }
+      if (result.status === 'unknown') {
+        warnings.push(`${sourceFile}: ${name} could not be proven safe (${result.error.kind})`);
+        break;
+      }
+      if (result.checker === 'automaton') break;
     }
-    if (result.status === 'unknown') {
-      warnings.push(
-        `src/engine/intel/patterns.ts: ${name} could not be proven safe (${result.error.kind})`,
-      );
-      break;
-    }
-    if (result.checker === 'automaton') break;
-  }
 
-  const probe = new RegExp(
-    regex.source,
-    regex.flags.includes('g') ? regex.flags : `g${regex.flags}`,
-  );
-  const hostile = ['a'.repeat(50_000), '/api/'.repeat(10_000), ' '.repeat(50_000)];
-  for (const input of hostile) {
-    const t = performance.now();
-    probe.lastIndex = 0;
-    while (probe.exec(input) !== null) {
-      // drain
-    }
-    const ms = performance.now() - t;
-    if (ms > 250) {
-      errors.push(
-        `src/engine/intel/patterns.ts: ${name} took ${ms.toFixed(0)} ms on a ${input.length}-char hostile input`,
-      );
+    const probe = new RegExp(
+      regex.source,
+      regex.flags.includes('g') ? regex.flags : `g${regex.flags}`,
+    );
+    const hostile = ['a'.repeat(50_000), '/api/'.repeat(10_000), ' '.repeat(50_000)];
+    for (const input of hostile) {
+      const t = performance.now();
+      probe.lastIndex = 0;
+      while (probe.exec(input) !== null) {
+        // drain
+      }
+      const ms = performance.now() - t;
+      if (ms > 250) {
+        errors.push(
+          `${sourceFile}: ${name} took ${ms.toFixed(0)} ms on a ${input.length}-char hostile input`,
+        );
+      }
     }
   }
 }
+
+await checkStaticPatterns('src/engine/intel/patterns.ts', INTEL_PATTERNS);
+await checkStaticPatterns('src/engine/audit/patterns.ts', AUDIT_PATTERNS);
 
 for (const warning of warnings) console.warn(`warning: ${warning}`);
 if (errors.length > 0) {
@@ -114,5 +121,5 @@ if (errors.length > 0) {
   process.exit(1);
 }
 console.log(
-  `rules:check: ${rules.length} rules, ${tests.samples} samples, ${INTEL_PATTERNS.length} intel patterns, ReDoS-safe, ${((Date.now() - started) / 1000).toFixed(1)} s`,
+  `rules:check: ${rules.length} rules, ${tests.samples} samples, ${INTEL_PATTERNS.length + AUDIT_PATTERNS.length} static patterns, ReDoS-safe, ${((Date.now() - started) / 1000).toFixed(1)} s`,
 );
