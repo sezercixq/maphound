@@ -164,9 +164,41 @@ describe('disableSite', () => {
       updatedAt: 0,
     });
 
+    await db.put('intel', {
+      id: 'http://localhost:3000|s1',
+      origin: 'http://localhost:3000',
+      scriptHash: 's1',
+      scriptUrl: 'http://localhost:3000/a.js',
+      endpoints: [],
+      routes: [],
+      comments: [],
+      sinks: [],
+      truncated: false,
+      updatedAt: 0,
+    });
+    await db.put('pages', {
+      id: 'http://localhost:3000|/',
+      origin: 'http://localhost:3000',
+      pageUrl: 'http://localhost:3000/',
+      nextData: {
+        bytes: 10,
+        query: {},
+        dataFetching: [],
+        hasRuntimeConfig: false,
+        pageProps: [],
+        keyCount: 0,
+        sensitive: [],
+        outline: [],
+        endpoints: [],
+      },
+      updatedAt: 0,
+    });
+
     expect((await disableSite('http://localhost:3000', true, db)).revoked).toEqual([]);
     expect(state.granted.has('http://localhost/*')).toBe(true);
     expect(await db.count('jobs')).toBe(0);
+    expect(await db.count('intel')).toBe(0);
+    expect(await db.count('pages')).toBe(0);
     expect(state.registered.has(collectorScriptId('http://localhost:3000'))).toBe(false);
 
     expect((await disableSite('http://localhost:4000', false, db)).revoked).toEqual([

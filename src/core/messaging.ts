@@ -1,4 +1,5 @@
 import { defineExtensionMessaging } from '@webext-core/messaging';
+import type { NextDataSummary } from '@/engine/intel';
 import type { MapAnalysisRequest, MapAnalysisResult } from './analyze';
 import type { Scope, SiteSettings } from './db';
 import type { ScriptScanRequest, ScriptScanResult } from './scan-job';
@@ -19,6 +20,7 @@ export interface PingResult {
 /** Typed protocol. Messages carry keys, never content. */
 export interface ProtocolMap {
   'scripts:discovered': (data: { pageUrl: string; urls: string[] }) => void;
+  'page:next-data': (data: { pageUrl: string; summary: NextDataSummary }) => void;
   /** Sent by the side panel after `permissions.request` succeeded. */
   'site:enable': (data: {
     origin: string;

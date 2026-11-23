@@ -1,5 +1,6 @@
 import { createUrlBatcher, isScriptResource, normalizeScriptUrl } from '@/core/collect';
 import { sendMessage } from '@/core/messaging';
+import { parseNextData } from '@/engine/intel/next-data';
 
 const INSTALLED = Symbol.for('maphound.collector');
 
@@ -54,6 +55,12 @@ export default defineContentScript({
 
     batcher.add(fromScripts());
     batcher.add(fromEntries(performance.getEntriesByType('resource')));
+
+    const nextEl = document.getElementById('__NEXT_DATA__');
+    if (nextEl instanceof HTMLScriptElement && nextEl.textContent) {
+      const summary = parseNextData(nextEl.textContent);
+      if (summary) sendMessage('page:next-data', { pageUrl, summary }).catch(() => {});
+    }
 
     // Lazy chunks: dynamic import(), injected <script> tags and preloads.
     const perf = new PerformanceObserver((list) => batcher.add(fromEntries(list.getEntries())));

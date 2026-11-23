@@ -123,6 +123,7 @@ describe('exportSourceZip', () => {
     const { files, stats, finals, progress } = await build();
     expect(Object.keys(files).sort()).toEqual(
       [
+        'ENDPOINTS.md',
         'FINDINGS.md',
         'findings.json',
         'manifest.json',
@@ -152,7 +153,7 @@ describe('exportSourceZip', () => {
     const { files } = await build();
     for (const name of Object.keys(files)) {
       expect(name).toMatch(
-        /^(manifest\.json|FINDINGS\.md|findings\.json|source\/[^/]+\/[^/]+\/(src|_vendor)\/.+)$/,
+        /^(manifest\.json|ENDPOINTS\.md|FINDINGS\.md|findings\.json|source\/[^/]+\/[^/]+\/(src|_vendor)\/.+)$/,
       );
       expect(name.split('/')).not.toContain('..');
       expect(name).not.toMatch(/[\\:\u0000]|^\//);
@@ -195,6 +196,60 @@ describe('exportSourceZip', () => {
     expect(manifest.scripts.find((s: { sha256: string }) => s.sha256 === 's2').urls).toEqual([
       `${ORIGIN}/admin/main.js?v=2`,
     ]);
+  });
+
+  it('includes populated ENDPOINTS.md when intel and pages are provided', async () => {
+    const chunks: Uint8Array[] = [];
+    await exportSourceZip(
+      {
+        site: { origin: ORIGIN, scope: 'origin' },
+        maps: [],
+        scripts: [],
+        jobs: [],
+        intel: [
+          {
+            id: `${ORIGIN}|s1`,
+            origin: ORIGIN,
+            scriptHash: 's1',
+            scriptUrl: `${ORIGIN}/app.js`,
+            endpoints: [
+              {
+                value: '/internal/admin/users',
+                category: 'admin',
+                methods: ['POST'],
+                dynamic: false,
+                locations: [
+                  {
+                    file: 'src/admin.ts',
+                    line: 10,
+                    column: 2,
+                    kind: 'source',
+                    scriptUrl: `${ORIGIN}/app.js`,
+                  },
+                ],
+              },
+            ],
+            routes: [],
+            comments: [],
+            sinks: [],
+            truncated: false,
+            updatedAt: 0,
+          },
+        ],
+        readBlob: async () => undefined,
+      },
+      { generator: 'MapHound test', onData: (chunk) => chunks.push(chunk) },
+    );
+    const zip = new Uint8Array(chunks.reduce((n, c) => n + c.byteLength, 0));
+    let offset = 0;
+    for (const chunk of chunks) {
+      zip.set(chunk, offset);
+      offset += chunk.byteLength;
+    }
+    const files = unzipSync(zip);
+    const endpointsMd = strFromU8(files['ENDPOINTS.md'] as Uint8Array);
+    expect(endpointsMd).toContain('/internal/admin/users');
+    expect(endpointsMd).toContain('POST');
   });
 
   it('stops when aborted', async () => {

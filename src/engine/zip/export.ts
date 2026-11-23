@@ -1,7 +1,16 @@
 import { Zip, ZipDeflate } from 'fflate';
-import type { FindingRecord, JobRecord, MapRecord, ScriptRecord, SiteRecord } from '@/core/db';
+import type {
+  FindingRecord,
+  JobRecord,
+  MapRecord,
+  PageIntelRecord,
+  ScriptIntelRecord,
+  ScriptRecord,
+  SiteRecord,
+} from '@/core/db';
 import { parseSourceMap, rebuildSourceTree } from '@/engine/sourcemap';
 import { PathAllocator, sanitizeSegment } from '@/engine/sourcemap/sanitize-path';
+import { combineSiteIntel, endpointsMarkdown } from './endpoints-report';
 import { countBySeverity, findingsJson, findingsMarkdown } from './findings-report';
 
 export interface ExportSource {
@@ -10,6 +19,8 @@ export interface ExportSource {
   scripts: readonly ScriptRecord[];
   jobs: readonly JobRecord[];
   findings?: readonly FindingRecord[];
+  intel?: readonly ScriptIntelRecord[];
+  pages?: readonly PageIntelRecord[];
   readBlob(hash: string): Promise<Blob | undefined>;
 }
 
@@ -216,6 +227,8 @@ export async function exportSourceZip(
       ...(job.thirdParty ? { thirdParty: job.thirdParty } : {}),
     }));
 
+  const mergedIntel = combineSiteIntel(source.intel ?? [], source.pages ?? []);
+
   const manifest = {
     generator: options.generator,
     exportedAt: now.toISOString(),
@@ -227,11 +240,14 @@ export async function exportSourceZip(
       files: stats.files,
       bytes: stats.bytes,
       findings: { total: stats.findings, bySeverity: countBySeverity(source.findings ?? []) },
+      endpoints: mergedIntel.endpoints.length,
+      routes: mergedIntel.routes.length,
+      sinks: mergedIntel.sinks.length,
     },
     scripts: [...manifestScripts.values()],
     notScanned,
     rawSecretsIncluded: options.includeSecrets ?? false,
-    note: 'Rebuilt from publicly served source maps. Findings are in FINDINGS.md and findings.json.',
+    note: 'Rebuilt from publicly served source maps. Findings are in FINDINGS.md / findings.json; endpoints and code hints are in ENDPOINTS.md.',
   };
   const report = {
     origin: source.site.origin,
@@ -241,6 +257,7 @@ export async function exportSourceZip(
   };
   add('FINDINGS.md', encoder.encode(findingsMarkdown(source.findings ?? [], report)));
   add('findings.json', encoder.encode(findingsJson(source.findings ?? [], report)));
+  add('ENDPOINTS.md', encoder.encode(endpointsMarkdown(mergedIntel, source.pages ?? [], report)));
   add('manifest.json', encoder.encode(`${JSON.stringify(manifest, null, 2)}\n`));
   zip.end();
   await done;

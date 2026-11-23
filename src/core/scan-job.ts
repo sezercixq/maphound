@@ -1,3 +1,9 @@
+import {
+  analyzeSourceFile,
+  extractFileArtifacts,
+  mergeScriptIntel,
+  type ScriptIntel,
+} from '@/engine/intel';
 import type { Scanner } from '@/engine/scan/scanner';
 import { CONFIDENCE_ORDER, type ScanHit, SEVERITY_ORDER } from '@/engine/scan/types';
 import {
@@ -64,6 +70,7 @@ export async function scanScript(
   if (!blob) return { ok: false, permanent: false, error: `blob not found: ${request.scriptHash}` };
 
   const located: Located[] = [];
+  const intelParts: ScriptIntel[] = [];
   let mapper: PositionMapper | null = null;
   let mapperUrl: string | undefined;
 
@@ -81,7 +88,35 @@ export async function scanScript(
     }
     const rebuilt = rebuildSourceTree(parsed, { includeContent: true });
     for (const file of rebuilt.files) {
-      if (file.content === undefined) continue;
+      if (file.content === undefined) {
+        if (!file.vendor) {
+          const artifacts = extractFileArtifacts(file.path, request.url, map.url);
+          if (artifacts.endpoint || artifacts.route) {
+            intelParts.push({
+              endpoints: artifacts.endpoint ? [artifacts.endpoint] : [],
+              routes: artifacts.route ? [artifacts.route] : [],
+              comments: [],
+              sinks: [],
+              truncated: false,
+            });
+          }
+        }
+        continue;
+      }
+      if (!file.vendor) {
+        intelParts.push(
+          analyzeSourceFile(
+            file.content,
+            {
+              file: file.path,
+              kind: 'source',
+              scriptUrl: request.url,
+              mapUrl: map.url,
+            },
+            { vendor: false, isBundle: false },
+          ),
+        );
+      }
       for (const hit of scanner.scan(file.content)) {
         located.push({
           hit,
@@ -103,6 +138,13 @@ export async function scanScript(
   }
 
   const bundle = await blob.blob.text();
+  intelParts.push(
+    analyzeSourceFile(
+      bundle,
+      { file: bundleFileName(request.url), kind: 'bundle', scriptUrl: request.url },
+      { vendor: false, isBundle: true },
+    ),
+  );
   for (const hit of scanner.scan(bundle)) {
     const original = mapper?.originalPositionFor(hit.line, hit.column) ?? null;
     located.push({
@@ -214,6 +256,16 @@ export async function scanScript(
     await tx.done;
     stored++;
   }
+
+  const mergedIntel = mergeScriptIntel(intelParts);
+  await db.put('intel', {
+    id: `${request.origin}|${request.scriptHash}`,
+    origin: request.origin,
+    scriptHash: request.scriptHash,
+    scriptUrl: request.url,
+    ...mergedIntel,
+    updatedAt: now,
+  });
 
   const script = await db.get('scripts', request.scriptHash);
   if (script) await db.put('scripts', { ...script, status: 'scanned', lastAccess: now });

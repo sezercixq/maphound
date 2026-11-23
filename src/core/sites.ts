@@ -63,7 +63,7 @@ export async function enableSite(
 }
 
 async function purgeOrigin(handle: MaphoundHandle, origin: string): Promise<void> {
-  for (const store of ['scripts', 'maps', 'findings', 'jobs'] as const) {
+  for (const store of ['scripts', 'maps', 'findings', 'intel', 'pages', 'jobs'] as const) {
     const tx = handle.transaction(store, 'readwrite');
     for (const key of await tx.store.index('by-origin').getAllKeys(origin)) {
       await tx.store.delete(key);
@@ -153,10 +153,12 @@ export async function syncSites(db?: MaphoundHandle): Promise<{ disabled: string
  */
 export async function rescanSite(origin: string, db?: MaphoundHandle): Promise<{ queued: number }> {
   const handle = db ?? (await getDb());
-  const findings = handle.transaction('findings', 'readwrite');
-  for (const key of await findings.store.index('by-origin').getAllKeys(origin))
-    await findings.store.delete(key);
-  await findings.done;
+  for (const store of ['findings', 'intel'] as const) {
+    const tx = handle.transaction(store, 'readwrite');
+    for (const key of await tx.store.index('by-origin').getAllKeys(origin))
+      await tx.store.delete(key);
+    await tx.done;
+  }
   const tx = handle.transaction('jobs', 'readwrite');
   let queued = 0;
   for (const job of await tx.store.index('by-origin').getAll(origin)) {

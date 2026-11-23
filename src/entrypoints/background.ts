@@ -8,6 +8,7 @@ import { ensureOffscreen } from '@/core/offscreen';
 import { registeredCollectorIds } from '@/core/permissions';
 import { Processor } from '@/core/processor';
 import { enqueueDiscovered } from '@/core/queue';
+import { siteForUrl } from '@/core/scope';
 import {
   addExtraOrigins,
   disableSite,
@@ -94,6 +95,34 @@ export default defineBackground(() => {
     if (result.queued > 0) void fetcher.pump();
   });
 
+  onMessage('page:next-data', async ({ data, sender }) => {
+    const pageUrl = sender.tab ? (sender.url ?? sender.tab.url) : undefined;
+    if (!pageUrl || !data?.summary) return;
+    const db = await getDb();
+    const active = siteForUrl(await db.getAll('sites'), pageUrl);
+    if (!active) return;
+    let pathname = '/';
+    try {
+      pathname = new URL(pageUrl).pathname;
+    } catch {
+      return;
+    }
+    const id = `${active.origin}|${pathname}`;
+    const existing = await db.get('pages', id);
+    if (!existing) {
+      const count = await db.countFromIndex('pages', 'by-origin', active.origin);
+      if (count >= 50) return;
+    }
+    await db.put('pages', {
+      id,
+      origin: active.origin,
+      pageUrl,
+      nextData: data.summary,
+      updatedAt: Date.now(),
+    });
+    notifyDbChanged({ store: 'pages', origin: active.origin });
+  });
+
   onMessage('site:enable', ({ data }) =>
     enableSite(data.origin, data.scope, undefined, data.settings),
   );
@@ -124,6 +153,8 @@ export default defineBackground(() => {
     g.__mhScripts = async () => (await getDb()).getAll('scripts');
     g.__mhMaps = async () => (await getDb()).getAll('maps');
     g.__mhFindings = async () => (await getDb()).getAll('findings');
+    g.__mhIntel = async () => (await getDb()).getAll('intel');
+    g.__mhPages = async () => (await getDb()).getAll('pages');
     g.__mhSetSettings = async (origin: string, patch: Partial<SiteSettings>) => {
       const db = await getDb();
       const site = await db.get('sites', origin);

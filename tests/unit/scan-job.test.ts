@@ -156,6 +156,55 @@ describe('scanScript', () => {
     ]);
   });
 
+  it('populates intel for first-party code, skips vendor sinks, and clears intel on rescan', async () => {
+    const db = await openMaphoundDb(`scanjob-intel-${counter++}`);
+    const map = JSON.stringify({
+      version: 3,
+      sources: ['webpack:///./src/panel.tsx', 'webpack:///./node_modules/vendor/a.js'],
+      sourcesContent: [
+        `fetch('/api/v1/users');\nel.innerHTML = raw;\n// BYPASS: skip check`,
+        `el.innerHTML = vendorRaw;\n// TODO: vendor internal`,
+      ],
+      mappings: 'AAAA',
+    });
+    await db.put('blobs', {
+      hash: 'sh',
+      kind: 'script',
+      blob: new Blob(["console.log('/graphql');"]),
+      size: 24,
+      lastAccess: 0,
+    });
+    await db.put('blobs', {
+      hash: 'mh',
+      kind: 'map',
+      blob: new Blob([map]),
+      size: map.length,
+      lastAccess: 0,
+    });
+    await analyzeMap(db, {
+      jobId: 'mj',
+      blobKey: 'mh',
+      scriptHash: 'sh',
+      origin: ORIGIN,
+      url: `${ORIGIN}/app.js.map`,
+    });
+    await scanScript(db, scanner, {
+      jobId: 'sj',
+      scriptHash: 'sh',
+      origin: ORIGIN,
+      url: `${ORIGIN}/app.js`,
+    });
+    const intel = await db.get('intel', `${ORIGIN}|sh`);
+    expect(intel?.endpoints.map((e) => e.value).sort()).toEqual(['/api/v1/users', '/graphql']);
+    expect(intel?.sinks).toHaveLength(1);
+    expect(intel?.sinks[0]?.location.file).toBe('src/src/panel.tsx');
+    expect(intel?.comments).toHaveLength(1);
+    expect(intel?.comments[0]?.marker).toBe('BYPASS');
+
+    await rescanSite(ORIGIN, db);
+    expect(await db.count('intel')).toBe(0);
+  });
+
   it('fails softly when the blob is gone', async () => {
     const db = await openMaphoundDb(`scanjob-${counter++}`);
     expect(

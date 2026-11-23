@@ -1,8 +1,9 @@
 import { type DBSchema, type IDBPDatabase, openDB } from 'idb';
+import type { CommentHit, EndpointHit, NextDataSummary, RouteHit, SinkHit } from '@/engine/intel';
 
 export const DB_NAME = 'maphound';
-/** v2: `maps` keyed by job id with origin/hash indexes and the rebuilt file index. */
-export const DB_VERSION = 2;
+/** v3: `intel` (endpoints, routes, comments, sinks) and `pages` (`__NEXT_DATA__`). */
+export const DB_VERSION = 3;
 
 export type Scope = 'origin' | 'subdomains';
 export type JobState =
@@ -147,6 +148,31 @@ export interface FindingRecord {
   updatedAt: number;
 }
 
+/** Attack surface and static code hints extracted from one script and its source maps. */
+export interface ScriptIntelRecord {
+  /** `${origin}|${scriptHash}` */
+  id: string;
+  origin: string;
+  scriptHash: string;
+  scriptUrl: string;
+  endpoints: EndpointHit[];
+  routes: RouteHit[];
+  comments: CommentHit[];
+  sinks: SinkHit[];
+  truncated: boolean;
+  updatedAt: number;
+}
+
+/** Parsed Next.js hydration metadata from one visited page of an enabled site. */
+export interface PageIntelRecord {
+  /** `${origin}|${pathname}` */
+  id: string;
+  origin: string;
+  pageUrl: string;
+  nextData: NextDataSummary;
+  updatedAt: number;
+}
+
 export interface JobRecord {
   id: string;
   kind: JobKind;
@@ -196,6 +222,16 @@ export interface MaphoundDB extends DBSchema {
     value: FindingRecord;
     indexes: { 'by-origin': string; 'by-scriptHash': string; 'by-secretHash': string };
   };
+  intel: {
+    key: string;
+    value: ScriptIntelRecord;
+    indexes: { 'by-origin': string; 'by-scriptHash': string };
+  };
+  pages: {
+    key: string;
+    value: PageIntelRecord;
+    indexes: { 'by-origin': string };
+  };
   jobs: {
     key: string;
     value: JobRecord;
@@ -235,6 +271,14 @@ export function openMaphoundDb(name: string = DB_NAME): Promise<MaphoundHandle> 
         maps.createIndex('by-origin', 'origin');
         maps.createIndex('by-scriptHash', 'scriptHash');
         maps.createIndex('by-hash', 'hash');
+      }
+      if (oldVersion < 3) {
+        const intel = db.createObjectStore('intel', { keyPath: 'id' });
+        intel.createIndex('by-origin', 'origin');
+        intel.createIndex('by-scriptHash', 'scriptHash');
+
+        const pages = db.createObjectStore('pages', { keyPath: 'id' });
+        pages.createIndex('by-origin', 'origin');
       }
     },
   });
