@@ -3,6 +3,40 @@
 All notable changes to MapHound. The format follows [Keep a Changelog](https://keepachangelog.com/)
 and the project uses [Semantic Versioning](https://semver.org/).
 
+## [0.4.0] - 2026-11-23
+
+### Added
+
+- **Client-side architecture & dependency map (`Architecture` tab + `ARCHITECTURE.md`).** Linear-time
+  extraction of `import`/`export` module dependencies, relative internal edges, file → API
+  endpoint data flows, and third-party SDK detection (Stripe, Firebase, Sentry, Auth0, Supabase,
+  Segment, PostHog, Mixpanel, Amplitude, Datadog, Clerk, LaunchDarkly, AWS SDK, OpenAI, Anthropic,
+  GraphQL clients, Realtime WS). Includes a collapsible interactive module tree with click-to-view
+  source preview and an auto-generated Mermaid `flowchart LR` diagram inside `ARCHITECTURE.md`.
+- **HTTP security headers, cookie & Web Storage auditor (`Audit` tab + `AUDIT.md`).** Audits active
+  document response headers (CSP weaknesses, HSTS, clickjacking `X-Frame-Options` /
+  `frame-ancestors`, `X-Content-Type-Options`, `Referrer-Policy`, permissive CORS), `localStorage` /
+  `sessionStorage` for JWTs, Bearer tokens and sensitive keys (strictly masked), and cookie
+  `HttpOnly`, `Secure`, `SameSite` flags without adding any static permissions.
+- **Version tracking: Snapshot & Diff engine (`Diff` tab + `DIFF.md`).** Upgraded IndexedDB to v4
+  (`audits` and `snapshots` stores) with non-destructive migration. Tracks files, endpoints,
+  routes, secret findings and code sinks across rescans and deployments, surfaces a **Changes /
+  Diff** badge in the panel, and writes `DIFF.md` into the ZIP archive when differences exist.
+- **SARIF v2.1.0 export (`results.sarif`) & 1-click disclosure drafts.** Exports masked secret
+  findings and static code sinks in standard SARIF v2.1.0 format compatible with GitHub Code
+  Scanning and VS Code SARIF Viewer, and adds a **Copy report draft** action on secret findings,
+  endpoints, code sinks, and security audit items.
+- **Offline Passive OSINT & 1-Click Launcher (`OSINT` tab + `OSINT.md`).** Linear-time offline
+  extraction of cloud storage buckets (S3, GCS, Firebase, Azure Blob, Cloudflare R2), target
+  subdomains, private RFC1918 IPs, masked local developer build paths, organizational/project
+  attribution, and telemetry IDs from rebuilt source maps and bundles, paired with a zero-background-request
+  1-click external OSINT & Google Dork launcher (`crt.sh`, Wayback Machine, `urlscan.io`, dorks).
+
+### Changed
+
+- **IndexedDB schema v4.** Added `audits` and `snapshots` object stores with non-destructive upgrade
+  from v3.
+
 ## [0.3.0] - 2026-11-23
 
 ### Added

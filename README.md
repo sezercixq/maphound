@@ -48,6 +48,20 @@ you export everything as a ZIP. No server, no account, no telemetry.
   methods), frontend/file-system routes, developer comments (`BYPASS`, `INTERNAL`, `TODO`),
   `__NEXT_DATA__` SSR prop summaries, and first-party static sinks (`dangerouslySetInnerHTML`,
   `innerHTML`, `eval`, unverified `message` listeners, open redirects) in separate tabs.
+- **Client-side architecture & data-flow map.** Reconstructs module imports/exports, third-party
+  SDK usage (Stripe, Firebase, Sentry, Auth0, Supabase, PostHog, etc.) and file → API calls into
+  an interactive tree and a Mermaid diagram in `ARCHITECTURE.md`.
+- **HTTP headers, cookie & Web Storage audit.** Inspects CSP, HSTS, `X-Frame-Options`, CORS,
+  `localStorage`/`sessionStorage` tokens (always masked) and cookie security flags (`HttpOnly`,
+  `Secure`, `SameSite`) locally on enabled sites (`AUDIT.md`).
+- **Snapshot & Diff tracking.** Compares deployments and rescans across files, endpoints, routes,
+  secrets and code sinks (`DIFF.md`).
+- **SARIF v2.1.0 & 1-click disclosure drafts.** Exports `results.sarif` alongside Markdown/JSON
+  reports and copies ready-to-send Markdown vulnerability drafts with masked evidence.
+- **Offline Passive OSINT & 1-Click Launcher.** Extracts cloud storage buckets (S3, GCS,
+  Firebase, Azure Blob, Cloudflare R2), subdomains, private RFC1918 IPs, masked build paths,
+  attribution links and telemetry IDs purely offline (`OSINT.md`), plus 1-click external OSINT
+  & Google Dork links that only open a tab on click with zero background requests.
 - **In-panel code search & viewer.** Search rebuilt source files locally by text or regex inside the
   side panel and jump straight to the highlighted `file:line` without downloading the ZIP first.
 - **A five-stage scanner** that stays fast on large bundles (about 100 ms for 5 MB): Aho-Corasick
@@ -101,7 +115,11 @@ pnpm build          # output: .output/chrome-mv3, load it as above
    ```
    FINDINGS.md                          readable secret report, secrets always masked
    findings.json                        machine-readable; raw values only if you opt in
+   results.sarif                        SARIF v2.1.0 for GitHub Code Scanning / VS Code
    ENDPOINTS.md                         extracted APIs, routes, dev notes, sinks & __NEXT_DATA__
+   ARCHITECTURE.md                      Mermaid dependency diagram, SDK map & module inventory
+   AUDIT.md                             HTTP security headers, cookie flags & Web Storage audit
+   DIFF.md                              snapshot diff report (included when changes exist)
    manifest.json                        scanned URLs, hashes, what was skipped and why
    source/<host>/<script>/src/...       first-party files
    source/<host>/<script>/_vendor/...   node_modules and ignoreList files
@@ -159,7 +177,7 @@ or open a pull request. Every rule ships with tests, so reviews are quick.
 ```bash
 pnpm lint          # Biome lint and format check
 pnpm typecheck     # TypeScript, strict
-pnpm test          # 241 unit tests (Vitest)
+pnpm test          # 254 unit tests (Vitest)
 pnpm rules:check   # rule schema, samples, ReDoS proof
 VITE_MH_E2E=1 pnpm build && pnpm test:e2e   # real-Chromium end-to-end tests (Playwright)
 ```

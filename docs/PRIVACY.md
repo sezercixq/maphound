@@ -1,6 +1,6 @@
 # Privacy policy
 
-_Last updated: 23 November 2026 (version 0.3.0)_
+_Last updated: 23 November 2026 (version 0.4.0)_
 
 MapHound is a browser extension that helps developers and security teams find source maps and
 leaked credentials in the JavaScript of websites they choose. **MapHound does not collect, transmit,
@@ -10,14 +10,18 @@ sell or share any user data. All analysis happens locally in your browser.**
 
 On a site you explicitly enable, MapHound:
 
-1. reads the addresses (URLs) of the scripts that the page loads, and when a Next.js page embeds
-   a `<script id="__NEXT_DATA__">` hydration block, summarizes its SSR prop keys locally (never
-   reading form input, cookies, passwords, or browsing history);
-2. downloads those scripts, and the source maps they declare, from that same site;
+1. reads the addresses (URLs) of the scripts that the page loads, summarizes any `<script id="__NEXT_DATA__">`
+   hydration block, and audits `localStorage`, `sessionStorage` and non-HttpOnly cookie flags locally
+   (strictly masking token values before leaving the page; never reading form input or browsing history);
+2. downloads those scripts, the source maps they declare, and the page's HTTP response headers from that same site;
 3. rebuilds the original source files from the source maps and scans them locally for credentials,
-   internal endpoints/routes, and dangerous static code patterns;
-4. shows the results in the side panel (with local source search and read-only preview) and, if you
-   ask, saves them to a ZIP file on your computer.
+   module dependencies, internal endpoints/routes, passive OSINT indicators (cloud buckets,
+   subdomains, private IPs, telemetry IDs, masked build paths), dangerous static code patterns, and
+   version changes;
+4. shows the results in the side panel (with local source search, read-only preview, 1-click
+   disclosure drafts, and optional external OSINT links that open a new tab only on click with zero
+   background requests) and, if you ask, saves them to a ZIP archive (including SARIF v2.1.0 and
+   `OSINT.md`) on your computer.
 
 ## Data collection and transmission
 

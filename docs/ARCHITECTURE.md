@@ -28,31 +28,33 @@ flowchart LR
   SP --> EW <--> DB
 ```
 
-| Context            | Code                                          | Role                                                                                                                                                                                                                                                 |
-| ------------------ | --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Collector          | `src/entrypoints/collector.content.ts`        | Registered at runtime per enabled site. Collects script URLs from `document.scripts`, resource timing, a `PerformanceObserver` and added `<script>`/`modulepreload` nodes. Debounced 500 ms, at most 200 URLs per message. Never reads page content. |
-| Service worker     | `src/entrypoints/background.ts`, `src/core/*` | Site lifecycle and permissions, job queue, fetcher (4 requests per origin, 10 s timeout, size caps, no cookies by default), processor. All listeners registered synchronously.                                                                       |
-| Offscreen document | `src/entrypoints/offscreen/`                  | Exists only to host the scan worker: MV3 service workers cannot create workers.                                                                                                                                                                      |
-| Scan worker        | `src/workers/scan.worker.ts`                  | Parses maps, rebuilds the source tree index, runs the secret scanner.                                                                                                                                                                                |
-| Side panel         | `src/entrypoints/sidepanel/`, `src/ui/`       | Reads IndexedDB directly and re-queries when notified. Requests host permission inside the click gesture. Hosts tabs for Overview, Endpoints, Code Hints, Source Search and the read-only Code Viewer.                                               |
-| Search worker      | `src/workers/search.worker.ts`                | Searches rebuilt map sources locally by text or regex and loads files for the in-panel Code Viewer with an LRU cache.                                                                                                                                |
-| Export worker      | `src/workers/export.worker.ts`                | Builds the ZIP with fflate (`FINDINGS.md`, `findings.json`, `ENDPOINTS.md`, `manifest.json` + rebuilt trees) and streams chunks to the panel.                                                                                                        |
+| Context            | Code                                          | Role                                                                                                                                                                                                                                                    |
+| ------------------ | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Collector          | `src/entrypoints/collector.content.ts`        | Registered at runtime per enabled site. Collects script URLs, parses `__NEXT_DATA__` SSR props locally, and audits client storage/cookies (values masked before leaving the page).                                                                      |
+| Service worker     | `src/entrypoints/background.ts`, `src/core/*` | Site lifecycle and permissions, job queue, fetcher (4 requests per origin, 10 s timeout, size caps, no cookies by default), processor, response header audit, and site snapshots. All listeners registered synchronously.                               |
+| Offscreen document | `src/entrypoints/offscreen/`                  | Exists only to host the scan worker: MV3 service workers cannot create workers.                                                                                                                                                                         |
+| Scan worker        | `src/workers/scan.worker.ts`                  | Parses maps, rebuilds the source tree index, runs the secret scanner and intel/architecture/OSINT extractors.                                                                                                                                           |
+| Side panel         | `src/entrypoints/sidepanel/`, `src/ui/`       | Reads IndexedDB directly and re-queries when notified. Requests host permission inside the click gesture. Hosts tabs for Overview, Endpoints, Code Hints, Architecture, OSINT, Security Audit, Diff, Source Search, Code Viewer, and disclosure drafts. |
+| Search worker      | `src/workers/search.worker.ts`                | Searches rebuilt map sources locally by text or regex and loads files for the in-panel Code Viewer with an LRU cache.                                                                                                                                   |
+| Export worker      | `src/workers/export.worker.ts`                | Builds the ZIP with fflate (`FINDINGS.md`, `findings.json`, `results.sarif`, `ENDPOINTS.md`, `ARCHITECTURE.md`, `OSINT.md`, `AUDIT.md`, conditional `DIFF.md`, `manifest.json` + rebuilt trees) and streams chunks to the panel.                        |
 
 ## Data model
 
-IndexedDB (schema v3) is the single source of truth. Messages carry keys (hashes, job ids) or compact summaries, never raw large blobs, and
+IndexedDB (schema v4) is the single source of truth. Messages carry keys (hashes, job ids) or compact, masked summaries, never raw large blobs or raw storage/cookie secrets, and
 the `BroadcastChannel` only says "something changed".
 
-| Store      | Key                         | Contents                                                                    |
-| ---------- | --------------------------- | --------------------------------------------------------------------------- |
-| `sites`    | origin                      | scope (`origin` or `subdomains`), settings (map probing, cookies)           |
-| `jobs`     | `script:<url>`, `map:<url>` | state machine below, attempts, lease, skip reason                           |
-| `blobs`    | SHA-256                     | downloaded scripts and maps, content-addressed and stored once              |
-| `scripts`  | SHA-256                     | URLs, size, source map reference, status                                    |
-| `maps`     | job id                      | rebuilt file index (paths, sizes, vendor, omissions), limits hit            |
-| `findings` | `origin \| rule \| sha256`  | severity, confidence, locations, masked preview, raw value                  |
-| `intel`    | `origin \| scriptHash`      | extracted endpoints, routes, developer comments, first-party static sinks   |
-| `pages`    | `origin \| pathname`        | parsed `__NEXT_DATA__` SSR hydration summary with masked sensitive previews |
+| Store       | Key                         | Contents                                                                    |
+| ----------- | --------------------------- | --------------------------------------------------------------------------- |
+| `sites`     | origin                      | scope (`origin` or `subdomains`), settings (map probing, cookies)           |
+| `jobs`      | `script:<url>`, `map:<url>` | state machine below, attempts, lease, skip reason                           |
+| `blobs`     | SHA-256                     | downloaded scripts and maps, content-addressed and stored once              |
+| `scripts`   | SHA-256                     | URLs, size, source map reference, status                                    |
+| `maps`      | job id                      | rebuilt file index (paths, sizes, vendor, omissions), limits hit            |
+| `findings`  | `origin \| rule \| sha256`  | severity, confidence, locations, masked preview, raw value                  |
+| `intel`     | `origin \| scriptHash`      | endpoints, routes, dev notes, static sinks, modules, offline passive OSINT  |
+| `pages`     | `origin \| pathname`        | parsed `__NEXT_DATA__` SSR hydration summary with masked sensitive previews |
+| `audits`    | `origin \| pathname`        | HTTP security header matrix and masked cookie/storage audit findings        |
+| `snapshots` | `origin \| timestamp`       | version snapshot signatures and deltas across rescans/deployments           |
 
 Rebuilt file contents are not stored twice: the export rebuilds them from the map blob with the same
 deterministic code that produced the index.
@@ -144,7 +146,10 @@ Details and justifications: [`PRIVACY.md`](PRIVACY.md).
 rules/                 detector YAML and schema
 scripts/               rule compiler and checker
 src/core/              service-worker logic: db, sites, permissions, queue, fetcher, processor, scan job
-src/engine/intel/      linear lexer, endpoint/route/comment extractors, static sinks, __NEXT_DATA__ parser
+src/engine/audit/      HTTP security headers, cookie flags, Web Storage audit & AUDIT.md report
+src/engine/diff/       site version snapshots, comparative diff engine & DIFF.md report
+src/engine/export/     SARIF v2.1.0 serializer & 1-click responsible disclosure drafts
+src/engine/intel/      linear lexer, endpoints/routes/comments, static sinks, __NEXT_DATA__, architecture graph
 src/engine/search/     in-panel source search & file loader
 src/engine/sourcemap/  parse, rebuild, sanitize
 src/engine/scan/       keyword index, regex stage, entropy, suppression, scanner
