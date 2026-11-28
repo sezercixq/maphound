@@ -144,10 +144,13 @@ export const ROUTE_KIND_KEYS: Record<RouteKind, MessageKey> = {
 };
 
 export const SINK_CATEGORY_KEYS: Record<SinkCategory, MessageKey> = {
+  'taint-flow': 'sinkCatTaintFlow',
   'dom-xss': 'sinkCatDomXss',
   'code-injection': 'sinkCatCodeInjection',
   messaging: 'sinkCatMessaging',
   redirect: 'sinkCatRedirect',
+  'authz-idor': 'sinkCatAuthzIdor',
+  crypto: 'sinkCatCrypto',
   framework: 'sinkCatFramework',
 };
 

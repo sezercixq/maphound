@@ -5,6 +5,13 @@ export {
   parseSetCookieHeader,
 } from './cookies';
 export {
+  auditJwtDeep,
+  auditSourceCrypto,
+  inspectJwtToken,
+  type JwtSecurityIssue,
+  MAX_CRYPTO_HITS_PER_FILE,
+} from './crypto-audit';
+export {
   discoveryMarkdownLines,
   MAX_ROBOTS_PATHS,
   MAX_SITEMAP_REFS,

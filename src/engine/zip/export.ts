@@ -16,7 +16,7 @@ import {
   stackHintsMarkdownLines,
 } from '@/engine/audit';
 import { diffMarkdown, diffSnapshots, type SiteSnapshotRecord } from '@/engine/diff';
-import { sarifJson } from '@/engine/export';
+import { openApiJson, sarifJson } from '@/engine/export';
 import { architectureMarkdown, buildArchitectureGraph, osintMarkdown } from '@/engine/intel';
 import { parseSourceMap, rebuildSourceTree } from '@/engine/sourcemap';
 import { PathAllocator, sanitizeSegment } from '@/engine/sourcemap/sanitize-path';
@@ -281,7 +281,7 @@ export async function exportSourceZip(
     scripts: [...manifestScripts.values()],
     notScanned,
     rawSecretsIncluded: options.includeSecrets ?? false,
-    note: 'Rebuilt from publicly served source maps. Reports: FINDINGS.md, findings.json, results.sarif, ENDPOINTS.md, ARCHITECTURE.md, OSINT.md, AUDIT.md, and DIFF.md (when snapshot changes exist).',
+    note: 'Rebuilt from publicly served source maps. Reports: FINDINGS.md, findings.json, results.sarif, openapi.json, ENDPOINTS.md, ARCHITECTURE.md, OSINT.md, AUDIT.md, and DIFF.md (when snapshot changes exist).',
   };
   const report = {
     origin: source.site.origin,
@@ -304,6 +304,16 @@ export async function exportSourceZip(
     ),
   );
   add('AUDIT.md', encoder.encode(auditMarkdown(source.audits ?? [], report, stackHints)));
+  add(
+    'openapi.json',
+    encoder.encode(
+      openApiJson({
+        origin: source.site.origin,
+        endpoints: mergedIntel.endpoints,
+        version: toolVersion,
+      }),
+    ),
+  );
   add(
     'results.sarif',
     encoder.encode(

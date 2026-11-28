@@ -20,6 +20,7 @@ export {
   SDK_CATALOG,
   type SdkUsageSummary,
 } from './architecture';
+export { extractAuthzSurface, MAX_AUTHZ_HITS_PER_FILE } from './authz-surface';
 export {
   classifyPath,
   extractComments,
@@ -56,6 +57,7 @@ export {
 } from './osint-links';
 export { INTEL_PATTERNS } from './patterns';
 export { extractSinks, MAX_SINKS_PER_FILE } from './sinks';
+export { extractTaintFlows, MAX_TAINT_FLOWS_PER_FILE } from './taint';
 export {
   type CommentHit,
   ENDPOINT_CATEGORIES,
@@ -81,4 +83,5 @@ export {
   type SdkMatch,
   type SinkCategory,
   type SinkHit,
+  type TaintTrace,
 } from './types';

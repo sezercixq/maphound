@@ -132,6 +132,7 @@ describe('findings report', () => {
       'OSINT.md',
       'findings.json',
       'manifest.json',
+      'openapi.json',
       'results.sarif',
     ]);
     expect(JSON.parse(strFromU8(files['findings.json'] as Uint8Array)).findings[0].secret).toBe(

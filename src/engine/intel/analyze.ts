@@ -1,4 +1,6 @@
+import { auditSourceCrypto } from '@/engine/audit/crypto-audit';
 import { extractModuleSummary, MAX_MODULES_PER_SITE } from './architecture';
+import { extractAuthzSurface } from './authz-surface';
 import {
   extractComments,
   extractEndpoints,
@@ -8,6 +10,7 @@ import {
 import { LineIndex, lex } from './lexer';
 import { extractOsint, sortOsintHits } from './osint';
 import { extractSinks } from './sinks';
+import { extractTaintFlows } from './taint';
 import {
   type CommentHit,
   ENDPOINT_CATEGORIES,
@@ -80,7 +83,14 @@ export function analyzeSourceFile(
   const endpoints = extractEndpoints(slice, lexed, lines, location);
   const routes = extractRoutes(slice, lexed, lines, location);
   const comments = isBundle ? [] : extractComments(slice, lexed, lines, location);
-  const sinks = isBundle ? [] : extractSinks(slice, lexed, lines, location);
+  const sinks = isBundle
+    ? []
+    : [
+        ...extractTaintFlows(slice, lexed, lines, location),
+        ...extractSinks(slice, lexed, lines, location),
+        ...extractAuthzSurface(slice, lexed, lines, location, endpoints),
+        ...auditSourceCrypto(slice, lexed, lines, location),
+      ];
   const osint = extractOsint(slice, lexed, lines, location, { siteOrigin: options.siteOrigin });
 
   if (!isBundle) {

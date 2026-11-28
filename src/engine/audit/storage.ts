@@ -1,4 +1,5 @@
 import { decodeJwt } from '@/engine/validators/jwt';
+import { auditJwtDeep } from './crypto-audit';
 import { AUDIT_BEARER, AUDIT_JWT, AUDIT_PROVIDER_PREFIX, AUDIT_SENSITIVE_KEY } from './patterns';
 import type { AuditFinding } from './types';
 
@@ -44,6 +45,7 @@ export function auditStorageEntries(
           recommendation:
             'Store session tokens in HttpOnly, Secure, SameSite cookies instead of Web Storage.',
         });
+        findings.push(...auditJwtDeep(jwtMatch[1], subject, 'storage'));
         continue;
       }
     }

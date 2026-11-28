@@ -5,6 +5,13 @@ export {
   draftSinkReport,
 } from './disclosure-draft';
 export {
+  buildOpenApiSpec,
+  type OpenApiDocument,
+  type OpenApiOperation,
+  type OpenApiParameter,
+  openApiJson,
+} from './openapi';
+export {
   buildSarifLog,
   type SarifDescriptor,
   type SarifLevel,

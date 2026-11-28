@@ -61,8 +61,15 @@ you export everything as a ZIP. No server, no account, no telemetry.
   lists and includes them in `OSINT.md` and `ENDPOINTS.md` (zero background brute-force).
 - **Snapshot & Diff tracking.** Compares deployments and rescans across files, endpoints, routes,
   secrets and code sinks (`DIFF.md`).
-- **SARIF v2.1.0 & 1-click disclosure drafts.** Exports `results.sarif` alongside Markdown/JSON
-  reports and copies ready-to-send Markdown vulnerability drafts with masked evidence.
+- **Source-to-Sink taint flow, AuthZ/IDOR & crypto/JWT auditing.** Tracks untrusted browser inputs
+  (`location.*`, `URLSearchParams`, `event.data`, Web Storage) through local assignments into DOM
+  XSS, code execution, open redirect and prototype pollution sinks (`L<src> → L<sink>`), flags
+  unvalidated `postMessage` handlers, client-side AuthZ gates and IDOR endpoint candidates, and
+  audits weak cryptography (`Math.random()`, `MD5`/`SHA-1`, ECB, static IV/salt) and JWTs
+  (`alg: "none"`, >30-day lifetimes, privileged claims).
+- **SARIF v2.1.0, OpenAPI 3.0.3 & 1-click disclosure drafts.** Exports `results.sarif` and Burp /
+  Postman-ready `openapi.json` alongside Markdown/JSON reports and copies ready-to-send Markdown
+  vulnerability drafts with masked evidence.
 - **Offline Passive OSINT & 1-Click Launcher.** Extracts cloud storage buckets (S3, GCS,
   Firebase, Azure Blob, Cloudflare R2), subdomains, private RFC1918 IPs, masked build paths,
   attribution links and telemetry IDs purely offline (`OSINT.md`), plus 1-click external OSINT
@@ -125,6 +132,7 @@ pnpm build          # output: .output/chrome-mv3, load it as above
    FINDINGS.md                          readable secret report, secrets always masked
    findings.json                        machine-readable; raw values only if you opt in
    results.sarif                        SARIF v2.1.0 for GitHub Code Scanning / VS Code
+   openapi.json                         OpenAPI 3.0.3 schema for Burp Suite / Postman
    ENDPOINTS.md                         extracted APIs, routes, dev notes, sinks & __NEXT_DATA__
    ARCHITECTURE.md                      Mermaid dependency diagram, SDK map & module inventory
    OSINT.md                             offline cloud buckets, subdomains, private IPs, masked paths & telemetry
@@ -187,7 +195,7 @@ or open a pull request. Every rule ships with tests, so reviews are quick.
 ```bash
 pnpm lint          # Biome lint and format check
 pnpm typecheck     # TypeScript, strict
-pnpm test          # 264 unit tests (Vitest)
+pnpm test          # 268 unit tests (Vitest)
 pnpm rules:check   # rule schema, samples, ReDoS proof
 pnpm preview:images # regenerate docs/assets/maphound*-preview.png from live UI
 VITE_MH_E2E=1 pnpm build && pnpm test:e2e   # real-Chromium end-to-end tests (Playwright)

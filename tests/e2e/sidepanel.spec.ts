@@ -101,6 +101,7 @@ test('side panel enables a site, lists results live and exports a safe ZIP', asy
       'OSINT.md',
       'findings.json',
       'manifest.json',
+      'openapi.json',
       'results.sarif',
       ...['app.js', 'chunk.js', 'lazy.mjs'].flatMap((script) => [
         `source/${host}/${script}/_vendor/lib/index.js`,

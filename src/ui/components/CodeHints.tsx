@@ -8,10 +8,13 @@ import { openCodeViewer } from '../state';
 import { Badge, CopyDraftButton, Section } from './primitives';
 
 const SINK_CATEGORIES: readonly SinkCategory[] = [
+  'taint-flow',
   'dom-xss',
   'code-injection',
   'messaging',
   'redirect',
+  'authz-idor',
+  'crypto',
   'framework',
 ];
 
@@ -273,6 +276,20 @@ export function CodeHintsView({
                         buildDraft={() => draftSinkReport(sink, origin)}
                       />
                     </div>
+                    {sink.trace && (
+                      <p
+                        data-testid="sink-trace"
+                        class="flex flex-wrap items-center gap-1 font-mono text-[10px] text-amber-200"
+                      >
+                        <span class="rounded bg-amber-400/15 px-1.5 py-px">
+                          L{sink.trace.sourceLine} → L{sink.trace.sinkLine}
+                        </span>
+                        <span class="text-zinc-400">
+                          {sink.trace.sourceExpr}
+                          {sink.trace.variable ? ` (${sink.trace.variable})` : ''}
+                        </span>
+                      </p>
+                    )}
                     <button
                       type="button"
                       data-testid="sink-location"

@@ -130,6 +130,7 @@ describe('exportSourceZip', () => {
         'OSINT.md',
         'findings.json',
         'manifest.json',
+        'openapi.json',
         'results.sarif',
         'source/127.0.0.1_8080/main-2.js/src/src/App.tsx',
         'source/127.0.0.1_8080/main-2.js/_vendor/react/index.js',
@@ -157,7 +158,7 @@ describe('exportSourceZip', () => {
     const { files } = await build();
     for (const name of Object.keys(files)) {
       expect(name).toMatch(
-        /^(manifest\.json|ARCHITECTURE\.md|AUDIT\.md|DIFF\.md|ENDPOINTS\.md|FINDINGS\.md|OSINT\.md|findings\.json|results\.sarif|source\/[^/]+\/[^/]+\/(src|_vendor)\/.+)$/,
+        /^(manifest\.json|ARCHITECTURE\.md|AUDIT\.md|DIFF\.md|ENDPOINTS\.md|FINDINGS\.md|OSINT\.md|findings\.json|openapi\.json|results\.sarif|source\/[^/]+\/[^/]+\/(src|_vendor)\/.+)$/,
       );
       expect(name.split('/')).not.toContain('..');
       expect(name).not.toMatch(/[\\:\u0000]|^\//);

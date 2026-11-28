@@ -766,5 +766,20 @@
   },
   "discoveryNoneFound": {
     "message": "No robots.txt or sitemap.xml entries found."
+  },
+  "sinkCatTaintFlow": {
+    "message": "Taint Flow"
+  },
+  "sinkCatAuthzIdor": {
+    "message": "AuthZ / IDOR"
+  },
+  "sinkCatCrypto": {
+    "message": "Crypto / JWT"
+  },
+  "endpointsExportOpenApi": {
+    "message": "OpenAPI"
+  },
+  "endpointsCopyOpenApi": {
+    "message": "Copy OpenAPI"
   }
 }

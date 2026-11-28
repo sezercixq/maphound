@@ -1,5 +1,5 @@
 import { useSignal } from '@preact/signals';
-import { draftEndpointReport } from '@/engine/export';
+import { draftEndpointReport, openApiJson } from '@/engine/export';
 import {
   ENDPOINT_CATEGORIES,
   type EndpointCategory,
@@ -138,6 +138,15 @@ export function EndpointsView({ intel, origin }: { intel: ScriptIntel; origin: s
     );
   };
 
+  const downloadOpenApi = () => {
+    saveBlob(
+      new Blob([openApiJson({ origin, endpoints: intel.endpoints })], {
+        type: 'application/json;charset=utf-8',
+      }),
+      `maphound-${hostSlug(origin)}-openapi.json`,
+    );
+  };
+
   const hasAny = intel.endpoints.length > 0 || intel.routes.length > 0 || intel.comments.length > 0;
 
   return (
@@ -169,6 +178,26 @@ export function EndpointsView({ intel, origin }: { intel: ScriptIntel; origin: s
           class="rounded border border-white/[0.08] bg-white/[0.03] px-2.5 py-1 font-mono text-[11px] text-zinc-300 hover:bg-white/[0.07] disabled:cursor-not-allowed disabled:opacity-40"
         >
           {t('endpointsExportJson')}
+        </button>
+        <button
+          type="button"
+          data-testid="endpoints-export-openapi"
+          disabled={intel.endpoints.length === 0}
+          onClick={downloadOpenApi}
+          class="rounded border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 font-mono text-[11px] text-emerald-300 hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          {t('endpointsExportOpenApi')}
+        </button>
+        <button
+          type="button"
+          data-testid="endpoints-copy-openapi"
+          disabled={intel.endpoints.length === 0}
+          onClick={() =>
+            void copyText(openApiJson({ origin, endpoints: intel.endpoints }), '__openapi__')
+          }
+          class="rounded border border-white/[0.08] bg-white/[0.03] px-2 py-1 text-[11px] text-zinc-300 hover:bg-white/[0.07] disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          {copiedItem.value === '__openapi__' ? t('copied') : t('endpointsCopyOpenApi')}
         </button>
       </div>
 

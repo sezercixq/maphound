@@ -43,7 +43,15 @@ export type HintLevel = 'high' | 'medium' | 'low' | 'info';
 
 export const HINT_LEVELS: readonly HintLevel[] = ['high', 'medium', 'low', 'info'];
 
-export type SinkCategory = 'dom-xss' | 'code-injection' | 'messaging' | 'redirect' | 'framework';
+export type SinkCategory =
+  | 'taint-flow'
+  | 'dom-xss'
+  | 'code-injection'
+  | 'messaging'
+  | 'redirect'
+  | 'authz-idor'
+  | 'crypto'
+  | 'framework';
 
 export type SdkCategory =
   | 'payment'
@@ -116,6 +124,13 @@ export interface CommentHit {
   location: IntelLocation;
 }
 
+export interface TaintTrace {
+  sourceExpr: string;
+  sourceLine: number;
+  sinkLine: number;
+  variable?: string;
+}
+
 export interface SinkHit {
   ruleId: string;
   title: string;
@@ -123,6 +138,8 @@ export interface SinkHit {
   level: HintLevel;
   /** The line around the match. */
   snippet: string;
+  /** Optional Source -> Sink data-flow trace. */
+  trace?: TaintTrace;
   location: IntelLocation;
 }
 

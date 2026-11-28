@@ -69,6 +69,7 @@ describe('auditStorageEntries', () => {
     );
     expect(findings.map((f) => f.ruleId)).toEqual([
       'storage-jwt',
+      'jwt-privileged-claims',
       'storage-bearer-token',
       'storage-sensitive-key',
     ]);

@@ -3,6 +3,29 @@
 All notable changes to MapHound. The format follows [Keep a Changelog](https://keepachangelog.com/)
 and the project uses [Semantic Versioning](https://semver.org/).
 
+## [0.6.0] - 2026-11-28
+
+### Added
+
+- **Scope-Aware Source-to-Sink Taint Flow Tracker (`src/engine/intel/taint.ts`).** Linear-time
+  data-flow tracing across `const`/`let`/`var` assignments and destructuring from untrusted browser
+  sources (`location.*`, `document.URL`, `document.referrer`, `window.name`, `URLSearchParams`,
+  `postMessage` `event.data`, `localStorage`/`sessionStorage.getItem`) to dangerous sinks (DOM XSS,
+  code execution, open redirect, prototype pollution), clearing taint on sanitizers and emitting
+  **Confirmed Source-to-Sink Flow** traces (`L<source> → L<sink>`) in `CodeHints.tsx` and `results.sarif`.
+- **`postMessage` & Client-Side AuthZ / IDOR Surface Analyzer (`src/engine/intel/authz-surface.ts`).**
+  Detects `addEventListener('message', ...)` / `onmessage` handlers missing `.origin` validation,
+  client-side authorization gates (`isAdmin`, `isSuperAdmin`, `role ===`, `permissions.includes`),
+  and parameterized/predictable IDOR API endpoint candidates (`:userId`, `?accountId=`).
+- **Cryptographic Weakness & Deep JWT Auditor (`src/engine/audit/crypto-audit.ts`).** Detects
+  `Math.random()` in security contexts, weak hashes (`MD5` / `SHA-1`), AES ECB mode, hardcoded static
+  IVs/salts, and performs offline deep JWT inspection (`alg: "none"`, `>30`-day token lifetimes, and
+  privileged role/scope claims, always strictly masked) across source code, Web Storage, and cookies.
+- **Burp / Postman Compatible OpenAPI 3.0.3 Generator (`src/engine/export/openapi.ts`).** Converts
+  discovered endpoints, HTTP methods, path/query parameters, JSON request bodies, and `BearerAuth` /
+  `ApiKeyAuth` schemes into standard `openapi.json`, downloadable/copyable directly from the
+  **Endpoints** tab and bundled inside the exported ZIP archive.
+
 ## [0.5.0] - 2026-11-23
 
 ### Added

@@ -166,6 +166,41 @@ const v040V2Map = JSON.stringify({
   mappings: 'AAAA',
 });
 
+export const v060BadJwt = `${b64u({ alg: 'none', typ: 'JWT' })}.${b64u({
+  sub: 'u_admin',
+  admin: true,
+  role: 'superadmin',
+  iat: 1700000000,
+  exp: 1700000000 + 90 * 86_400,
+})}.${rand(24)}`;
+
+const v060Source = [
+  'export function renderGreeting() {',
+  '  const params = new URLSearchParams(location.search);',
+  '  const userInput = params.get("q");',
+  '  document.body.innerHTML = userInput;',
+  '}',
+  'window.addEventListener("message", (ev) => {',
+  '  applyConfig(ev.data);',
+  '});',
+  'export function generateCsrfToken(user, userId) {',
+  '  const nonce = Math.random().toString(36);',
+  '  const digest = CryptoJS.MD5(nonce);',
+  '  if (user.isAdmin) {',
+  '    return axios.post(`/api/v1/users/${userId}/export?accountId=7`, { digest });',
+  '  }',
+  '}',
+  '',
+].join('\n');
+
+const v060Map = JSON.stringify({
+  version: 3,
+  file: 'v060-app.js',
+  sources: ['src/security/flows.ts'],
+  sourcesContent: [v060Source],
+  mappings: 'AAAA',
+});
+
 export interface TestServer {
   base: string;
   thirdPartyBase: string;
@@ -264,6 +299,14 @@ export function startServer(): Promise<TestServer> {
           'application/xml',
           `<?xml version="1.0" encoding="UTF-8"?><urlset><url><loc>http://${req.headers.host}/pricing</loc></url><url><loc>http://${req.headers.host}/status</loc></url></urlset>`,
         );
+      case '/v060.html':
+        return html(
+          `<script>localStorage.setItem('admin_jwt', '${v060BadJwt}');</script><script src="/v060-app.js"></script>`,
+        );
+      case '/v060-app.js':
+        return js("console.log('v060');\n//# sourceMappingURL=v060-app.js.map\n");
+      case '/v060-app.js.map':
+        return send('application/json', v060Map);
       case '/app.js':
         return js(
           [

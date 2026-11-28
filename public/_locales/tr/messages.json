@@ -766,5 +766,20 @@
   },
   "discoveryNoneFound": {
     "message": "robots.txt veya sitemap.xml kaydı bulunamadı."
+  },
+  "sinkCatTaintFlow": {
+    "message": "Veri Akışı"
+  },
+  "sinkCatAuthzIdor": {
+    "message": "Yetki / IDOR"
+  },
+  "sinkCatCrypto": {
+    "message": "Kripto / JWT"
+  },
+  "endpointsExportOpenApi": {
+    "message": "OpenAPI"
+  },
+  "endpointsCopyOpenApi": {
+    "message": "OpenAPI Kopyala"
   }
 }

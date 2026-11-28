@@ -84,10 +84,13 @@ const SINK_SCORE: Record<HintLevel, string> = {
 };
 
 const SINK_CWE: Record<SinkCategory, string[]> = {
+  'taint-flow': ['security', 'taint', 'external/cwe/cwe-79', 'external/cwe/cwe-94'],
   'dom-xss': ['security', 'external/cwe/cwe-79'],
   'code-injection': ['security', 'external/cwe/cwe-95'],
   messaging: ['security', 'external/cwe/cwe-346'],
   redirect: ['security', 'external/cwe/cwe-601'],
+  'authz-idor': ['security', 'external/cwe/cwe-639', 'external/cwe/cwe-346'],
+  crypto: ['security', 'external/cwe/cwe-327', 'external/cwe/cwe-338'],
   framework: ['security', 'external/cwe/cwe-79'],
 };
 
@@ -166,10 +169,13 @@ export function buildSarifLog(input: {
       });
     }
 
+    const traceSuffix = s.trace
+      ? ` Flow: ${s.trace.sourceExpr} (line ${s.trace.sourceLine}) -> line ${s.trace.sinkLine}.`
+      : '';
     results.push({
       ruleId: sarifRuleId,
       level: SINK_LEVEL[s.level],
-      message: { text: `${s.title} (${s.category}).` },
+      message: { text: `${s.title} (${s.category}).${traceSuffix}` },
       locations: [
         {
           physicalLocation: {

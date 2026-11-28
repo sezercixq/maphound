@@ -1,4 +1,5 @@
 import { decodeJwt } from '@/engine/validators/jwt';
+import { auditJwtDeep } from './crypto-audit';
 import { AUDIT_ANALYTICS_COOKIE, AUDIT_JWT, AUDIT_SENSITIVE_COOKIE } from './patterns';
 import { maskAuditValue } from './storage';
 import type { AuditFinding, ClientCookieInput } from './types';
@@ -59,6 +60,10 @@ export function auditCookies(
     const hasJwt = Boolean(jwtMatch?.[1] && decodeJwt(jwtMatch[1]));
     const sensitive = AUDIT_SENSITIVE_COOKIE.test(name) || hasJwt;
     const preview = hasJwt && jwtMatch?.[1] ? maskAuditValue(jwtMatch[1]) : undefined;
+
+    if (hasJwt && jwtMatch?.[1]) {
+      findings.push(...auditJwtDeep(jwtMatch[1], name, 'cookie'));
+    }
 
     if (cookie.httpOnly === false || cookie.fromDocumentCookie) {
       findings.push({

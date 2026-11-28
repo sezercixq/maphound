@@ -3,6 +3,12 @@ import type { AuditFinding } from '@/engine/audit';
 import type { EndpointHit, SinkCategory, SinkHit } from '@/engine/intel';
 
 const SINK_IMPACT: Record<SinkCategory, { impact: string; remediation: string }> = {
+  'taint-flow': {
+    impact:
+      'Untrusted browser input flows directly into a dangerous execution, DOM, redirect, or object-merge sink without sanitization, enabling high-impact client-side exploitation.',
+    remediation:
+      'Sanitize or strictly validate untrusted input at the boundary (e.g. DOMPurify, allowlisted URLs, safe property keys) before passing it to the sink.',
+  },
   'dom-xss': {
     impact:
       'If user-controlled or untrusted data reaches this DOM HTML sink, an attacker can execute arbitrary JavaScript in the origin of the application.',
@@ -26,6 +32,18 @@ const SINK_IMPACT: Record<SinkCategory, { impact: string; remediation: string }>
       'Assigning unvalidated input to window.location or window.open enables Open Redirect or javascript: URI execution.',
     remediation:
       'Validate redirect targets against an allowlist of same-origin relative paths or permitted hosts and block non-http(s) schemes.',
+  },
+  'authz-idor': {
+    impact:
+      'Client-side authorization gates, unvalidated postMessage handlers, or predictable object-ID endpoints may allow unauthorized access or cross-origin actions if not strictly enforced server-side.',
+    remediation:
+      'Enforce object-level authorization (BOLA/IDOR checks) on the server for every request and validate event.origin against an explicit allowlist in message handlers.',
+  },
+  crypto: {
+    impact:
+      'Weak randomness (Math.random), deprecated hashes (MD5/SHA-1), AES-ECB, static IVs/salts, or weak/long-lived JWT configurations undermine confidentiality and token integrity.',
+    remediation:
+      'Use crypto.getRandomValues(), SHA-256/Argon2, authenticated encryption (AES-GCM) with unique random IVs, and short-lived asymmetrically signed JWTs.',
   },
   framework: {
     impact:
