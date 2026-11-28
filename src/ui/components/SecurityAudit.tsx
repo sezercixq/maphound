@@ -72,6 +72,8 @@ export function SecurityAuditView({
 }) {
   const activeCategory = useSignal<AuditCategory | 'all'>('all');
   const selectedAuditId = useSignal<string | null>(null);
+  const rawOpen = useSignal(false);
+  const rawCopied = useSignal(false);
 
   if (audits.length === 0 && stackHints.length === 0) {
     return <p class="px-1 text-[12px] text-zinc-500">{t('auditEmpty')}</p>;
@@ -159,8 +161,132 @@ export function SecurityAuditView({
               )}
             </p>
           </div>
+
+          {currentAudit.rawHeaders && currentAudit.rawHeaders.length > 0 && (
+            <div class="rounded-lg border border-white/[0.06] bg-white/[0.02]">
+              <div class="flex items-center justify-between gap-2 px-2.5 py-1.5">
+                <button
+                  type="button"
+                  data-testid="raw-headers-toggle"
+                  onClick={() => {
+                    rawOpen.value = !rawOpen.value;
+                  }}
+                  class="flex items-center gap-1.5 text-[11px] font-medium text-zinc-300 hover:text-zinc-100"
+                >
+                  <span class="font-mono text-[10px] text-zinc-500">
+                    {rawOpen.value ? '▾' : '▸'}
+                  </span>
+                  <span>{t('rawHeadersTitle')}</span>
+                  <span class="font-mono text-[10px] text-zinc-500">
+                    ({currentAudit.rawHeaders.length})
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  data-testid="raw-headers-copy"
+                  onClick={() => {
+                    const text = (currentAudit.rawHeaders ?? [])
+                      .map((h) => `${h.name}: ${h.value}`)
+                      .join('\n');
+                    void navigator.clipboard
+                      .writeText(text)
+                      .then(() => {
+                        rawCopied.value = true;
+                        setTimeout(() => {
+                          rawCopied.value = false;
+                        }, 1500);
+                      })
+                      .catch(() => {});
+                  }}
+                  class="rounded px-1.5 py-0.5 text-[10px] text-zinc-400 hover:bg-white/[0.06] hover:text-zinc-200"
+                >
+                  {rawCopied.value ? t('osintCopiedValue') : t('rawHeadersCopy')}
+                </button>
+              </div>
+              {rawOpen.value && (
+                <div
+                  data-testid="raw-headers-table"
+                  class="max-h-56 divide-y divide-white/[0.04] overflow-auto border-t border-white/[0.06]"
+                >
+                  {currentAudit.rawHeaders.map((h) => (
+                    <div
+                      key={h.name}
+                      class="flex items-start gap-2 px-2.5 py-1 font-mono text-[10px]"
+                    >
+                      <span class="w-36 shrink-0 truncate text-emerald-300/90" title={h.name}>
+                        {h.name}
+                      </span>
+                      <span class="min-w-0 flex-1 break-all text-zinc-400">{h.value}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </Section>
       )}
+
+      {currentAudit?.htmlAudit &&
+        (currentAudit.htmlAudit.metas.length > 0 || currentAudit.htmlAudit.comments.length > 0) && (
+          <Section
+            title={t('htmlAuditTitle')}
+            count={currentAudit.htmlAudit.metas.length + currentAudit.htmlAudit.comments.length}
+          >
+            <div
+              data-testid="html-audit-card"
+              class="space-y-2.5 rounded-lg border border-white/[0.06] bg-white/[0.02] p-2.5"
+            >
+              {currentAudit.htmlAudit.metas.length > 0 && (
+                <div class="space-y-1">
+                  <p class="text-[10px] font-medium tracking-wider text-zinc-500 uppercase">
+                    {t('htmlMetaHeading')}
+                  </p>
+                  <ul class="space-y-1">
+                    {currentAudit.htmlAudit.metas.map((m) => (
+                      <li
+                        key={`${m.name}:${m.content}`}
+                        class="flex items-center gap-2 font-mono text-[11px]"
+                      >
+                        <Badge tone="neutral">{m.name}</Badge>
+                        <span class="truncate text-zinc-200">{m.content}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {currentAudit.htmlAudit.comments.length > 0 && (
+                <div class="space-y-1">
+                  <p class="text-[10px] font-medium tracking-wider text-zinc-500 uppercase">
+                    {t('htmlCommentsHeading')}
+                  </p>
+                  <ul class="divide-y divide-white/[0.05] overflow-hidden rounded border border-white/[0.05] bg-black/20">
+                    {currentAudit.htmlAudit.comments.map((c) => (
+                      <li key={c.text} class="space-y-1 px-2 py-1.5">
+                        <div class="flex flex-wrap gap-1">
+                          {c.tags.map((tag) => (
+                            <span
+                              key={tag}
+                              class={`rounded px-1.5 py-px text-[9px] font-semibold uppercase ${
+                                c.level === 'high'
+                                  ? 'bg-orange-400/15 text-orange-300'
+                                  : c.level === 'medium'
+                                    ? 'bg-amber-300/15 text-amber-200'
+                                    : 'bg-zinc-800 text-zinc-300'
+                              }`}
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                        <p class="font-mono text-[10.5px] break-all text-zinc-300">{c.text}</p>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </Section>
+        )}
 
       <Section title={t('auditFindingsTitle')} count={filtered.length}>
         <div class="flex flex-wrap items-center gap-1 px-0.5">

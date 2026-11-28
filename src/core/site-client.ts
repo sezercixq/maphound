@@ -40,6 +40,10 @@ export function captureSnapshotFromUi(origin: string) {
   return sendMessage('snapshot:capture', { origin });
 }
 
+export function checkDiscoveryFilesFromUi(origin: string) {
+  return sendMessage('site:check-discovery', { origin });
+}
+
 export type AllowOriginsResult = AddOriginsResult | { ok: false; reason: 'permission-denied' };
 
 /**

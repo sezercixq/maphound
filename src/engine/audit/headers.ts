@@ -1,5 +1,6 @@
+import { AUDIT_DEBUG_HEADER_NAME } from './patterns';
 import { hasBannerVersion } from './stack-hints';
-import type { AuditFinding, HeaderMatrixEntry } from './types';
+import type { AuditFinding, HeaderMatrixEntry, RawHeaderEntry } from './types';
 
 export const SECURITY_HEADER_NAMES = [
   'content-security-policy',
@@ -22,18 +23,32 @@ export const STACK_HEADER_NAMES = [
   'x-generator',
 ] as const;
 
-function normalizeHeaders(input: Headers | Record<string, string>): Map<string, string> {
+function normalizeHeaders(input: Headers | Record<string, string>): {
+  map: Map<string, string>;
+  rawHeaders: RawHeaderEntry[];
+} {
   const map = new Map<string, string>();
+  const rawHeaders: RawHeaderEntry[] = [];
   if (typeof (input as Headers).forEach === 'function') {
     (input as Headers).forEach((value, key) => {
-      map.set(key.toLowerCase(), value);
+      const lower = key.toLowerCase();
+      map.set(lower, value);
+      if (lower !== 'set-cookie' && rawHeaders.length < 120) {
+        rawHeaders.push({ name: key, value: value.slice(0, 512) });
+      }
     });
   } else {
     for (const [key, value] of Object.entries(input)) {
-      if (typeof value === 'string') map.set(key.toLowerCase(), value);
+      if (typeof value !== 'string') continue;
+      const lower = key.toLowerCase();
+      map.set(lower, value);
+      if (lower !== 'set-cookie' && rawHeaders.length < 120) {
+        rawHeaders.push({ name: key, value: value.slice(0, 512) });
+      }
     }
   }
-  return map;
+  rawHeaders.sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase()));
+  return { map, rawHeaders };
 }
 
 function parseCspDirectives(csp: string): Map<string, string[]> {
@@ -60,10 +75,11 @@ export function auditHeaders(
   pageUrl: string,
 ): {
   summary: Record<string, string | null>;
+  rawHeaders: RawHeaderEntry[];
   matrix: HeaderMatrixEntry[];
   findings: AuditFinding[];
 } {
-  const map = normalizeHeaders(headers);
+  const { map, rawHeaders } = normalizeHeaders(headers);
   const summary: Record<string, string | null> = {};
   for (const name of SECURITY_HEADER_NAMES) {
     summary[name] = map.get(name) ?? null;
@@ -394,5 +410,31 @@ export function auditHeaders(
     });
   }
 
-  return { summary, matrix, findings };
+  // 8. Custom / debug / internal headers exposed on response
+  const handledBanners = new Set(bannerHeaders.map(([k]) => k));
+  for (const entry of rawHeaders) {
+    const lower = entry.name.toLowerCase();
+    if (handledBanners.has(lower)) continue;
+    if (!AUDIT_DEBUG_HEADER_NAME.test(lower)) continue;
+    const isDebugOrInternal =
+      lower.startsWith('x-debug') ||
+      lower.startsWith('x-dev') ||
+      lower.startsWith('x-internal') ||
+      lower.startsWith('x-backend');
+    findings.push({
+      id: `headers:custom-debug-${lower}`,
+      category: 'headers',
+      ruleId: 'custom-debug-header',
+      title: `Custom / debug header "${entry.name}" exposed`,
+      severity:
+        isDebugOrInternal || (lower !== 'x-runtime' && hasBannerVersion(entry.value))
+          ? 'low'
+          : 'info',
+      subject: entry.name,
+      detail: `${entry.name}: ${entry.value.slice(0, 140)}`,
+      recommendation: `Remove or restrict non-standard header "${entry.name}" in production responses.`,
+    });
+  }
+
+  return { summary, rawHeaders, matrix, findings };
 }

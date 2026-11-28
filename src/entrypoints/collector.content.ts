@@ -1,6 +1,11 @@
 import { createUrlBatcher, isScriptResource, normalizeScriptUrl } from '@/core/collect';
 import { sendMessage } from '@/core/messaging';
-import { auditCookies, auditStorageEntries, type ClientCookieInput } from '@/engine/audit';
+import {
+  auditCookies,
+  auditHtmlMetadata,
+  auditStorageEntries,
+  type ClientCookieInput,
+} from '@/engine/audit';
 import { parseNextData } from '@/engine/intel/next-data';
 
 const INSTALLED = Symbol.for('maphound.collector');
@@ -186,12 +191,38 @@ async function collectClientAudit(pageUrl: string): Promise<void> {
     // document.cookie unavailable.
   }
 
+  const rawComments: string[] = [];
+  try {
+    const walker = document.createTreeWalker(document.documentElement, NodeFilter.SHOW_COMMENT);
+    let node = walker.nextNode();
+    while (node && rawComments.length < 300) {
+      if (node.nodeValue) rawComments.push(node.nodeValue.slice(0, 500));
+      node = walker.nextNode();
+    }
+  } catch {
+    // DOM traversal unavailable.
+  }
+
+  const rawMetas: { name: string; content: string }[] = [];
+  try {
+    for (const meta of Array.from(document.querySelectorAll('meta[name][content]')).slice(0, 100)) {
+      const name = meta.getAttribute('name') ?? '';
+      const content = meta.getAttribute('content') ?? '';
+      if (name && content) rawMetas.push({ name, content });
+    }
+  } catch {
+    // Meta traversal unavailable.
+  }
+
+  const htmlAudit = auditHtmlMetadata(rawComments, rawMetas);
+
   const cookieFindings = auditCookies(cookieInputs, pageUrl);
   await sendMessage('page:audit', {
     pageUrl,
     storageFindings,
     cookieFindings,
     cookieNames: [...seenNames],
+    htmlAudit,
     storageKeysChecked: localEntries.length + sessionEntries.length,
     cookiesChecked: cookieInputs.length,
   }).catch(() => {});

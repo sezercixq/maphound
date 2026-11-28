@@ -61,6 +61,33 @@ export function auditMarkdown(
       }
       lines.push('');
     }
+    if (audit.rawHeaders && audit.rawHeaders.length > 0) {
+      lines.push('### Raw Response Headers', '', '| Header | Value |', '| --- | --- |');
+      for (const h of audit.rawHeaders) {
+        lines.push(`| ${code(h.name)} | ${code(h.value)} |`);
+      }
+      lines.push('');
+    }
+    if (
+      audit.htmlAudit &&
+      (audit.htmlAudit.metas.length > 0 || audit.htmlAudit.comments.length > 0)
+    ) {
+      lines.push('### HTML Source Comments & Meta', '');
+      if (audit.htmlAudit.metas.length > 0) {
+        lines.push('| Meta Name | Content |', '| --- | --- |');
+        for (const m of audit.htmlAudit.metas) {
+          lines.push(`| ${code(m.name)} | ${code(m.content)} |`);
+        }
+        lines.push('');
+      }
+      if (audit.htmlAudit.comments.length > 0) {
+        lines.push('| Level | Tags | Comment |', '| --- | --- | --- |');
+        for (const c of audit.htmlAudit.comments) {
+          lines.push(`| ${c.level} | ${cell(c.tags.join(', '))} | ${code(c.text)} |`);
+        }
+        lines.push('');
+      }
+    }
   }
 
   if (allFindings.length > 0) {

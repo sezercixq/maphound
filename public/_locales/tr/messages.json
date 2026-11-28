@@ -724,5 +724,47 @@
   },
   "stackCatBuildOs": {
     "message": "Derleme OS"
+  },
+  "rawHeadersTitle": {
+    "message": "Tüm Ham Yanıt Başlıkları"
+  },
+  "rawHeadersCopy": {
+    "message": "Başlıkları kopyala"
+  },
+  "htmlAuditTitle": {
+    "message": "HTML Kaynak Yorumları & Meta"
+  },
+  "htmlMetaHeading": {
+    "message": "Meta Etiketleri"
+  },
+  "htmlCommentsHeading": {
+    "message": "İşaretli HTML Yorumları"
+  },
+  "discoveryTitle": {
+    "message": "Standart Keşif Dosyaları"
+  },
+  "discoveryHint": {
+    "message": "Yalnızca istek üzerine: tıkladığınızda yalnızca /robots.txt ve /sitemap.xml getirilir."
+  },
+  "discoveryCheckBtn": {
+    "message": "Keşif Dosyalarını Kontrol Et (robots.txt / sitemap.xml)"
+  },
+  "discoveryChecking": {
+    "message": "Kontrol ediliyor…"
+  },
+  "discoveryDisallowHeading": {
+    "message": "robots.txt Disallow Yolları"
+  },
+  "discoveryAllowHeading": {
+    "message": "robots.txt Allow Yolları"
+  },
+  "discoverySitemapsHeading": {
+    "message": "Sitemap Bağlantıları"
+  },
+  "discoverySitemapUrlsHeading": {
+    "message": "sitemap.xml Adresleri"
+  },
+  "discoveryNoneFound": {
+    "message": "robots.txt veya sitemap.xml kaydı bulunamadı."
   }
 }

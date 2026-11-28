@@ -271,7 +271,11 @@ export function App() {
             <ArchitectureView graph={model.architecture} origin={enabled.origin} />
           )}
           {activeTab.value === 'osint' && (
-            <OsintView hits={model.intel.osint ?? []} origin={enabled.origin} />
+            <OsintView
+              hits={model.intel.osint ?? []}
+              discovery={enabled.discovery}
+              origin={enabled.origin}
+            />
           )}
           {activeTab.value === 'audit' && (
             <SecurityAuditView

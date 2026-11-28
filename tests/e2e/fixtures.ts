@@ -230,6 +230,40 @@ export function startServer(): Promise<TestServer> {
         return js("console.log('v040-v2');\n//# sourceMappingURL=v040-v2.js.map\n");
       case '/v040-v2.js.map':
         return send('application/json', v040V2Map);
+      case '/v050.html':
+        return send(
+          'text/html',
+          [
+            '<!doctype html><html><head>',
+            '<meta name="generator" content="CustomCMS 4.2">',
+            '<meta name="author" content="Acme DevOps">',
+            '</head><body>',
+            '<!-- TODO: remove /internal/staging-debug before prod -->',
+            '<script src="/v040-v1.js"></script>',
+            '</body></html>',
+          ].join('\n'),
+          {
+            'X-Debug-Mode': 'enabled',
+            'X-Backend-Version': '2.8.1',
+            'X-Request-Id': 'req-e2e-050',
+          },
+        );
+      case '/robots.txt':
+        return send(
+          'text/plain',
+          [
+            'User-agent: *',
+            'Disallow: /admin/secret-portal',
+            'Disallow: /internal/backups',
+            'Allow: /docs/public',
+            `Sitemap: http://${req.headers.host}/sitemap.xml`,
+          ].join('\n'),
+        );
+      case '/sitemap.xml':
+        return send(
+          'application/xml',
+          `<?xml version="1.0" encoding="UTF-8"?><urlset><url><loc>http://${req.headers.host}/pricing</loc></url><url><loc>http://${req.headers.host}/status</loc></url></urlset>`,
+        );
       case '/app.js':
         return js(
           [

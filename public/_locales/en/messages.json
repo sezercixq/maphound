@@ -724,5 +724,47 @@
   },
   "stackCatBuildOs": {
     "message": "Build OS"
+  },
+  "rawHeadersTitle": {
+    "message": "Raw Response Headers"
+  },
+  "rawHeadersCopy": {
+    "message": "Copy headers"
+  },
+  "htmlAuditTitle": {
+    "message": "HTML Source Comments & Meta"
+  },
+  "htmlMetaHeading": {
+    "message": "Meta Tags"
+  },
+  "htmlCommentsHeading": {
+    "message": "Flagged HTML Comments"
+  },
+  "discoveryTitle": {
+    "message": "Standard Discovery Files"
+  },
+  "discoveryHint": {
+    "message": "On-demand only: fetches /robots.txt and /sitemap.xml only when you click."
+  },
+  "discoveryCheckBtn": {
+    "message": "Check robots.txt & sitemap.xml"
+  },
+  "discoveryChecking": {
+    "message": "Checking…"
+  },
+  "discoveryDisallowHeading": {
+    "message": "robots.txt Disallow"
+  },
+  "discoveryAllowHeading": {
+    "message": "robots.txt Allow"
+  },
+  "discoverySitemapsHeading": {
+    "message": "Sitemap References"
+  },
+  "discoverySitemapUrlsHeading": {
+    "message": "sitemap.xml URLs"
+  },
+  "discoveryNoneFound": {
+    "message": "No robots.txt or sitemap.xml entries found."
   }
 }

@@ -22,7 +22,7 @@ export interface StackHint {
 }
 
 export interface StackHintsInput {
-  audits?: readonly Pick<AuditRecord, 'headers' | 'cookieNames' | 'findings'>[];
+  audits?: readonly Pick<AuditRecord, 'headers' | 'cookieNames' | 'findings' | 'htmlAudit'>[];
   intel?: Pick<ScriptIntel, 'endpoints' | 'osint'>;
   architecture?: Pick<ArchitectureGraph, 'sdks'>;
 }
@@ -184,7 +184,34 @@ export function extractStackHints(input: StackHintsInput): StackHint[] {
     }
   }
 
-  // 2. Session cookie fingerprinting (cookie names only — never values)
+  // 2. HTML <meta name="generator"> tags
+  for (const audit of audits) {
+    for (const meta of audit.htmlAudit?.metas ?? []) {
+      if (meta.name !== 'generator' || !meta.content) continue;
+      let matched = false;
+      for (const rule of BANNER_RULES) {
+        const m = rule.match.exec(meta.content);
+        if (!m) continue;
+        matched = true;
+        const version = m[1] || m[2] || undefined;
+        add({
+          category: rule.category,
+          name: rule.name,
+          ...(version ? { version } : {}),
+          evidence: 'Meta: generator',
+        });
+      }
+      if (!matched) {
+        add({
+          category: 'runtime',
+          name: meta.content.slice(0, 48),
+          evidence: 'Meta: generator',
+        });
+      }
+    }
+  }
+
+  // 3. Session cookie fingerprinting (cookie names only — never values)
   const cookieNames = collectCookieNames(audits);
   const lowerCookieMap = new Map<string, string>();
   for (const name of cookieNames) {

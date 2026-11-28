@@ -1,5 +1,5 @@
 import { defineExtensionMessaging } from '@webext-core/messaging';
-import type { ClientAuditPayload } from '@/engine/audit';
+import type { ClientAuditPayload, DiscoveryFilesRecord } from '@/engine/audit';
 import type { NextDataSummary } from '@/engine/intel';
 import type { MapAnalysisRequest, MapAnalysisResult } from './analyze';
 import type { Scope, SiteSettings } from './db';
@@ -24,6 +24,12 @@ export interface ProtocolMap {
   'page:next-data': (data: { pageUrl: string; summary: NextDataSummary }) => void;
   'page:audit': (data: ClientAuditPayload) => void;
   'snapshot:capture': (data: { origin: string }) => { ok: boolean; id?: string };
+  /** User-triggered fetch of standard public discovery files (`/robots.txt` and `/sitemap.xml`). */
+  'site:check-discovery': (data: { origin: string }) => {
+    ok: boolean;
+    discovery?: DiscoveryFilesRecord;
+    error?: string;
+  };
   /** Sent by the side panel after `permissions.request` succeeded. */
   'site:enable': (data: {
     origin: string;

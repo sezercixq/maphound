@@ -3,6 +3,26 @@
 All notable changes to MapHound. The format follows [Keep a Changelog](https://keepachangelog.com/)
 and the project uses [Semantic Versioning](https://semver.org/).
 
+## [0.5.0] - 2026-11-23
+
+### Added
+
+- **Raw HTTP Response Headers & Custom Debug Header Audit (`headers.ts`, `SecurityAudit.tsx`, `AUDIT.md`).**
+  Captures all non-cookie HTTP response headers on the enabled document (including `X-Debug-*`,
+  `X-Request-Id`, `X-Runtime`, `X-Backend-*`, `X-Version`, and other custom headers), automatically
+  flags debug/internal/version-leaking custom headers as audit findings, and provides a collapsible
+  **Raw Response Headers** table with 1-click copy.
+- **HTML Source Comments & Meta Tag Extraction (`html-audit.ts`, `collector.content.ts`, `SecurityAudit.tsx`).**
+  Walks the active page DOM (`NodeFilter.SHOW_COMMENT`) and `<meta>` tags (`generator`, `author`,
+  `version`, `build`, `csrf-token` masked) purely locally, surfacing forgotten developer notes
+  (`TODO`, `FIXME`, `BYPASS`, `INTERNAL`), hidden paths, version numbers, and masked token hints
+  in the **HTML Source Comments & Meta** card and `AUDIT.md` (and feeding `<meta name="generator">`
+  into stack hints).
+- **On-Demand Standard Discovery Files (`robots.txt` & `sitemap.xml`, `discovery-files.ts`, `OsintView.tsx`).**
+  Adds a user-triggered **Check robots.txt & sitemap.xml** button in the **OSINT** tab (zero
+  background auto-fetching, zero brute-force) that parses `Disallow:`, `Allow:`, `Sitemap:` and
+  `<loc>` URLs into clickable lists and includes them in both `OSINT.md` and `ENDPOINTS.md`.
+
 ## [0.4.1] - 2026-11-23
 
 ### Added

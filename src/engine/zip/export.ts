@@ -9,7 +9,12 @@ import type {
   ScriptRecord,
   SiteRecord,
 } from '@/core/db';
-import { auditMarkdown, extractStackHints, stackHintsMarkdownLines } from '@/engine/audit';
+import {
+  auditMarkdown,
+  discoveryMarkdownLines,
+  extractStackHints,
+  stackHintsMarkdownLines,
+} from '@/engine/audit';
 import { diffMarkdown, diffSnapshots, type SiteSnapshotRecord } from '@/engine/diff';
 import { sarifJson } from '@/engine/export';
 import { architectureMarkdown, buildArchitectureGraph, osintMarkdown } from '@/engine/intel';
@@ -19,7 +24,7 @@ import { combineSiteIntel, endpointsMarkdown } from './endpoints-report';
 import { countBySeverity, findingsJson, findingsMarkdown } from './findings-report';
 
 export interface ExportSource {
-  site: Pick<SiteRecord, 'origin' | 'scope'>;
+  site: Pick<SiteRecord, 'origin' | 'scope' | 'discovery'>;
   maps: readonly MapRecord[];
   scripts: readonly ScriptRecord[];
   jobs: readonly JobRecord[];
@@ -242,6 +247,7 @@ export async function exportSourceZip(
     architecture: archGraph,
   });
   const stackMdLines = stackHintsMarkdownLines(stackHints);
+  const discoveryMdLines = discoveryMarkdownLines(source.site.discovery);
   const sortedSnapshots = [...(source.snapshots ?? [])].sort((a, b) => a.createdAt - b.createdAt);
   const latestDiff =
     sortedSnapshots.length >= 2
@@ -286,9 +292,17 @@ export async function exportSourceZip(
   const toolVersion = options.generator.replace(/^MapHound\s*/i, '').trim() || '0.4.0';
   add('FINDINGS.md', encoder.encode(findingsMarkdown(source.findings ?? [], report)));
   add('findings.json', encoder.encode(findingsJson(source.findings ?? [], report)));
-  add('ENDPOINTS.md', encoder.encode(endpointsMarkdown(mergedIntel, source.pages ?? [], report)));
+  add(
+    'ENDPOINTS.md',
+    encoder.encode(endpointsMarkdown(mergedIntel, source.pages ?? [], report, discoveryMdLines)),
+  );
   add('ARCHITECTURE.md', encoder.encode(architectureMarkdown(archGraph, report)));
-  add('OSINT.md', encoder.encode(osintMarkdown(mergedIntel.osint ?? [], report, stackMdLines)));
+  add(
+    'OSINT.md',
+    encoder.encode(
+      osintMarkdown(mergedIntel.osint ?? [], report, [...stackMdLines, ...discoveryMdLines]),
+    ),
+  );
   add('AUDIT.md', encoder.encode(auditMarkdown(source.audits ?? [], report, stackHints)));
   add(
     'results.sarif',

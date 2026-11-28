@@ -1,4 +1,6 @@
 import { useSignal } from '@preact/signals';
+import { checkDiscoveryFilesFromUi } from '@/core/site-client';
+import type { DiscoveryFilesRecord } from '@/engine/audit';
 import {
   buildOsintLinks,
   OSINT_CATEGORIES,
@@ -7,7 +9,7 @@ import {
   type OsintLinkId,
 } from '@/engine/intel';
 import { type MessageKey, t } from '../i18n';
-import { openCodeViewer } from '../state';
+import { openCodeViewer, refresh } from '../state';
 import { Badge, Section } from './primitives';
 
 const CATEGORY_KEYS: Record<OsintCategory, MessageKey> = {
@@ -117,7 +119,167 @@ function OsintLauncher({ origin }: { origin: string }) {
   );
 }
 
-export function OsintView({ hits, origin }: { hits: readonly OsintHit[]; origin: string }) {
+function DiscoveryFilesSection({
+  origin,
+  discovery,
+}: {
+  origin: string;
+  discovery?: DiscoveryFilesRecord;
+}) {
+  const busy = useSignal(false);
+  const runCheck = async () => {
+    busy.value = true;
+    try {
+      await checkDiscoveryFilesFromUi(origin);
+      await refresh();
+    } finally {
+      busy.value = false;
+    }
+  };
+
+  const hasEntries =
+    discovery &&
+    (discovery.robots.disallow.length > 0 ||
+      discovery.robots.allow.length > 0 ||
+      discovery.robots.sitemaps.length > 0 ||
+      discovery.sitemap.urls.length > 0);
+
+  return (
+    <Section title={t('discoveryTitle')}>
+      <div
+        data-testid="discovery-section"
+        class="space-y-2.5 rounded-lg border border-white/[0.06] bg-white/[0.02] p-2.5"
+      >
+        <p class="text-[11px] leading-relaxed text-zinc-400">{t('discoveryHint')}</p>
+        <button
+          type="button"
+          data-testid="check-discovery-btn"
+          disabled={busy.value}
+          onClick={() => void runCheck()}
+          class="w-full rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1.5 text-[11px] font-medium text-emerald-300 transition-colors hover:bg-emerald-500/20 disabled:opacity-50"
+        >
+          {busy.value ? t('discoveryChecking') : t('discoveryCheckBtn')}
+        </button>
+
+        {discovery && !hasEntries && (
+          <p class="text-[11px] text-zinc-500" data-testid="discovery-empty">
+            {t('discoveryNoneFound')}
+          </p>
+        )}
+
+        {discovery && hasEntries && (
+          <div class="space-y-2.5 pt-1">
+            {discovery.robots.disallow.length > 0 && (
+              <div class="space-y-1" data-testid="discovery-disallow">
+                <p class="text-[10px] font-medium tracking-wider text-zinc-500 uppercase">
+                  {t('discoveryDisallowHeading')} ({discovery.robots.disallow.length})
+                </p>
+                <ul class="max-h-36 space-y-0.5 overflow-auto rounded border border-white/[0.05] bg-black/20 p-1.5 font-mono text-[10.5px]">
+                  {discovery.robots.disallow.slice(0, 60).map((path) => (
+                    <li key={path} class="truncate">
+                      {path.startsWith('/') ? (
+                        <a
+                          href={`${origin}${path}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          class="text-amber-200 hover:underline"
+                        >
+                          {path}
+                        </a>
+                      ) : (
+                        <span class="text-zinc-300">{path}</span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {discovery.robots.allow.length > 0 && (
+              <div class="space-y-1" data-testid="discovery-allow">
+                <p class="text-[10px] font-medium tracking-wider text-zinc-500 uppercase">
+                  {t('discoveryAllowHeading')} ({discovery.robots.allow.length})
+                </p>
+                <ul class="max-h-28 space-y-0.5 overflow-auto rounded border border-white/[0.05] bg-black/20 p-1.5 font-mono text-[10.5px]">
+                  {discovery.robots.allow.slice(0, 40).map((path) => (
+                    <li key={path} class="truncate">
+                      {path.startsWith('/') ? (
+                        <a
+                          href={`${origin}${path}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          class="text-emerald-300 hover:underline"
+                        >
+                          {path}
+                        </a>
+                      ) : (
+                        <span class="text-zinc-300">{path}</span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {discovery.robots.sitemaps.length > 0 && (
+              <div class="space-y-1" data-testid="discovery-sitemaps">
+                <p class="text-[10px] font-medium tracking-wider text-zinc-500 uppercase">
+                  {t('discoverySitemapsHeading')} ({discovery.robots.sitemaps.length})
+                </p>
+                <ul class="space-y-0.5 font-mono text-[10.5px]">
+                  {discovery.robots.sitemaps.map((url) => (
+                    <li key={url} class="truncate">
+                      <a
+                        href={url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="text-sky-300 hover:underline"
+                      >
+                        {url}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {discovery.sitemap.urls.length > 0 && (
+              <div class="space-y-1" data-testid="discovery-sitemap-urls">
+                <p class="text-[10px] font-medium tracking-wider text-zinc-500 uppercase">
+                  {t('discoverySitemapUrlsHeading')} ({discovery.sitemap.urls.length})
+                </p>
+                <ul class="max-h-36 space-y-0.5 overflow-auto rounded border border-white/[0.05] bg-black/20 p-1.5 font-mono text-[10.5px]">
+                  {discovery.sitemap.urls.slice(0, 60).map((url) => (
+                    <li key={url} class="truncate">
+                      <a
+                        href={url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="text-zinc-300 hover:text-emerald-300 hover:underline"
+                      >
+                        {url}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </Section>
+  );
+}
+
+export function OsintView({
+  hits,
+  discovery,
+  origin,
+}: {
+  hits: readonly OsintHit[];
+  discovery?: DiscoveryFilesRecord;
+  origin: string;
+}) {
   const activeCategory = useSignal<OsintCategory | 'all'>('all');
   const copiedKey = useSignal<string | null>(null);
 
@@ -249,6 +411,7 @@ export function OsintView({ hits, origin }: { hits: readonly OsintHit[]; origin:
           </ul>
         )}
       </Section>
+      <DiscoveryFilesSection origin={origin} discovery={discovery} />
       <OsintLauncher origin={origin} />
     </div>
   );

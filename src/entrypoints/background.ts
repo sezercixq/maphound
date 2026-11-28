@@ -18,7 +18,14 @@ import {
   syncSites,
   updateSiteSettings,
 } from '@/core/sites';
-import { auditHeaders, auditSetCookieHeaders, mergeAuditFindings } from '@/engine/audit';
+import {
+  auditHeaders,
+  auditSetCookieHeaders,
+  type DiscoveryFilesRecord,
+  mergeAuditFindings,
+  parseRobotsTxt,
+  parseSitemapXml,
+} from '@/engine/audit';
 import { recordSiteSnapshot } from '@/engine/diff';
 
 /** Background to offscreen to worker round trip. */
@@ -153,6 +160,7 @@ export default defineBackground(() => {
     }
 
     let headerSummary: Record<string, string | null> = {};
+    let rawHeaders: ReturnType<typeof auditHeaders>['rawHeaders'] = [];
     let matrix: ReturnType<typeof auditHeaders>['matrix'] = [];
     let headerFindings: ReturnType<typeof auditHeaders>['findings'] = [];
     let setCookieFindings: ReturnType<typeof auditSetCookieHeaders> = [];
@@ -168,6 +176,7 @@ export default defineBackground(() => {
       });
       const headerOut = auditHeaders(response.headers, pageUrl);
       headerSummary = headerOut.summary;
+      rawHeaders = headerOut.rawHeaders;
       matrix = headerOut.matrix;
       headerFindings = headerOut.findings;
 
@@ -206,14 +215,69 @@ export default defineBackground(() => {
       origin: active.origin,
       pageUrl,
       headers: headerSummary,
+      rawHeaders,
       matrix,
       findings,
       cookieNames,
+      ...(data.htmlAudit ? { htmlAudit: data.htmlAudit } : {}),
       storageKeysChecked: data.storageKeysChecked ?? 0,
       cookiesChecked: Math.max(data.cookiesChecked ?? 0, cookieNames.length),
       updatedAt: Date.now(),
     });
     notifyDbChanged({ store: 'audits', origin: active.origin });
+  });
+
+  onMessage('site:check-discovery', async ({ data }) => {
+    const db = await getDb();
+    const active = await db.get('sites', data.origin);
+    if (!active) return { ok: false, error: 'site-not-enabled' };
+
+    const fetchText = async (
+      path: string,
+    ): Promise<{ ok: boolean; status: number; text: string }> => {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 5_000);
+      try {
+        const res = await fetch(`${active.origin}${path}`, {
+          credentials: active.settings.useCredentials ? 'include' : 'omit',
+          signal: controller.signal,
+          redirect: 'follow',
+        });
+        if (!res.ok) {
+          void res.body?.cancel().catch(() => {});
+          return { ok: false, status: res.status, text: '' };
+        }
+        const text = (await res.text()).slice(0, 512_000);
+        return { ok: true, status: res.status, text };
+      } catch {
+        return { ok: false, status: 0, text: '' };
+      } finally {
+        clearTimeout(timer);
+      }
+    };
+
+    const [robotsRes, sitemapRes] = await Promise.all([
+      fetchText('/robots.txt'),
+      fetchText('/sitemap.xml'),
+    ]);
+
+    const robotsParsed = robotsRes.ok
+      ? parseRobotsTxt(robotsRes.text, active.origin)
+      : { disallow: [], allow: [], sitemaps: [] };
+    const sitemapParsed = sitemapRes.ok
+      ? parseSitemapXml(sitemapRes.text, active.origin)
+      : { urls: [] };
+
+    const discovery: DiscoveryFilesRecord = {
+      origin: active.origin,
+      checkedAt: Date.now(),
+      robots: { found: robotsRes.ok, status: robotsRes.status, ...robotsParsed },
+      sitemap: { found: sitemapRes.ok, status: sitemapRes.status, ...sitemapParsed },
+    };
+
+    await db.put('sites', { ...active, discovery });
+    notifyDbChanged({ store: 'sites', origin: active.origin });
+    return { ok: true, discovery };
   });
 
   onMessage('snapshot:capture', async ({ data }) => {

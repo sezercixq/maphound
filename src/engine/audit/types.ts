@@ -42,12 +42,55 @@ export interface ClientCookieInput {
   fromDocumentCookie?: boolean;
 }
 
+export interface RawHeaderEntry {
+  name: string;
+  value: string;
+}
+
+export interface HtmlCommentHit {
+  text: string;
+  tags: string[];
+  level: 'high' | 'medium' | 'low' | 'info';
+}
+
+export interface HtmlMetaTag {
+  name: string;
+  content: string;
+}
+
+export interface HtmlAuditSummary {
+  comments: HtmlCommentHit[];
+  metas: HtmlMetaTag[];
+}
+
+export interface RobotsSummary {
+  found: boolean;
+  status: number;
+  disallow: string[];
+  allow: string[];
+  sitemaps: string[];
+}
+
+export interface SitemapSummary {
+  found: boolean;
+  status: number;
+  urls: string[];
+}
+
+export interface DiscoveryFilesRecord {
+  origin: string;
+  checkedAt: number;
+  robots: RobotsSummary;
+  sitemap: SitemapSummary;
+}
+
 export interface ClientAuditPayload {
   pageUrl: string;
   storageFindings: AuditFinding[];
   cookieFindings: AuditFinding[];
   /** Cookie names only (never values), for passive backend stack fingerprinting. */
   cookieNames?: string[];
+  htmlAudit?: HtmlAuditSummary;
   storageKeysChecked: number;
   cookiesChecked: number;
 }

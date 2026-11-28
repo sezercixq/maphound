@@ -1,5 +1,11 @@
 import { type DBSchema, type IDBPDatabase, openDB } from 'idb';
-import type { AuditFinding, HeaderMatrixEntry } from '@/engine/audit';
+import type {
+  AuditFinding,
+  DiscoveryFilesRecord,
+  HeaderMatrixEntry,
+  HtmlAuditSummary,
+  RawHeaderEntry,
+} from '@/engine/audit';
 import type { SiteSnapshotRecord } from '@/engine/diff';
 import type {
   CommentHit,
@@ -57,6 +63,8 @@ export interface SiteRecord {
    * `airbnb.com` for `airbnb.com.tr`). Scripts and maps there are fetched and scanned.
    */
   extraOrigins?: string[];
+  /** Standard discovery files (`robots.txt` / `sitemap.xml`), populated only when requested by the user. */
+  discovery?: DiscoveryFilesRecord;
 }
 
 export interface ScriptRecord {
@@ -192,10 +200,14 @@ export interface AuditRecord {
   origin: string;
   pageUrl: string;
   headers: Record<string, string | null>;
+  /** All captured HTTP response headers on the document response (excluding Set-Cookie). */
+  rawHeaders?: RawHeaderEntry[];
   matrix: HeaderMatrixEntry[];
   findings: AuditFinding[];
   /** Deduplicated cookie names only (never values), for passive backend stack hints. */
   cookieNames?: string[];
+  /** Flagged HTML DOM comments and metadata tags from the page. */
+  htmlAudit?: HtmlAuditSummary;
   storageKeysChecked: number;
   cookiesChecked: number;
   updatedAt: number;

@@ -105,6 +105,7 @@ export function endpointsMarkdown(
   intel: ScriptIntel,
   pages: readonly PageIntelRecord[],
   context: EndpointsReportContext,
+  extraLines: readonly string[] = [],
 ): string {
   const lines: string[] = [
     `# MapHound attack surface: ${context.origin}`,
@@ -126,7 +127,11 @@ export function endpointsMarkdown(
     intel.sinks.length === 0 &&
     pages.length === 0
   ) {
-    lines.push('No endpoints, routes, developer notes or code hints were discovered.', '');
+    if (extraLines.length > 0) {
+      lines.push(...extraLines);
+    } else {
+      lines.push('No endpoints, routes, developer notes or code hints were discovered.', '');
+    }
     return lines.join('\n');
   }
 
@@ -205,6 +210,10 @@ export function endpointsMarkdown(
       }
       lines.push('');
     }
+  }
+
+  if (extraLines.length > 0) {
+    lines.push(...extraLines);
   }
 
   return lines.join('\n');
