@@ -1,3 +1,4 @@
+import type { CustomRuleRecord } from '@/engine/rules';
 import type { Scope, SiteSettings } from './db';
 import { sendMessage } from './messaging';
 import { requestOriginsPermission, requestSitePermission } from './permissions';
@@ -42,6 +43,22 @@ export function captureSnapshotFromUi(origin: string) {
 
 export function checkDiscoveryFilesFromUi(origin: string) {
   return sendMessage('site:check-discovery', { origin });
+}
+
+export function runSafeChecksFromUi(origin: string) {
+  return sendMessage('site:run-safe-checks', { origin });
+}
+
+export function saveCustomRuleFromUi(rule: CustomRuleRecord) {
+  return sendMessage('rules:save', { rule });
+}
+
+export function deleteCustomRuleFromUi(id: string) {
+  return sendMessage('rules:delete', { id });
+}
+
+export function toggleCustomRuleFromUi(id: string, enabled: boolean) {
+  return sendMessage('rules:toggle', { id, enabled });
 }
 
 export type AllowOriginsResult = AddOriginsResult | { ok: false; reason: 'permission-denied' };

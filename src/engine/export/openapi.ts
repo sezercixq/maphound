@@ -1,4 +1,5 @@
 import type { EndpointCategory, EndpointHit } from '@/engine/intel';
+import { type ObservedApiEvent, observedEventsToEndpoints } from '@/engine/runtime';
 
 export interface OpenApiParameter {
   name: string;
@@ -15,7 +16,11 @@ export interface OpenApiOperation {
     required: false;
     content: {
       'application/json': {
-        schema: { type: 'object'; additionalProperties: true };
+        schema: {
+          type: 'object';
+          properties?: Record<string, { type: 'string' }>;
+          additionalProperties: true;
+        };
       };
     };
   };
@@ -24,6 +29,8 @@ export interface OpenApiOperation {
     '200': { description: string };
   };
   'x-maphound-locations'?: string[];
+  'x-maphound-live-observed'?: boolean;
+  'x-maphound-response-keys'?: string[];
 }
 
 export interface OpenApiDocument {
@@ -107,11 +114,20 @@ function normalizeEndpointPath(
 export function buildOpenApiSpec(input: {
   origin: string;
   endpoints: readonly EndpointHit[];
+  observedApi?: readonly ObservedApiEvent[];
   version?: string;
 }): OpenApiDocument {
   const paths: Record<string, Record<string, OpenApiOperation>> = {};
+  const allEndpoints = [
+    ...input.endpoints,
+    ...(input.observedApi ? observedEventsToEndpoints(input.observedApi) : []),
+  ];
+  const observedByMethodPath = new Map<string, ObservedApiEvent>();
+  for (const ev of input.observedApi ?? []) {
+    observedByMethodPath.set(`${ev.method.toLowerCase()}:${ev.path.split('?')[0]}`, ev);
+  }
 
-  for (const ep of input.endpoints) {
+  for (const ep of allEndpoints) {
     const parsed = normalizeEndpointPath(ep.value, input.origin);
     if (!parsed) continue;
 
@@ -143,7 +159,12 @@ export function buildOpenApiSpec(input: {
       const method = rawMethod.toLowerCase();
       if (pathItem[method]) continue;
 
+      const observed = observedByMethodPath.get(`${method}:${parsed.path}`);
       const hasBody = method === 'post' || method === 'put' || method === 'patch';
+      const reqProps =
+        observed && observed.requestKeys.length > 0
+          ? Object.fromEntries(observed.requestKeys.map((k) => [k, { type: 'string' as const }]))
+          : undefined;
       const op: OpenApiOperation = {
         summary: `${rawMethod} ${parsed.path}`,
         tags: [ep.category],
@@ -154,7 +175,11 @@ export function buildOpenApiSpec(input: {
                 required: false,
                 content: {
                   'application/json': {
-                    schema: { type: 'object', additionalProperties: true },
+                    schema: {
+                      type: 'object',
+                      ...(reqProps ? { properties: reqProps } : {}),
+                      additionalProperties: true,
+                    },
                   },
                 },
               },
@@ -165,6 +190,10 @@ export function buildOpenApiSpec(input: {
           : {}),
         responses: { '200': { description: 'Observed client-side endpoint' } },
         ...(locations.length > 0 ? { 'x-maphound-locations': locations } : {}),
+        ...(ep.liveObserved || observed ? { 'x-maphound-live-observed': true } : {}),
+        ...(observed && observed.responseKeys.length > 0
+          ? { 'x-maphound-response-keys': observed.responseKeys }
+          : {}),
       };
       pathItem[method] = op;
     }
@@ -194,6 +223,7 @@ export function buildOpenApiSpec(input: {
 export function openApiJson(input: {
   origin: string;
   endpoints: readonly EndpointHit[];
+  observedApi?: readonly ObservedApiEvent[];
   version?: string;
 }): string {
   return `${JSON.stringify(buildOpenApiSpec(input), null, 2)}\n`;

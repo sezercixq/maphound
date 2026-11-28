@@ -3,6 +3,7 @@ import { useEffect } from 'preact/hooks';
 import { ArchitectureView } from './components/Architecture';
 import { CodeHintsView } from './components/CodeHints';
 import { CodeViewer } from './components/CodeViewer';
+import { CustomRulesView } from './components/CustomRules';
 import { DiffView } from './components/DiffView';
 import { EndpointsView } from './components/Endpoints';
 import { FindingList } from './components/Findings';
@@ -25,6 +26,7 @@ type TabId =
   | 'osint'
   | 'audit'
   | 'diff'
+  | 'rules'
   | 'search';
 
 function Logo() {
@@ -152,6 +154,7 @@ function TabBar({
   osintCount,
   auditCount,
   diffCount,
+  rulesCount,
 }: {
   active: TabId;
   onSelect: (tab: TabId) => void;
@@ -160,6 +163,7 @@ function TabBar({
   osintCount: number;
   auditCount: number;
   diffCount: number;
+  rulesCount: number;
 }) {
   const tabs: { id: TabId; label: MessageKey; count?: number; isDiff?: boolean }[] = [
     { id: 'overview', label: 'tabOverview' },
@@ -169,6 +173,7 @@ function TabBar({
     { id: 'osint', label: 'tabOsint', count: osintCount },
     { id: 'audit', label: 'tabAudit', count: auditCount },
     { id: 'diff', label: 'tabDiff', count: diffCount, isDiff: true },
+    { id: 'rules', label: 'tabRules', count: rulesCount },
     { id: 'search', label: 'tabSearch' },
   ];
   return (
@@ -243,6 +248,7 @@ export function App() {
             osintCount={model.osintCount}
             auditCount={model.auditCount}
             diffCount={model.diff?.hasChanges ? model.diff.totalChanges : 0}
+            rulesCount={model.customRules.filter((r) => r.enabled).length}
           />
           {activeTab.value === 'overview' && (
             <>
@@ -262,10 +268,20 @@ export function App() {
             </>
           )}
           {activeTab.value === 'endpoints' && (
-            <EndpointsView intel={model.intel} origin={enabled.origin} />
+            <EndpointsView
+              intel={model.intel}
+              runtimeApi={model.runtimeApi}
+              origin={enabled.origin}
+            />
           )}
           {activeTab.value === 'hints' && (
-            <CodeHintsView sinks={model.intel.sinks} pages={model.pages} origin={enabled.origin} />
+            <CodeHintsView
+              sinks={model.intel.sinks}
+              pages={model.pages}
+              runtimeDom={model.runtimeDom}
+              runtimeGuard={Boolean(enabled.settings.runtimeGuard)}
+              origin={enabled.origin}
+            />
           )}
           {activeTab.value === 'architecture' && (
             <ArchitectureView graph={model.architecture} origin={enabled.origin} />
@@ -283,12 +299,14 @@ export function App() {
               findings={model.auditFindings}
               counts={model.auditCounts}
               stackHints={model.stackHints}
+              safeChecks={enabled.safeChecks}
               origin={enabled.origin}
             />
           )}
           {activeTab.value === 'diff' && (
             <DiffView snapshots={model.snapshots} diff={model.diff} origin={enabled.origin} />
           )}
+          {activeTab.value === 'rules' && <CustomRulesView rules={model.customRules} />}
           {activeTab.value === 'search' && (
             <SourceSearchView origin={enabled.origin} hasMaps={model.stats.files > 0} />
           )}

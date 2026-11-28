@@ -781,5 +781,83 @@
   },
   "endpointsCopyOpenApi": {
     "message": "Copy OpenAPI"
+  },
+  "tabRules": {
+    "message": "Rules"
+  },
+  "endpointsLiveObserved": {
+    "message": "Live Observed"
+  },
+  "runtimeGuardTitle": {
+    "message": "Live Runtime Events"
+  },
+  "runtimeGuardLabel": {
+    "message": "Runtime Guard (Live Monitoring)"
+  },
+  "runtimeGuardHint": {
+    "message": "Opt-in passive hooks for live postMessage, innerHTML and eval events on this site."
+  },
+  "sinkCopyFix": {
+    "message": "Copy fix"
+  },
+  "safeChecksTitle": {
+    "message": "Controlled Safe Verification"
+  },
+  "safeChecksHint": {
+    "message": "On-demand non-destructive checks: CORS reflection, GraphQL introspection, and .well-known metadata."
+  },
+  "safeChecksRunBtn": {
+    "message": "Run Safe Verification Checks"
+  },
+  "safeChecksRunning": {
+    "message": "Running checks…"
+  },
+  "customRulesStudioTitle": {
+    "message": "Custom Rules Studio"
+  },
+  "customRulesNamePlaceholder": {
+    "message": "Rule name (e.g. Internal API Token)"
+  },
+  "customRulesPatternPlaceholder": {
+    "message": "Regex pattern (e.g. ACME_KEY_[A-Z0-9]{16})"
+  },
+  "customRulesScopeBoth": {
+    "message": "Code & HTML"
+  },
+  "customRulesScopeCode": {
+    "message": "Code only"
+  },
+  "customRulesScopeHtml": {
+    "message": "HTML only"
+  },
+  "customRulesRedosSafe": {
+    "message": "ReDoS-Safe"
+  },
+  "customRulesRedosUnsafe": {
+    "message": "Unsafe Regex"
+  },
+  "customRulesPlaygroundPlaceholder": {
+    "message": "Regex Playground: paste sample text to test live…"
+  },
+  "customRulesMatchesCount": {
+    "message": "$1 matches"
+  },
+  "customRulesMissingFields": {
+    "message": "Rule name and regex pattern are required."
+  },
+  "customRulesUnsafe": {
+    "message": "Pattern rejected by ReDoS safety check."
+  },
+  "customRulesSaveBtn": {
+    "message": "Save Custom Rule"
+  },
+  "customRulesListTitle": {
+    "message": "Saved Custom Rules"
+  },
+  "customRulesEmpty": {
+    "message": "No custom rules saved yet."
+  },
+  "customRulesDelete": {
+    "message": "Delete"
   }
 }

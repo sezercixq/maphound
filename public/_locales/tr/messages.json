@@ -781,5 +781,83 @@
   },
   "endpointsCopyOpenApi": {
     "message": "OpenAPI Kopyala"
+  },
+  "tabRules": {
+    "message": "Kurallar"
+  },
+  "endpointsLiveObserved": {
+    "message": "Canlı Gözlem"
+  },
+  "runtimeGuardTitle": {
+    "message": "Canlı Çalışma Zamanı Olayları"
+  },
+  "runtimeGuardLabel": {
+    "message": "Canlı İzleme Modu (Runtime Guard)"
+  },
+  "runtimeGuardHint": {
+    "message": "İsteğe bağlı salt-gözlemci kancalar: canlı postMessage, innerHTML ve eval olaylarını izler."
+  },
+  "sinkCopyFix": {
+    "message": "Düzeltmeyi kopyala"
+  },
+  "safeChecksTitle": {
+    "message": "Kontrollü Güvenli Doğrulama"
+  },
+  "safeChecksHint": {
+    "message": "Yalnızca tıklayınca çalışan zararsız kontroller: CORS yansıması, GraphQL introspection ve .well-known."
+  },
+  "safeChecksRunBtn": {
+    "message": "Güvenli Kontrolleri Çalıştır"
+  },
+  "safeChecksRunning": {
+    "message": "Kontroller çalışıyor…"
+  },
+  "customRulesStudioTitle": {
+    "message": "Özel Kural Stüdyosu"
+  },
+  "customRulesNamePlaceholder": {
+    "message": "Kural adı (örn. Dahili API Anahtarı)"
+  },
+  "customRulesPatternPlaceholder": {
+    "message": "Regex deseni (örn. ACME_KEY_[A-Z0-9]{16})"
+  },
+  "customRulesScopeBoth": {
+    "message": "Kod & HTML"
+  },
+  "customRulesScopeCode": {
+    "message": "Yalnızca Kod"
+  },
+  "customRulesScopeHtml": {
+    "message": "Yalnızca HTML"
+  },
+  "customRulesRedosSafe": {
+    "message": "ReDoS-Güvenli"
+  },
+  "customRulesRedosUnsafe": {
+    "message": "Güvensiz Regex"
+  },
+  "customRulesPlaygroundPlaceholder": {
+    "message": "Regex Playground: canlı test için örnek metin yapıştırın…"
+  },
+  "customRulesMatchesCount": {
+    "message": "$1 eşleşme"
+  },
+  "customRulesMissingFields": {
+    "message": "Kural adı ve regex deseni zorunludur."
+  },
+  "customRulesUnsafe": {
+    "message": "Desen ReDoS güvenlik kontrolünden geçemedi."
+  },
+  "customRulesSaveBtn": {
+    "message": "Özel Kuralı Kaydet"
+  },
+  "customRulesListTitle": {
+    "message": "Kayıtlı Özel Kurallar"
+  },
+  "customRulesEmpty": {
+    "message": "Henüz kayıtlı özel kural yok."
+  },
+  "customRulesDelete": {
+    "message": "Sil"
   }
 }

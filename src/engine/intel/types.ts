@@ -107,6 +107,8 @@ export interface EndpointHit {
   methods: HttpMethod[];
   /** Whether part of it is computed at runtime (template expression). */
   dynamic: boolean;
+  /** True when observed live at runtime via passive fetch/XHR observer. */
+  liveObserved?: boolean;
   locations: IntelLocation[];
 }
 

@@ -1,5 +1,6 @@
 import { useSignal } from '@preact/signals';
 import type { AuditRecord, Severity } from '@/core/db';
+import { runSafeChecksFromUi } from '@/core/site-client';
 import type {
   AuditCategory,
   AuditFinding,
@@ -8,8 +9,10 @@ import type {
   StackHintCategory,
 } from '@/engine/audit';
 import { draftAuditReport } from '@/engine/export';
+import type { SafeCheckReport } from '@/engine/verify';
 import { AUDIT_CATEGORY_KEYS, SEVERITY_KEYS } from '../format';
 import { type MessageKey, t } from '../i18n';
+import { refresh } from '../state';
 import { Badge, CopyDraftButton, Section } from './primitives';
 
 const STACK_CATEGORY_KEYS: Record<StackHintCategory, MessageKey> = {
@@ -62,18 +65,31 @@ export function SecurityAuditView({
   findings,
   counts,
   stackHints = [],
+  safeChecks,
   origin,
 }: {
   audits: AuditRecord[];
   findings: AuditFinding[];
   counts: Record<Severity, number>;
   stackHints?: readonly StackHint[];
+  safeChecks?: SafeCheckReport;
   origin: string;
 }) {
   const activeCategory = useSignal<AuditCategory | 'all'>('all');
   const selectedAuditId = useSignal<string | null>(null);
   const rawOpen = useSignal(false);
   const rawCopied = useSignal(false);
+  const checkingSafe = useSignal(false);
+
+  const runChecks = async () => {
+    checkingSafe.value = true;
+    try {
+      await runSafeChecksFromUi(origin);
+      await refresh();
+    } finally {
+      checkingSafe.value = false;
+    }
+  };
 
   if (audits.length === 0 && stackHints.length === 0) {
     return <p class="px-1 text-[12px] text-zinc-500">{t('auditEmpty')}</p>;
@@ -87,6 +103,55 @@ export function SecurityAuditView({
 
   return (
     <div class="space-y-4">
+      <Section title={t('safeChecksTitle')}>
+        <div
+          data-testid="safe-checks-section"
+          class="space-y-2 rounded-lg border border-white/[0.06] bg-white/[0.02] p-2.5"
+        >
+          <p class="text-[11px] leading-relaxed text-zinc-400">{t('safeChecksHint')}</p>
+          <button
+            type="button"
+            data-testid="run-safe-checks-btn"
+            disabled={checkingSafe.value}
+            onClick={() => void runChecks()}
+            class="w-full rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1.5 text-[11px] font-medium text-emerald-300 transition-colors hover:bg-emerald-500/20 disabled:opacity-50"
+          >
+            {checkingSafe.value ? t('safeChecksRunning') : t('safeChecksRunBtn')}
+          </button>
+          {safeChecks && safeChecks.items.length > 0 && (
+            <ul
+              data-testid="safe-checks-list"
+              class="divide-y divide-white/[0.05] overflow-hidden rounded border border-white/[0.05] bg-black/20"
+            >
+              {safeChecks.items.map((item) => (
+                <li key={item.id} class="space-y-0.5 px-2 py-1.5">
+                  <div class="flex items-center justify-between gap-2">
+                    <span class="text-[11px] font-medium text-zinc-100">{item.title}</span>
+                    <Badge
+                      tone={
+                        item.status === 'warn'
+                          ? 'warn'
+                          : item.status === 'ok'
+                            ? 'ok'
+                            : item.status === 'error'
+                              ? 'error'
+                              : 'muted'
+                      }
+                    >
+                      {item.status}
+                    </Badge>
+                  </div>
+                  <p class="text-[10.5px] text-zinc-400">{item.detail}</p>
+                  {item.evidence && (
+                    <p class="truncate font-mono text-[10px] text-zinc-500">{item.evidence}</p>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </Section>
+
       {stackHints.length > 0 && (
         <Section title={t('stackHintsTitle')} count={stackHints.length}>
           <ul

@@ -1,11 +1,14 @@
 import { useSignal } from '@preact/signals';
 import type { PageIntelRecord } from '@/core/db';
+import { updateSiteSettingsFromUi } from '@/core/site-client';
 import { draftSinkReport } from '@/engine/export';
 import type { HintLevel, SinkCategory, SinkHit } from '@/engine/intel';
+import type { RuntimeDomEvent } from '@/engine/runtime';
+import { generatePostMessageFixSnippet } from '@/engine/verify';
 import { formatBytes, HINT_LEVEL_KEYS, NEXT_DATA_REASON_KEYS, SINK_CATEGORY_KEYS } from '../format';
 import { t } from '../i18n';
-import { openCodeViewer } from '../state';
-import { Badge, CopyDraftButton, Section } from './primitives';
+import { openCodeViewer, refresh } from '../state';
+import { Badge, CopyDraftButton, Section, Toggle } from './primitives';
 
 const SINK_CATEGORIES: readonly SinkCategory[] = [
   'taint-flow',
@@ -138,15 +141,31 @@ function NextDataCard({ page }: { page: PageIntelRecord }) {
 export function CodeHintsView({
   sinks,
   pages,
+  runtimeDom = [],
+  runtimeGuard = false,
   origin,
 }: {
   sinks: SinkHit[];
   pages: PageIntelRecord[];
+  runtimeDom?: readonly RuntimeDomEvent[];
+  runtimeGuard?: boolean;
   origin: string;
 }) {
   const activeCategory = useSignal<SinkCategory | 'all'>('all');
   const activeLevel = useSignal<HintLevel | 'all'>('all');
   const limit = useSignal(PAGE_LIMIT);
+  const togglingGuard = useSignal(false);
+  const copiedFix = useSignal<string | null>(null);
+
+  const toggleRuntimeGuard = async (checked: boolean) => {
+    togglingGuard.value = true;
+    try {
+      await updateSiteSettingsFromUi(origin, { runtimeGuard: checked });
+      await refresh();
+    } finally {
+      togglingGuard.value = false;
+    }
+  };
 
   const presentCategories = SINK_CATEGORIES.filter((cat) =>
     sinks.some((sink) => sink.category === cat),
@@ -164,6 +183,38 @@ export function CodeHintsView({
       <p class="rounded-md border border-white/[0.06] bg-white/[0.02] px-2.5 py-2 text-[11px] leading-4 text-zinc-400">
         {t('hintsNotice')}
       </p>
+
+      <Section title={t('runtimeGuardTitle')} count={runtimeDom.length}>
+        <div class="space-y-2 rounded-lg border border-white/[0.06] bg-white/[0.02] p-2.5">
+          <Toggle
+            testId="runtime-guard-toggle"
+            checked={runtimeGuard}
+            disabled={togglingGuard.value}
+            onChange={(checked) => void toggleRuntimeGuard(checked)}
+            label={t('runtimeGuardLabel')}
+            hint={t('runtimeGuardHint')}
+          />
+          {runtimeDom.length > 0 && (
+            <ul
+              data-testid="runtime-dom-list"
+              class="divide-y divide-white/[0.05] overflow-hidden rounded border border-white/[0.05] bg-black/25"
+            >
+              {runtimeDom.slice(0, 30).map((ev) => (
+                <li key={ev.id} data-testid="runtime-dom-row" class="space-y-1 px-2 py-1.5">
+                  <div class="flex items-center justify-between gap-1.5">
+                    <Badge tone="warn">{ev.kind}</Badge>
+                    <span class="font-mono text-[10px] text-zinc-500">{ev.count}×</span>
+                  </div>
+                  <p class="font-mono text-[10.5px] break-all text-zinc-200">{ev.detail}</p>
+                  {ev.stack.length > 0 && (
+                    <p class="truncate font-mono text-[9.5px] text-zinc-500">{ev.stack[0]}</p>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </Section>
 
       {pages.length > 0 && (
         <Section title={t('nextDataSection')} count={pages.length}>
@@ -275,6 +326,30 @@ export function CodeHintsView({
                         testId="sink-draft"
                         buildDraft={() => draftSinkReport(sink, origin)}
                       />
+                      {(sink.ruleId === 'authz-unvalidated-postmessage' ||
+                        sink.category === 'messaging') && (
+                        <button
+                          type="button"
+                          data-testid="sink-copy-fix"
+                          onClick={() => {
+                            const key = `${sink.ruleId}:${sink.location.line}`;
+                            void navigator.clipboard
+                              .writeText(generatePostMessageFixSnippet(sink, origin))
+                              .then(() => {
+                                copiedFix.value = key;
+                                setTimeout(() => {
+                                  if (copiedFix.value === key) copiedFix.value = null;
+                                }, 1500);
+                              })
+                              .catch(() => {});
+                          }}
+                          class="shrink-0 rounded px-1.5 py-0.5 text-[10px] text-emerald-300 hover:bg-emerald-500/15"
+                        >
+                          {copiedFix.value === `${sink.ruleId}:${sink.location.line}`
+                            ? t('copied')
+                            : t('sinkCopyFix')}
+                        </button>
+                      )}
                     </div>
                     {sink.trace && (
                       <p

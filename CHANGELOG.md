@@ -3,6 +3,27 @@
 All notable changes to MapHound. The format follows [Keep a Changelog](https://keepachangelog.com/)
 and the project uses [Semantic Versioning](https://semver.org/).
 
+## [0.7.0] - 2026-11-28
+
+### Added
+
+- **Passive Runtime API & GraphQL Observer (`src/engine/runtime/traffic-observer.ts`, `runtime-hook.ts`).**
+  Read-only `fetch` / `XMLHttpRequest` observer injected only on enabled tabs via `chrome.scripting`
+  (`MAIN` world) capturing REST/GraphQL methods, paths, HTTP status codes, auth header names (values
+  never stored), request/response JSON shape keys, and GraphQL `operationName`/`query`/`mutation`/variable
+  names. Merges into `Endpoints.tsx` (`Live Observed` badge) and enriches `openapi.json`.
+- **Opt-In Runtime Guard (`src/engine/runtime/dom-guard.ts`, `CodeHints.tsx`).** Default-OFF passive
+  instrumentation switch allowing users to observe live `window.postMessage` events and DOM sink calls
+  (`innerHTML`, `eval`) with sanitized stack summaries under **Live Runtime Events**.
+- **Controlled Safe Verification & Safe Snippets (`src/engine/verify/`).** User-triggered non-destructive
+  checks for CORS origin reflection, `/graphql` introspection, `/.well-known/security.txt`, and
+  `/.well-known/openid-configuration`, plus 1-click environment-variable-placeholder `curl` and Python
+  `requests` snippets on endpoints and defensive `event.origin` remediation snippets on `postMessage` findings.
+- **Custom Rules Studio & In-Browser ReDoS Guard (`src/engine/rules/custom-rules.ts`, `CustomRules.tsx`).**
+  Upgraded IndexedDB non-destructively to schema **v5** (`customRules`, `runtimeApi`, `runtimeDom` stores).
+  Users can author, toggle, and test custom regex rules in a live **Regex Playground** guarded by an
+  in-browser ReDoS safety verifier before saving into the `scan-job.ts` and HTML audit pipelines.
+
 ## [0.6.0] - 2026-11-28
 
 ### Added

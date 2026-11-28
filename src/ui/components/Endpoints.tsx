@@ -6,7 +6,9 @@ import {
   type HintLevel,
   type ScriptIntel,
 } from '@/engine/intel';
+import type { ObservedApiEvent } from '@/engine/runtime';
 import { sanitizeSegment } from '@/engine/sourcemap/sanitize-path';
+import { generateCurlSnippet, generatePythonRequestsSnippet } from '@/engine/verify';
 import { endpointsJson, endpointsText } from '@/engine/zip/endpoints-report';
 import { saveBlob } from '../export-client';
 import { ENDPOINT_CATEGORY_KEYS, HINT_LEVEL_KEYS, ROUTE_KIND_KEYS } from '../format';
@@ -87,7 +89,15 @@ function LocationButton({
   );
 }
 
-export function EndpointsView({ intel, origin }: { intel: ScriptIntel; origin: string }) {
+export function EndpointsView({
+  intel,
+  runtimeApi = [],
+  origin,
+}: {
+  intel: ScriptIntel;
+  runtimeApi?: readonly ObservedApiEvent[];
+  origin: string;
+}) {
   const activeCategory = useSignal<EndpointCategory | 'all'>('all');
   const copiedAll = useSignal(false);
   const copiedItem = useSignal<string | null>(null);
@@ -140,7 +150,7 @@ export function EndpointsView({ intel, origin }: { intel: ScriptIntel; origin: s
 
   const downloadOpenApi = () => {
     saveBlob(
-      new Blob([openApiJson({ origin, endpoints: intel.endpoints })], {
+      new Blob([openApiJson({ origin, endpoints: intel.endpoints, observedApi: runtimeApi })], {
         type: 'application/json;charset=utf-8',
       }),
       `maphound-${hostSlug(origin)}-openapi.json`,
@@ -193,7 +203,10 @@ export function EndpointsView({ intel, origin }: { intel: ScriptIntel; origin: s
           data-testid="endpoints-copy-openapi"
           disabled={intel.endpoints.length === 0}
           onClick={() =>
-            void copyText(openApiJson({ origin, endpoints: intel.endpoints }), '__openapi__')
+            void copyText(
+              openApiJson({ origin, endpoints: intel.endpoints, observedApi: runtimeApi }),
+              '__openapi__',
+            )
           }
           class="rounded border border-white/[0.08] bg-white/[0.03] px-2 py-1 text-[11px] text-zinc-300 hover:bg-white/[0.07] disabled:cursor-not-allowed disabled:opacity-40"
         >
@@ -256,6 +269,7 @@ export function EndpointsView({ intel, origin }: { intel: ScriptIntel; origin: s
                       >
                         {t(ENDPOINT_CATEGORY_KEYS[ep.category])}
                       </span>
+                      {ep.liveObserved && <Badge tone="ok">{t('endpointsLiveObserved')}</Badge>}
                       {ep.methods.map((method) => (
                         <span
                           key={method}
@@ -269,6 +283,26 @@ export function EndpointsView({ intel, origin }: { intel: ScriptIntel; origin: s
                         testId="endpoint-draft"
                         buildDraft={() => draftEndpointReport(ep, origin)}
                       />
+                      <button
+                        type="button"
+                        data-testid="endpoint-curl"
+                        onClick={() =>
+                          void copyText(generateCurlSnippet(ep, origin), `curl:${ep.value}`)
+                        }
+                        class="shrink-0 rounded px-1.5 py-0.5 font-mono text-[10px] text-zinc-400 hover:bg-white/[0.06] hover:text-zinc-200"
+                      >
+                        {copiedItem.value === `curl:${ep.value}` ? t('copied') : 'cURL'}
+                      </button>
+                      <button
+                        type="button"
+                        data-testid="endpoint-python"
+                        onClick={() =>
+                          void copyText(generatePythonRequestsSnippet(ep, origin), `py:${ep.value}`)
+                        }
+                        class="shrink-0 rounded px-1.5 py-0.5 font-mono text-[10px] text-zinc-400 hover:bg-white/[0.06] hover:text-zinc-200"
+                      >
+                        {copiedItem.value === `py:${ep.value}` ? t('copied') : 'Py'}
+                      </button>
                       <button
                         type="button"
                         data-testid="endpoint-copy"

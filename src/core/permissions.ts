@@ -4,12 +4,21 @@ import { originPatterns, parseOrigin } from './scope';
 
 /** Output path of `src/entrypoints/collector.content.ts`. */
 export const COLLECTOR_FILE = '/content-scripts/collector.js' as const;
+/** Output path of `src/entrypoints/runtime-hook.ts`. */
+export const RUNTIME_HOOK_FILE = '/runtime-hook.js' as const;
 const COLLECTOR_PREFIX = 'mh-collector-';
+const RUNTIME_HOOK_PREFIX = 'mh-runtime-';
 
 /** Stable content script id for a site. Ids may not start with `_`. */
 export function collectorScriptId(origin: string): string {
   return (
     COLLECTOR_PREFIX + origin.replace(/[^a-z0-9]/gi, (c) => `_${c.charCodeAt(0).toString(16)}`)
+  );
+}
+
+export function runtimeHookScriptId(origin: string): string {
+  return (
+    RUNTIME_HOOK_PREFIX + origin.replace(/[^a-z0-9]/gi, (c) => `_${c.charCodeAt(0).toString(16)}`)
   );
 }
 
@@ -66,17 +75,28 @@ export async function revokePatterns(patterns: string[]): Promise<boolean> {
   }
 }
 
-/** Persistently register the collector for a site. Replaces an existing registration. */
+/** Persistently register the collector and MAIN-world passive runtime hook for a site. */
 export async function registerCollector(origin: string, scope: Scope): Promise<void> {
   const id = collectorScriptId(origin);
+  const hookId = runtimeHookScriptId(origin);
   await unregisterCollector(origin);
+  const matches = originPatterns(origin, scope);
   await browser.scripting.registerContentScripts([
     {
       id,
-      matches: originPatterns(origin, scope),
+      matches,
       js: [COLLECTOR_FILE],
       runAt: 'document_idle',
       world: 'ISOLATED',
+      allFrames: false,
+      persistAcrossSessions: true,
+    },
+    {
+      id: hookId,
+      matches,
+      js: [RUNTIME_HOOK_FILE],
+      runAt: 'document_start',
+      world: 'MAIN',
       allFrames: false,
       persistAcrossSessions: true,
     },
@@ -84,9 +104,11 @@ export async function registerCollector(origin: string, scope: Scope): Promise<v
 }
 
 export async function unregisterCollector(origin: string): Promise<void> {
-  const id = collectorScriptId(origin);
-  const existing = await browser.scripting.getRegisteredContentScripts({ ids: [id] });
-  if (existing.length > 0) await browser.scripting.unregisterContentScripts({ ids: [id] });
+  const ids = [collectorScriptId(origin), runtimeHookScriptId(origin)];
+  const existing = await browser.scripting.getRegisteredContentScripts({ ids });
+  if (existing.length > 0) {
+    await browser.scripting.unregisterContentScripts({ ids: existing.map((s) => s.id) });
+  }
 }
 
 export async function unregisterCollectorIds(ids: string[]): Promise<void> {
@@ -108,6 +130,11 @@ export async function injectIntoOpenTabs(origin: string, scope: Scope): Promise<
   for (const tab of tabs) {
     if (tab.id === undefined) continue;
     try {
+      await browser.scripting.executeScript({
+        target: { tabId: tab.id },
+        files: [RUNTIME_HOOK_FILE],
+        world: 'MAIN',
+      });
       await browser.scripting.executeScript({
         target: { tabId: tab.id },
         files: [COLLECTOR_FILE],

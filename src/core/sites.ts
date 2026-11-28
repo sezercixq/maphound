@@ -72,6 +72,8 @@ async function purgeOrigin(handle: MaphoundHandle, origin: string): Promise<void
     'pages',
     'audits',
     'snapshots',
+    'runtimeApi',
+    'runtimeDom',
     'jobs',
   ] as const) {
     const tx = handle.transaction(store, 'readwrite');
@@ -95,6 +97,7 @@ export async function updateSiteSettings(
   const settings: SiteSettings = {
     aggressiveMapProbing: patch.aggressiveMapProbing ?? site.settings.aggressiveMapProbing,
     useCredentials: patch.useCredentials ?? site.settings.useCredentials,
+    runtimeGuard: patch.runtimeGuard ?? site.settings.runtimeGuard ?? false,
   };
   await handle.put('sites', { ...site, settings });
   notifyDbChanged({ store: 'sites', origin });

@@ -15,6 +15,8 @@ import {
 import { getActiveTabOrigin } from '@/core/permissions';
 import { parseOrigin, siteForUrl } from '@/core/scope';
 import type { SiteSnapshotRecord } from '@/engine/diff';
+import type { CustomRuleRecord } from '@/engine/rules';
+import type { ObservedApiEvent, RuntimeDomEvent } from '@/engine/runtime';
 import type { FileLoadTarget } from '@/engine/search/source-search';
 import { clearSearchCache } from './search-client';
 import { buildViewModel } from './view-model';
@@ -46,6 +48,9 @@ const intel = signal<ScriptIntelRecord[]>([]);
 const pages = signal<PageIntelRecord[]>([]);
 const audits = signal<AuditRecord[]>([]);
 const snapshots = signal<SiteSnapshotRecord[]>([]);
+const runtimeApi = signal<ObservedApiEvent[]>([]);
+const runtimeDom = signal<RuntimeDomEvent[]>([]);
+const customRules = signal<CustomRuleRecord[]>([]);
 export const viewerTarget = signal<ViewerTarget | null>(null);
 export const loaded = signal(false);
 
@@ -68,6 +73,9 @@ export const view = computed(() =>
     pages.value,
     audits.value,
     snapshots.value,
+    runtimeApi.value,
+    runtimeDom.value,
+    customRules.value,
   ),
 );
 
@@ -84,6 +92,7 @@ export async function refresh(): Promise<void> {
     viewerTarget.value = null;
     clearSearchCache();
   }
+  const allCustomRules = await db.getAll('customRules');
   const [
     siteJobs,
     siteScripts,
@@ -93,6 +102,8 @@ export async function refresh(): Promise<void> {
     sitePages,
     siteAudits,
     siteSnapshots,
+    siteRuntimeApi,
+    siteRuntimeDom,
   ] = active
     ? await Promise.all([
         db.getAllFromIndex('jobs', 'by-origin', active.origin),
@@ -103,8 +114,10 @@ export async function refresh(): Promise<void> {
         db.getAllFromIndex('pages', 'by-origin', active.origin),
         db.getAllFromIndex('audits', 'by-origin', active.origin),
         db.getAllFromIndex('snapshots', 'by-origin', active.origin),
+        db.getAllFromIndex('runtimeApi', 'by-origin', active.origin),
+        db.getAllFromIndex('runtimeDom', 'by-origin', active.origin),
       ])
-    : [[], [], [], [], [], [], [], []];
+    : [[], [], [], [], [], [], [], [], [], []];
   batch(() => {
     sites.value = allSites;
     jobs.value = siteJobs;
@@ -115,6 +128,9 @@ export async function refresh(): Promise<void> {
     pages.value = sitePages;
     audits.value = siteAudits;
     snapshots.value = siteSnapshots;
+    runtimeApi.value = siteRuntimeApi;
+    runtimeDom.value = siteRuntimeDom;
+    customRules.value = allCustomRules;
     loaded.value = true;
   });
 }

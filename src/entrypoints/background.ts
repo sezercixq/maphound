@@ -27,6 +27,15 @@ import {
   parseSitemapXml,
 } from '@/engine/audit';
 import { recordSiteSnapshot } from '@/engine/diff';
+import { scanWithCustomRules, validateCustomRegex } from '@/engine/rules';
+import {
+  buildObservedApiEvent,
+  buildRuntimeDomEvent,
+  MAX_OBSERVED_API_EVENTS,
+  mergeObservedApiEvent,
+  mergeRuntimeDomEvent,
+} from '@/engine/runtime';
+import { runSafeVerificationChecks } from '@/engine/verify';
 
 /** Background to offscreen to worker round trip. */
 export async function pingPipeline(text: string): Promise<PingResult> {
@@ -200,11 +209,38 @@ export default defineBackground(() => {
       clearTimeout(timer);
     }
 
+    // Apply enabled HTML-scoped custom rules to captured HTML comments & meta values
+    const htmlCustomRules = (await db.getAll('customRules')).filter(
+      (r) => r.enabled && (r.scope === 'html' || r.scope === 'both'),
+    );
+    const htmlCustomFindings =
+      htmlCustomRules.length > 0 && data.htmlAudit
+        ? scanWithCustomRules(
+            [
+              ...data.htmlAudit.comments.map((c) => c.text),
+              ...data.htmlAudit.metas.map((m) => `${m.name}: ${m.content}`),
+            ].join('\n'),
+            htmlCustomRules,
+            'html',
+          ).map((hit) => ({
+            id: `html-custom:${hit.ruleId}:${hit.line}`,
+            category: 'headers' as const,
+            ruleId: hit.ruleId,
+            title: hit.ruleName,
+            severity: hit.severity,
+            subject: 'HTML',
+            preview: hit.preview,
+            detail: hit.snippet,
+            recommendation: 'Review custom rule match in page HTML comments or meta tags.',
+          }))
+        : [];
+
     const findings = mergeAuditFindings(
       headerFindings,
       setCookieFindings,
       data.cookieFindings ?? [],
       data.storageFindings ?? [],
+      htmlCustomFindings,
     );
     const cookieNames = [
       ...new Set([...(data.cookieNames ?? []), ...headerCookieNames].filter(Boolean)),
@@ -278,6 +314,97 @@ export default defineBackground(() => {
     await db.put('sites', { ...active, discovery });
     notifyDbChanged({ store: 'sites', origin: active.origin });
     return { ok: true, discovery };
+  });
+
+  onMessage('site:run-safe-checks', async ({ data }) => {
+    const db = await getDb();
+    const active = await db.get('sites', data.origin);
+    if (!active) return { ok: false, error: 'site-not-enabled' };
+    const report = await runSafeVerificationChecks(active.origin);
+    await db.put('sites', { ...active, safeChecks: report });
+    notifyDbChanged({ store: 'sites', origin: active.origin });
+    return { ok: true, report };
+  });
+
+  onMessage('runtime:api', async ({ data, sender }) => {
+    const pageUrl = sender.tab ? (sender.url ?? sender.tab.url) : data.pageUrl;
+    if (!pageUrl) return;
+    const db = await getDb();
+    const active = siteForUrl(await db.getAll('sites'), pageUrl);
+    if (!active) return;
+    const event = buildObservedApiEvent({
+      origin: active.origin,
+      url: data.url,
+      method: data.method,
+      status: data.status,
+      headerNames: data.headerNames,
+      requestBody: data.requestBody,
+      responseBody: data.responseBody,
+    });
+    if (!event) return;
+    const existing = await db.get('runtimeApi', event.id);
+    if (!existing) {
+      const count = await db.countFromIndex('runtimeApi', 'by-origin', active.origin);
+      if (count >= MAX_OBSERVED_API_EVENTS) return;
+    }
+    await db.put('runtimeApi', mergeObservedApiEvent(existing, event));
+    notifyDbChanged({ store: 'runtimeApi', origin: active.origin });
+  });
+
+  onMessage('runtime:dom', async ({ data, sender }) => {
+    const pageUrl = sender.tab ? (sender.url ?? sender.tab.url) : data.pageUrl;
+    if (!pageUrl) return;
+    const db = await getDb();
+    const active = siteForUrl(await db.getAll('sites'), pageUrl);
+    if (!active || !active.settings.runtimeGuard) return;
+    const event = buildRuntimeDomEvent({
+      origin: active.origin,
+      kind: data.kind,
+      detail: data.detail,
+      senderOrigin: data.senderOrigin,
+      hasListener: data.hasListener,
+      rawStack: data.rawStack,
+    });
+    const existing = await db.get('runtimeDom', event.id);
+    if (!existing) {
+      const count = await db.countFromIndex('runtimeDom', 'by-origin', active.origin);
+      if (count >= 100) return;
+    }
+    await db.put('runtimeDom', mergeRuntimeDomEvent(existing, event));
+    notifyDbChanged({ store: 'runtimeDom', origin: active.origin });
+  });
+
+  onMessage('runtime:guard-status', async ({ data, sender }) => {
+    const pageUrl = sender.tab ? (sender.url ?? sender.tab.url) : data.pageUrl;
+    if (!pageUrl) return { enabled: false };
+    const db = await getDb();
+    const active = siteForUrl(await db.getAll('sites'), pageUrl);
+    return { enabled: Boolean(active?.settings.runtimeGuard) };
+  });
+
+  onMessage('rules:save', async ({ data }) => {
+    const safety = validateCustomRegex(data.rule.pattern, data.rule.flags);
+    if (!safety.safe) return { ok: false, error: safety.reason ?? 'Unsafe regex pattern' };
+    const db = await getDb();
+    await db.put('customRules', data.rule);
+    notifyDbChanged({ store: 'customRules' });
+    return { ok: true };
+  });
+
+  onMessage('rules:delete', async ({ data }) => {
+    const db = await getDb();
+    await db.delete('customRules', data.id);
+    notifyDbChanged({ store: 'customRules' });
+    return { ok: true };
+  });
+
+  onMessage('rules:toggle', async ({ data }) => {
+    const db = await getDb();
+    const existing = await db.get('customRules', data.id);
+    if (!existing) return { ok: false };
+    await db.put('customRules', { ...existing, enabled: data.enabled });
+    notifyDbChanged({ store: 'customRules' });
+    return { ok: true };
   });
 
   onMessage('snapshot:capture', async ({ data }) => {

@@ -18,7 +18,18 @@ import {
   type StackHint,
 } from '@/engine/audit';
 import { diffSnapshots, type SiteSnapshotRecord, type SnapshotDiff } from '@/engine/diff';
-import { type ArchitectureGraph, buildArchitectureGraph, type ScriptIntel } from '@/engine/intel';
+import {
+  type ArchitectureGraph,
+  buildArchitectureGraph,
+  mergeScriptIntel,
+  type ScriptIntel,
+} from '@/engine/intel';
+import type { CustomRuleRecord } from '@/engine/rules';
+import {
+  type ObservedApiEvent,
+  observedEventsToEndpoints,
+  type RuntimeDomEvent,
+} from '@/engine/runtime';
 import { combineSiteIntel } from '@/engine/zip/endpoints-report';
 import { countBySeverity, sortFindings } from '@/engine/zip/findings-report';
 import { fileName, hostOf } from './format';
@@ -88,6 +99,11 @@ export interface ViewModel {
   /** Version snapshots and latest diff. */
   snapshots: SiteSnapshotRecord[];
   diff: SnapshotDiff | null;
+  /** Passive runtime API & opt-in DOM Guard events. */
+  runtimeApi: ObservedApiEvent[];
+  runtimeDom: RuntimeDomEvent[];
+  /** User-defined custom regex rules (ReDoS-validated). */
+  customRules: CustomRuleRecord[];
   endpointCount: number;
   hintCount: number;
   osintCount: number;
@@ -111,6 +127,9 @@ export function buildViewModel(
   pages: readonly PageIntelRecord[] = [],
   audits: readonly AuditRecord[] = [],
   snapshots: readonly SiteSnapshotRecord[] = [],
+  runtimeApi: readonly ObservedApiEvent[] = [],
+  runtimeDom: readonly RuntimeDomEvent[] = [],
+  customRules: readonly CustomRuleRecord[] = [],
 ): ViewModel {
   const scriptByHash = new Map(scripts.map((s) => [s.hash, s]));
   const mapById = new Map(maps.map((m) => [m.id, m]));
@@ -184,7 +203,15 @@ export function buildViewModel(
   }));
 
   const files = maps.reduce((sum, map) => sum + map.withContent, 0);
-  const intel = combineSiteIntel(intelRecords, pages);
+  const staticIntel = combineSiteIntel(intelRecords, pages);
+  const liveEndpoints = observedEventsToEndpoints(runtimeApi);
+  const intel =
+    liveEndpoints.length > 0
+      ? mergeScriptIntel([
+          staticIntel,
+          { endpoints: liveEndpoints, routes: [], comments: [], sinks: [], truncated: false },
+        ])
+      : staticIntel;
   const architecture = buildArchitectureGraph(intel.modules ?? []);
   const sortedPages = [...pages].sort((a, b) => a.pageUrl.localeCompare(b.pageUrl));
   const sortedAudits = [...audits].sort((a, b) => a.pageUrl.localeCompare(b.pageUrl));
@@ -237,6 +264,9 @@ export function buildViewModel(
     stackHints,
     snapshots: sortedSnapshots,
     diff,
+    runtimeApi: [...runtimeApi].sort((a, b) => b.lastSeen - a.lastSeen),
+    runtimeDom: [...runtimeDom].sort((a, b) => b.lastSeen - a.lastSeen),
+    customRules: [...customRules].sort((a, b) => b.createdAt - a.createdAt),
     endpointCount,
     hintCount,
     osintCount,

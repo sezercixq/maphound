@@ -30,16 +30,19 @@ self.onmessage = async (event: MessageEvent<ExportRequest>) => {
     const db = await getDb();
     const site = await db.get('sites', origin);
     if (!site) throw new Error(`site not enabled: ${origin}`);
-    const [maps, scripts, jobs, findings, intel, pages, audits, snapshots] = await Promise.all([
-      db.getAllFromIndex('maps', 'by-origin', origin),
-      db.getAllFromIndex('scripts', 'by-origin', origin),
-      db.getAllFromIndex('jobs', 'by-origin', origin),
-      db.getAllFromIndex('findings', 'by-origin', origin),
-      db.getAllFromIndex('intel', 'by-origin', origin),
-      db.getAllFromIndex('pages', 'by-origin', origin),
-      db.getAllFromIndex('audits', 'by-origin', origin),
-      db.getAllFromIndex('snapshots', 'by-origin', origin),
-    ]);
+    const [maps, scripts, jobs, findings, intel, pages, audits, snapshots, runtimeApi, runtimeDom] =
+      await Promise.all([
+        db.getAllFromIndex('maps', 'by-origin', origin),
+        db.getAllFromIndex('scripts', 'by-origin', origin),
+        db.getAllFromIndex('jobs', 'by-origin', origin),
+        db.getAllFromIndex('findings', 'by-origin', origin),
+        db.getAllFromIndex('intel', 'by-origin', origin),
+        db.getAllFromIndex('pages', 'by-origin', origin),
+        db.getAllFromIndex('audits', 'by-origin', origin),
+        db.getAllFromIndex('snapshots', 'by-origin', origin),
+        db.getAllFromIndex('runtimeApi', 'by-origin', origin),
+        db.getAllFromIndex('runtimeDom', 'by-origin', origin),
+      ]);
     const stats = await exportSourceZip(
       {
         site,
@@ -51,6 +54,8 @@ self.onmessage = async (event: MessageEvent<ExportRequest>) => {
         pages,
         audits,
         snapshots,
+        runtimeApi,
+        runtimeDom,
         readBlob: async (hash) => (await db.get('blobs', hash))?.blob,
       },
       {

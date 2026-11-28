@@ -5,6 +5,7 @@ import {
   mergeScriptIntel,
   type ScriptIntel,
 } from '@/engine/intel';
+import { scanWithCustomRules } from '@/engine/rules';
 import type { Scanner } from '@/engine/scan/scanner';
 import { CONFIDENCE_ORDER, type ScanHit, SEVERITY_ORDER } from '@/engine/scan/types';
 import {
@@ -72,6 +73,7 @@ export async function scanScript(
 
   const located: Located[] = [];
   const intelParts: ScriptIntel[] = [];
+  const customRules = (await db.getAll('customRules')).filter((r) => r.enabled);
   let mapper: PositionMapper | null = null;
   let mapperUrl: string | undefined;
 
@@ -131,7 +133,10 @@ export async function scanScript(
           ),
         );
       }
-      for (const hit of scanner.scan(file.content)) {
+      for (const hit of [
+        ...scanner.scan(file.content),
+        ...(customRules.length > 0 ? scanWithCustomRules(file.content, customRules, 'code') : []),
+      ]) {
         located.push({
           hit,
           location: {
@@ -159,7 +164,10 @@ export async function scanScript(
       { vendor: false, isBundle: true, siteOrigin: request.origin },
     ),
   );
-  for (const hit of scanner.scan(bundle)) {
+  for (const hit of [
+    ...scanner.scan(bundle),
+    ...(customRules.length > 0 ? scanWithCustomRules(bundle, customRules, 'code') : []),
+  ]) {
     const original = mapper?.originalPositionFor(hit.line, hit.column) ?? null;
     located.push({
       hit,

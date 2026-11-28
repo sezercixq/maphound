@@ -70,6 +70,53 @@ export default defineContentScript({
 
     void collectClientAudit(pageUrl);
 
+    // Bridge passive MAIN-world runtime-hook events (API traffic & opt-in DOM Guard)
+    const onRuntimeMessage = (event: MessageEvent) => {
+      if (event.source !== window || event.origin !== window.location.origin) return;
+      const msg = event.data as {
+        __mhRuntime?: boolean;
+        kind?: 'api' | 'dom';
+        payload?: Record<string, unknown>;
+      } | null;
+      if (!msg?.__mhRuntime || !msg.payload) return;
+      if (msg.kind === 'api') {
+        sendMessage('runtime:api', {
+          pageUrl,
+          url: String(msg.payload.url ?? ''),
+          method: String(msg.payload.method ?? 'GET'),
+          status: Number(msg.payload.status ?? 0),
+          headerNames: Array.isArray(msg.payload.headerNames)
+            ? msg.payload.headerNames.map(String)
+            : [],
+          requestBody: typeof msg.payload.requestBody === 'string' ? msg.payload.requestBody : null,
+          responseBody:
+            typeof msg.payload.responseBody === 'string' ? msg.payload.responseBody : null,
+        }).catch(() => {});
+      } else if (msg.kind === 'dom') {
+        sendMessage('runtime:dom', {
+          pageUrl,
+          kind: msg.payload.kind as 'postMessage' | 'innerHTML' | 'eval' | 'Function' | 'cookie',
+          detail: String(msg.payload.detail ?? ''),
+          ...(typeof msg.payload.senderOrigin === 'string'
+            ? { senderOrigin: msg.payload.senderOrigin }
+            : {}),
+          ...(typeof msg.payload.hasListener === 'boolean'
+            ? { hasListener: msg.payload.hasListener }
+            : {}),
+          ...(typeof msg.payload.rawStack === 'string' ? { rawStack: msg.payload.rawStack } : {}),
+        }).catch(() => {});
+      }
+    };
+    window.addEventListener('message', onRuntimeMessage);
+
+    void sendMessage('runtime:guard-status', { pageUrl })
+      .then((res) => {
+        if (res?.enabled) {
+          window.postMessage({ __mhControl: 'dom-guard', enabled: true }, window.location.origin);
+        }
+      })
+      .catch(() => {});
+
     // Lazy chunks: dynamic import(), injected <script> tags and preloads.
     const perf = new PerformanceObserver((list) => batcher.add(fromEntries(list.getEntries())));
     perf.observe({ type: 'resource', buffered: true });
@@ -95,6 +142,7 @@ export default defineContentScript({
     // collector never needs to touch (and change) the page's own buffer.
     window.addEventListener('pagehide', () => batcher.flush());
     ctx.onInvalidated(() => {
+      window.removeEventListener('message', onRuntimeMessage);
       perf.disconnect();
       mutations.disconnect();
       batcher.dispose();

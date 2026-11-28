@@ -67,6 +67,13 @@ you export everything as a ZIP. No server, no account, no telemetry.
   unvalidated `postMessage` handlers, client-side AuthZ gates and IDOR endpoint candidates, and
   audits weak cryptography (`Math.random()`, `MD5`/`SHA-1`, ECB, static IV/salt) and JWTs
   (`alg: "none"`, >30-day lifetimes, privileged claims).
+- **Passive runtime API/GraphQL observer & opt-in Runtime Guard.** Observes live `fetch`/`XHR`
+  REST & GraphQL traffic (paths, status codes, JSON shape keys, auth header names only) on enabled
+  tabs (`Live Observed` badge + enriched `openapi.json`), plus an opt-in default-OFF **Runtime Guard**
+  for live `postMessage`, `innerHTML` and `eval` events with sanitized stack traces.
+- **Controlled safe verification & Custom Rules Studio.** On-demand non-destructive checks for CORS
+  reflection, GraphQL introspection and `.well-known` metadata, safe `curl`/Python request snippets,
+  and a local **Custom Rules Studio** with in-browser ReDoS safety verification and a live Regex Playground.
 - **SARIF v2.1.0, OpenAPI 3.0.3 & 1-click disclosure drafts.** Exports `results.sarif` and Burp /
   Postman-ready `openapi.json` alongside Markdown/JSON reports and copies ready-to-send Markdown
   vulnerability drafts with masked evidence.
@@ -195,7 +202,7 @@ or open a pull request. Every rule ships with tests, so reviews are quick.
 ```bash
 pnpm lint          # Biome lint and format check
 pnpm typecheck     # TypeScript, strict
-pnpm test          # 268 unit tests (Vitest)
+pnpm test          # 272 unit tests (Vitest)
 pnpm rules:check   # rule schema, samples, ReDoS proof
 pnpm preview:images # regenerate docs/assets/maphound*-preview.png from live UI
 VITE_MH_E2E=1 pnpm build && pnpm test:e2e   # real-Chromium end-to-end tests (Playwright)

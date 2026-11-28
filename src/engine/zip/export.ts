@@ -18,6 +18,7 @@ import {
 import { diffMarkdown, diffSnapshots, type SiteSnapshotRecord } from '@/engine/diff';
 import { openApiJson, sarifJson } from '@/engine/export';
 import { architectureMarkdown, buildArchitectureGraph, osintMarkdown } from '@/engine/intel';
+import type { ObservedApiEvent, RuntimeDomEvent } from '@/engine/runtime';
 import { parseSourceMap, rebuildSourceTree } from '@/engine/sourcemap';
 import { PathAllocator, sanitizeSegment } from '@/engine/sourcemap/sanitize-path';
 import { combineSiteIntel, endpointsMarkdown } from './endpoints-report';
@@ -33,6 +34,8 @@ export interface ExportSource {
   pages?: readonly PageIntelRecord[];
   audits?: readonly AuditRecord[];
   snapshots?: readonly SiteSnapshotRecord[];
+  runtimeApi?: readonly ObservedApiEvent[];
+  runtimeDom?: readonly RuntimeDomEvent[];
   readBlob(hash: string): Promise<Blob | undefined>;
 }
 
@@ -310,6 +313,7 @@ export async function exportSourceZip(
       openApiJson({
         origin: source.site.origin,
         endpoints: mergedIntel.endpoints,
+        observedApi: source.runtimeApi,
         version: toolVersion,
       }),
     ),

@@ -1,6 +1,9 @@
 import { defineExtensionMessaging } from '@webext-core/messaging';
 import type { ClientAuditPayload, DiscoveryFilesRecord } from '@/engine/audit';
 import type { NextDataSummary } from '@/engine/intel';
+import type { CustomRuleRecord } from '@/engine/rules';
+import type { RuntimeDomKind } from '@/engine/runtime';
+import type { SafeCheckReport } from '@/engine/verify';
 import type { MapAnalysisRequest, MapAnalysisResult } from './analyze';
 import type { Scope, SiteSettings } from './db';
 import type { ScriptScanRequest, ScriptScanResult } from './scan-job';
@@ -30,6 +33,37 @@ export interface ProtocolMap {
     discovery?: DiscoveryFilesRecord;
     error?: string;
   };
+  /** User-triggered non-destructive checks (CORS reflection, GraphQL introspection, .well-known). */
+  'site:run-safe-checks': (data: { origin: string }) => {
+    ok: boolean;
+    report?: SafeCheckReport;
+    error?: string;
+  };
+  /** Passive runtime API observation reported by the collector from an enabled tab. */
+  'runtime:api': (data: {
+    pageUrl: string;
+    url: string;
+    method: string;
+    status: number;
+    headerNames: string[];
+    requestBody: string | null;
+    responseBody: string | null;
+  }) => void;
+  /** Opt-in Runtime Guard DOM/postMessage event reported by the collector. */
+  'runtime:dom': (data: {
+    pageUrl: string;
+    kind: RuntimeDomKind;
+    detail: string;
+    senderOrigin?: string;
+    hasListener?: boolean;
+    rawStack?: string;
+  }) => void;
+  /** Collector queries whether opt-in Runtime Guard is enabled for the active page. */
+  'runtime:guard-status': (data: { pageUrl: string }) => { enabled: boolean };
+  /** Custom Rules Studio CRUD (ReDoS-validated before saving). */
+  'rules:save': (data: { rule: CustomRuleRecord }) => { ok: boolean; error?: string };
+  'rules:delete': (data: { id: string }) => { ok: boolean };
+  'rules:toggle': (data: { id: string; enabled: boolean }) => { ok: boolean };
   /** Sent by the side panel after `permissions.request` succeeded. */
   'site:enable': (data: {
     origin: string;

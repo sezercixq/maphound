@@ -307,6 +307,39 @@ export function startServer(): Promise<TestServer> {
         return js("console.log('v060');\n//# sourceMappingURL=v060-app.js.map\n");
       case '/v060-app.js.map':
         return send('application/json', v060Map);
+      case '/v070.html':
+        return send(
+          'text/html',
+          [
+            '<!doctype html><html><body>',
+            '<div id="out"></div>',
+            '<script src="/v070-app.js"></script>',
+            '<script>',
+            "setTimeout(() => { fetch('/api/v1/live-orders', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-API-Key': 'demo' }, body: JSON.stringify({ orderId: 99, amount: 120 }) }); }, 400);",
+            '</script>',
+            '</body></html>',
+          ].join('\n'),
+          {
+            'Access-Control-Allow-Origin': req.headers.origin ?? '*',
+            'Access-Control-Allow-Credentials': 'true',
+          },
+        );
+      case '/v070-app.js':
+        return js("console.log('v070');\n");
+      case '/api/v1/live-orders':
+        return send('application/json', JSON.stringify({ status: 'created', receiptId: 'r-7' }));
+      case '/graphql':
+        return send(
+          'application/json',
+          JSON.stringify({ data: { __schema: { queryType: { name: 'RootQuery' } } } }),
+        );
+      case '/.well-known/security.txt':
+        return send('text/plain', 'Contact: mailto:sec@example.test\n');
+      case '/':
+        return send('text/plain', 'ok', {
+          'Access-Control-Allow-Origin': req.headers.origin ?? '*',
+          'Access-Control-Allow-Credentials': 'true',
+        });
       case '/app.js':
         return js(
           [

@@ -16,10 +16,13 @@ import type {
   RouteHit,
   SinkHit,
 } from '@/engine/intel';
+import type { CustomRuleRecord } from '@/engine/rules';
+import type { ObservedApiEvent, RuntimeDomEvent } from '@/engine/runtime';
+import type { SafeCheckReport } from '@/engine/verify';
 
 export const DB_NAME = 'maphound';
-/** v4: `audits` (headers, cookies, storage) and `snapshots` (version diffing). */
-export const DB_VERSION = 4;
+/** v5: `customRules`, `runtimeApi` and `runtimeDom` stores. */
+export const DB_VERSION = 5;
 
 export type Scope = 'origin' | 'subdomains';
 export type JobState =
@@ -51,6 +54,8 @@ export interface SiteSettings {
   aggressiveMapProbing: boolean;
   /** Send cookies when fetching same-origin assets. Off by default. */
   useCredentials: boolean;
+  /** Opt-in Runtime Guard for live postMessage & DOM sink monitoring. Off by default. */
+  runtimeGuard?: boolean;
 }
 
 export interface SiteRecord {
@@ -65,6 +70,8 @@ export interface SiteRecord {
   extraOrigins?: string[];
   /** Standard discovery files (`robots.txt` / `sitemap.xml`), populated only when requested by the user. */
   discovery?: DiscoveryFilesRecord;
+  /** User-triggered non-destructive verification checks (CORS, GraphQL introspection, .well-known). */
+  safeChecks?: SafeCheckReport;
 }
 
 export interface ScriptRecord {
@@ -282,6 +289,20 @@ export interface MaphoundDB extends DBSchema {
     value: SiteSnapshotRecord;
     indexes: { 'by-origin': string };
   };
+  customRules: {
+    key: string;
+    value: CustomRuleRecord;
+  };
+  runtimeApi: {
+    key: string;
+    value: ObservedApiEvent;
+    indexes: { 'by-origin': string };
+  };
+  runtimeDom: {
+    key: string;
+    value: RuntimeDomEvent;
+    indexes: { 'by-origin': string };
+  };
   jobs: {
     key: string;
     value: JobRecord;
@@ -336,6 +357,15 @@ export function openMaphoundDb(name: string = DB_NAME): Promise<MaphoundHandle> 
 
         const snapshots = db.createObjectStore('snapshots', { keyPath: 'id' });
         snapshots.createIndex('by-origin', 'origin');
+      }
+      if (oldVersion < 5) {
+        db.createObjectStore('customRules', { keyPath: 'id' });
+
+        const runtimeApi = db.createObjectStore('runtimeApi', { keyPath: 'id' });
+        runtimeApi.createIndex('by-origin', 'origin');
+
+        const runtimeDom = db.createObjectStore('runtimeDom', { keyPath: 'id' });
+        runtimeDom.createIndex('by-origin', 'origin');
       }
     },
   });

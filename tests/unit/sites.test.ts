@@ -63,7 +63,9 @@ const browserMock = {
 vi.mock('wxt/browser', () => ({ browser: browserMock }));
 
 const { openMaphoundDb } = await import('@/core/db');
-const { collectorScriptId, COLLECTOR_FILE } = await import('@/core/permissions');
+const { collectorScriptId, COLLECTOR_FILE, runtimeHookScriptId } = await import(
+  '@/core/permissions'
+);
 const { addExtraOrigins, disableSite, enableSite, removeExtraOrigin, syncSites } = await import(
   '@/core/sites'
 );
@@ -107,7 +109,7 @@ describe('enableSite', () => {
     ];
     const result = await enableSite('https://www.example.com/page', 'subdomains', db);
     expect(result).toEqual({ ok: true, injected: 1 });
-    expect(state.injected).toEqual([1]);
+    expect(state.injected).toEqual([1, 1]);
     expect(await db.get('sites', 'https://www.example.com')).toMatchObject({
       scope: 'subdomains',
       settings: { aggressiveMapProbing: false, useCredentials: false },
@@ -131,7 +133,7 @@ describe('enableSite', () => {
     if (!site) throw new Error('missing site');
     await db.put('sites', { ...site, settings: { ...site.settings, aggressiveMapProbing: true } });
     expect((await enableSite('https://example.com', 'origin', db)).ok).toBe(true);
-    expect(state.registered.size).toBe(1);
+    expect(state.registered.size).toBe(2);
     expect((await db.get('sites', 'https://example.com'))?.settings.aggressiveMapProbing).toBe(
       true,
     );
@@ -251,7 +253,11 @@ describe('syncSites', () => {
     expect(await syncSites(db)).toEqual({ disabled: ['https://a.com'] });
     expect(await db.get('sites', 'https://a.com')).toBeUndefined();
     expect([...state.registered.keys()].sort()).toEqual(
-      [collectorScriptId('https://b.com'), 'someone-else'].sort(),
+      [
+        collectorScriptId('https://b.com'),
+        runtimeHookScriptId('https://b.com'),
+        'someone-else',
+      ].sort(),
     );
   });
 });
