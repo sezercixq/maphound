@@ -10,10 +10,12 @@ import type {
 } from '@/engine/audit';
 import { draftAuditReport } from '@/engine/export';
 import type { SafeCheckReport } from '@/engine/verify';
+import { filterByTriage, findingTriageId, type TriageRecord } from '@/engine/workspace';
 import { AUDIT_CATEGORY_KEYS, SEVERITY_KEYS } from '../format';
 import { type MessageKey, t } from '../i18n';
 import { refresh } from '../state';
 import { Badge, CopyDraftButton, Section } from './primitives';
+import { TriageBar, TriageSummaryBar } from './TriageControls';
 
 const STACK_CATEGORY_KEYS: Record<StackHintCategory, MessageKey> = {
   server: 'stackCatServer',
@@ -58,7 +60,13 @@ const MATRIX_KEY: Record<
   info: 'auditStatusInfo',
 };
 
-const CATEGORIES: readonly AuditCategory[] = ['headers', 'cookie', 'storage'];
+const CATEGORIES: readonly AuditCategory[] = [
+  'headers',
+  'cookie',
+  'storage',
+  'supply-chain',
+  'oauth',
+];
 
 export function SecurityAuditView({
   audits,
@@ -67,6 +75,8 @@ export function SecurityAuditView({
   stackHints = [],
   safeChecks,
   origin,
+  triageRecords = [],
+  triageById = new Map(),
 }: {
   audits: AuditRecord[];
   findings: AuditFinding[];
@@ -74,8 +84,11 @@ export function SecurityAuditView({
   stackHints?: readonly StackHint[];
   safeChecks?: SafeCheckReport;
   origin: string;
+  triageRecords?: readonly TriageRecord[];
+  triageById?: ReadonlyMap<string, TriageRecord>;
 }) {
   const activeCategory = useSignal<AuditCategory | 'all'>('all');
+  const showDismissed = useSignal(false);
   const selectedAuditId = useSignal<string | null>(null);
   const rawOpen = useSignal(false);
   const rawCopied = useSignal(false);
@@ -95,11 +108,19 @@ export function SecurityAuditView({
     return <p class="px-1 text-[12px] text-zinc-500">{t('auditEmpty')}</p>;
   }
 
+  const auditTriageKind = (cat: AuditCategory) =>
+    cat === 'supply-chain' || cat === 'oauth' ? cat : 'audit';
+  const auditTriageId = (f: AuditFinding) =>
+    findingTriageId(auditTriageKind(f.category), f.ruleId, f.subject);
+
+  const triaged = filterByTriage(findings, auditTriageId, triageById, showDismissed.value);
+  const activeFindings = triaged.visible;
+
   const currentAudit = audits.find((a) => a.id === selectedAuditId.value) ?? audits[0];
   const filtered =
     activeCategory.value === 'all'
-      ? findings
-      : findings.filter((f) => f.category === activeCategory.value);
+      ? activeFindings
+      : activeFindings.filter((f) => f.category === activeCategory.value);
 
   return (
     <div class="space-y-4">
@@ -354,6 +375,15 @@ export function SecurityAuditView({
         )}
 
       <Section title={t('auditFindingsTitle')} count={filtered.length}>
+        <TriageSummaryBar
+          records={triageRecords}
+          target={origin}
+          dismissedCount={triaged.dismissedCount}
+          showDismissed={showDismissed.value}
+          onToggleDismissed={() => {
+            showDismissed.value = !showDismissed.value;
+          }}
+        />
         <div class="flex flex-wrap items-center gap-1 px-0.5">
           {(['critical', 'high', 'medium', 'low', 'info'] as const)
             .filter((sev) => counts[sev] > 0)
@@ -439,6 +469,16 @@ export function SecurityAuditView({
                   </div>
                   <p class="text-[11px] leading-4 text-zinc-400">{finding.detail}</p>
                   <p class="text-[10px] leading-4 text-zinc-500">{finding.recommendation}</p>
+                  <TriageBar
+                    triageId={auditTriageId(finding)}
+                    origin={origin}
+                    kind={auditTriageKind(finding.category)}
+                    title={finding.title}
+                    severity={finding.severity}
+                    asset={finding.subject}
+                    evidence={finding.preview ?? finding.detail}
+                    record={triageById.get(auditTriageId(finding))}
+                  />
                 </li>
               ))}
             </ul>

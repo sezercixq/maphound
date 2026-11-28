@@ -326,6 +326,22 @@ export function startServer(): Promise<TestServer> {
         );
       case '/v070-app.js':
         return js("console.log('v070');\n");
+      case '/v080.html':
+        return html(
+          [
+            '<script src="https://cdn.example-thirdparty.invalid/widget.js"></script>',
+            '<script src="/v080-app.js"></script>',
+          ].join('\n'),
+        );
+      case '/v080-app.js':
+        return js(
+          [
+            '/*! jQuery JavaScript Library v3.4.1 */',
+            'const authCfg = { response_type: "token", redirect_uri: window.location.href };',
+            'console.log(authCfg);',
+            '',
+          ].join('\n'),
+        );
       case '/api/v1/live-orders':
         return send('application/json', JSON.stringify({ status: 'created', receiptId: 'r-7' }));
       case '/graphql':

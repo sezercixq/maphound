@@ -21,6 +21,7 @@ import { architectureMarkdown, buildArchitectureGraph, osintMarkdown } from '@/e
 import type { ObservedApiEvent, RuntimeDomEvent } from '@/engine/runtime';
 import { parseSourceMap, rebuildSourceTree } from '@/engine/sourcemap';
 import { PathAllocator, sanitizeSegment } from '@/engine/sourcemap/sanitize-path';
+import { generateTriageReportMarkdown, type TriageRecord } from '@/engine/workspace';
 import { combineSiteIntel, endpointsMarkdown } from './endpoints-report';
 import { countBySeverity, findingsJson, findingsMarkdown } from './findings-report';
 
@@ -36,6 +37,8 @@ export interface ExportSource {
   snapshots?: readonly SiteSnapshotRecord[];
   runtimeApi?: readonly ObservedApiEvent[];
   runtimeDom?: readonly RuntimeDomEvent[];
+  triage?: readonly TriageRecord[];
+  workspace?: { domain: string; origins: string[]; visitedPages: string[] };
   readBlob(hash: string): Promise<Blob | undefined>;
 }
 
@@ -259,12 +262,15 @@ export async function exportSourceZip(
           sortedSnapshots[sortedSnapshots.length - 1]!,
         )
       : null;
-  const auditFindingsCount = (source.audits ?? []).reduce((n, a) => n + a.findings.length, 0);
+  const allAuditFindings = (source.audits ?? []).flatMap((a) => a.findings);
+  const auditFindingsCount = allAuditFindings.length;
+  const confirmedTriage = (source.triage ?? []).filter((r) => r.status === 'confirmed');
 
   const manifest = {
     generator: options.generator,
     exportedAt: now.toISOString(),
     site: { origin: source.site.origin, scope: source.site.scope },
+    ...(source.workspace ? { workspace: source.workspace } : {}),
     summary: {
       scripts: manifestScripts.size,
       maps: maps.length,
@@ -278,13 +284,14 @@ export async function exportSourceZip(
       modules: archGraph.nodes.length,
       osint: mergedIntel.osint?.length ?? 0,
       auditFindings: auditFindingsCount,
+      confirmedTriage: confirmedTriage.length,
       snapshots: sortedSnapshots.length,
       hasDiff: Boolean(latestDiff?.hasChanges),
     },
     scripts: [...manifestScripts.values()],
     notScanned,
     rawSecretsIncluded: options.includeSecrets ?? false,
-    note: 'Rebuilt from publicly served source maps. Reports: FINDINGS.md, findings.json, results.sarif, openapi.json, ENDPOINTS.md, ARCHITECTURE.md, OSINT.md, AUDIT.md, and DIFF.md (when snapshot changes exist).',
+    note: 'Rebuilt from publicly served source maps. Reports: FINDINGS.md, findings.json, results.sarif, openapi.json, ENDPOINTS.md, ARCHITECTURE.md, OSINT.md, AUDIT.md, TRIAGE_REPORT.md (when confirmed findings exist), and DIFF.md (when snapshot changes exist).',
   };
   const report = {
     origin: source.site.origin,
@@ -324,11 +331,24 @@ export async function exportSourceZip(
       sarifJson({
         findings: source.findings ?? [],
         sinks: mergedIntel.sinks,
+        auditFindings: allAuditFindings,
         origin: source.site.origin,
         version: toolVersion,
       }),
     ),
   );
+  if (confirmedTriage.length > 0) {
+    add(
+      'TRIAGE_REPORT.md',
+      encoder.encode(
+        generateTriageReportMarkdown(confirmedTriage, {
+          target: source.workspace ? `*.${source.workspace.domain}` : source.site.origin,
+          generator: options.generator,
+          exportedAt: now.toISOString(),
+        }),
+      ),
+    );
+  }
   if (latestDiff?.hasChanges) {
     add('DIFF.md', encoder.encode(diffMarkdown(latestDiff, report)));
   }

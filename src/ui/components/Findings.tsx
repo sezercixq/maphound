@@ -2,10 +2,12 @@ import { useSignal } from '@preact/signals';
 import type { FindingRecord, Severity } from '@/core/db';
 import { rescanSiteFromUi } from '@/core/site-client';
 import { draftSecretReport } from '@/engine/export';
+import { filterByTriage, findingTriageId, type TriageRecord } from '@/engine/workspace';
 import { CONFIDENCE_KEYS, isUrgent, SEVERITY_KEYS, type Tone } from '../format';
 import { t } from '../i18n';
 import { openCodeViewer } from '../state';
 import { Badge, CopyDraftButton, Section } from './primitives';
+import { TriageBar, TriageSummaryBar } from './TriageControls';
 
 const SEVERITY_STYLE: Record<Severity, { bar: string; badge: string }> = {
   critical: { bar: 'bg-red-500', badge: 'bg-red-500/15 text-red-300' },
@@ -57,7 +59,15 @@ function IconButton({
   );
 }
 
-function FindingItem({ finding, origin }: { finding: FindingRecord; origin: string }) {
+function FindingItem({
+  finding,
+  origin,
+  triageRecord,
+}: {
+  finding: FindingRecord;
+  origin: string;
+  triageRecord?: TriageRecord;
+}) {
   const revealed = useSignal(false);
   const copied = useSignal(false);
   const fileName = finding.file.split('/').pop() ?? finding.file;
@@ -186,6 +196,16 @@ function FindingItem({ finding, origin }: { finding: FindingRecord; origin: stri
           )}
         </IconButton>
       </div>
+      <TriageBar
+        triageId={findingTriageId('secret', finding.ruleId, finding.secretHash)}
+        origin={origin}
+        kind="secret"
+        title={finding.ruleName}
+        severity={finding.severity}
+        asset={`${finding.file}:${finding.line}`}
+        evidence={`${finding.preview}\n${finding.snippet}`}
+        record={triageRecord}
+      />
     </li>
   );
 }
@@ -195,18 +215,39 @@ export function FindingList({
   counts,
   scanning,
   origin,
+  triageRecords = [],
+  triageById = new Map(),
 }: {
   findings: FindingRecord[];
   counts: Record<Severity, number>;
   scanning: boolean;
   origin: string;
+  triageRecords?: readonly TriageRecord[];
+  triageById?: ReadonlyMap<string, TriageRecord>;
 }) {
   const showAll = useSignal(false);
-  const urgent = findings.filter((f) => isUrgent(f.severity));
-  const lower = findings.length - urgent.length;
-  const visible = showAll.value ? findings : urgent;
+  const showDismissed = useSignal(false);
+  const triaged = filterByTriage(
+    findings,
+    (f) => findingTriageId('secret', f.ruleId, f.secretHash),
+    triageById,
+    showDismissed.value,
+  );
+  const activeFindings = triaged.visible;
+  const urgent = activeFindings.filter((f) => isUrgent(f.severity));
+  const lower = activeFindings.length - urgent.length;
+  const visible = showAll.value ? activeFindings : urgent;
   return (
-    <Section title={t('sectionFindings')} count={findings.length}>
+    <Section title={t('sectionFindings')} count={activeFindings.length}>
+      <TriageSummaryBar
+        records={triageRecords}
+        target={origin}
+        dismissedCount={triaged.dismissedCount}
+        showDismissed={showDismissed.value}
+        onToggleDismissed={() => {
+          showDismissed.value = !showDismissed.value;
+        }}
+      />
       <div class="flex flex-wrap items-center gap-1 px-1" data-testid="finding-counts">
         {(['critical', 'high', 'medium', 'low', 'info'] as const)
           .filter((severity) => counts[severity] > 0)
@@ -228,14 +269,21 @@ export function FindingList({
           {t('rescan')}
         </button>
       </div>
-      {findings.length === 0 ? (
+      {activeFindings.length === 0 ? (
         !scanning && <p class="px-1 text-[12px] text-zinc-500">{t('findingsNone')}</p>
       ) : (
         <div class="overflow-hidden rounded-lg border border-white/[0.06]">
           {visible.length > 0 ? (
             <ul class="divide-y divide-white/[0.04]" data-testid="finding-list">
               {visible.map((finding) => (
-                <FindingItem key={finding.id} finding={finding} origin={origin} />
+                <FindingItem
+                  key={finding.id}
+                  finding={finding}
+                  origin={origin}
+                  triageRecord={triageById.get(
+                    findingTriageId('secret', finding.ruleId, finding.secretHash),
+                  )}
+                />
               ))}
             </ul>
           ) : (

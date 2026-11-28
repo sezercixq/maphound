@@ -1,4 +1,5 @@
 import type { CustomRuleRecord } from '@/engine/rules';
+import type { TriageRecord } from '@/engine/workspace';
 import type { Scope, SiteSettings } from './db';
 import { sendMessage } from './messaging';
 import { requestOriginsPermission, requestSitePermission } from './permissions';
@@ -59,6 +60,14 @@ export function deleteCustomRuleFromUi(id: string) {
 
 export function toggleCustomRuleFromUi(id: string, enabled: boolean) {
   return sendMessage('rules:toggle', { id, enabled });
+}
+
+export function saveTriageFromUi(record: TriageRecord) {
+  return sendMessage('triage:save', { record });
+}
+
+export function deleteTriageFromUi(id: string) {
+  return sendMessage('triage:delete', { id });
 }
 
 export type AllowOriginsResult = AddOriginsResult | { ok: false; reason: 'permission-denied' };

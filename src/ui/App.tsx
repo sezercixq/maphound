@@ -15,7 +15,7 @@ import { SourceSearchView } from './components/SourceSearch';
 import { ThirdPartyOrigins } from './components/ThirdParty';
 import { downloadSourcesZip } from './export-client';
 import { type MessageKey, t } from './i18n';
-import { site, startState, view } from './state';
+import { setWorkspaceMode, site, startState, view, workspaceMeta, workspaceMode } from './state';
 import type { Stats } from './view-model';
 
 type TabId =
@@ -78,7 +78,15 @@ type ExportState =
   | { kind: 'done'; files: number }
   | { kind: 'error'; message: string };
 
-function ExportBar({ origin, exportable }: { origin: string; exportable: boolean }) {
+function ExportBar({
+  origin,
+  exportable,
+  isWorkspace,
+}: {
+  origin: string;
+  exportable: boolean;
+  isWorkspace: boolean;
+}) {
   const state = useSignal<ExportState>({ kind: 'idle' });
   const includeSecrets = useSignal(false);
   const current = state.value;
@@ -91,6 +99,7 @@ function ExportBar({ origin, exportable }: { origin: string; exportable: boolean
           state.value = { kind: 'busy', done, total };
         },
         includeSecrets.value,
+        isWorkspace,
       );
       state.value = { kind: 'done', files: outcome.files };
     } catch (error) {
@@ -237,6 +246,39 @@ export function App() {
       <SiteCard />
       {enabled && (
         <>
+          <div
+            data-testid="workspace-switcher"
+            class="flex items-center gap-1 rounded-lg border border-white/[0.06] bg-white/[0.02] p-1 text-[11px]"
+          >
+            <button
+              type="button"
+              data-testid="workspace-mode-page"
+              onClick={() => setWorkspaceMode('page')}
+              class={`flex-1 rounded-md px-2 py-1 font-medium transition-colors ${
+                workspaceMode.value === 'page'
+                  ? 'bg-emerald-500/15 text-emerald-300'
+                  : 'text-zinc-400 hover:bg-white/[0.04] hover:text-zinc-200'
+              }`}
+            >
+              {t('workspaceActivePage')}
+            </button>
+            <button
+              type="button"
+              data-testid="workspace-mode-target"
+              onClick={() => setWorkspaceMode('workspace')}
+              class={`flex-1 truncate rounded-md px-2 py-1 font-medium transition-colors ${
+                workspaceMode.value === 'workspace'
+                  ? 'bg-emerald-500/15 text-emerald-300'
+                  : 'text-zinc-400 hover:bg-white/[0.04] hover:text-zinc-200'
+              }`}
+            >
+              {t(
+                'workspaceUnifiedLabel',
+                workspaceMeta.value.domain || enabled.origin,
+                workspaceMeta.value.pageCount || 1,
+              )}
+            </button>
+          </div>
           <StatsRow stats={model.stats} />
           <TabBar
             active={activeTab.value}
@@ -257,6 +299,8 @@ export function App() {
                 counts={model.findingCounts}
                 scanning={model.scanning}
                 origin={enabled.origin}
+                triageRecords={model.triageRecords}
+                triageById={model.triageById}
               />
               <ThirdPartyOrigins
                 siteOrigin={enabled.origin}
@@ -281,6 +325,8 @@ export function App() {
               runtimeDom={model.runtimeDom}
               runtimeGuard={Boolean(enabled.settings.runtimeGuard)}
               origin={enabled.origin}
+              triageRecords={model.triageRecords}
+              triageById={model.triageById}
             />
           )}
           {activeTab.value === 'architecture' && (
@@ -301,6 +347,8 @@ export function App() {
               stackHints={model.stackHints}
               safeChecks={enabled.safeChecks}
               origin={enabled.origin}
+              triageRecords={model.triageRecords}
+              triageById={model.triageById}
             />
           )}
           {activeTab.value === 'diff' && (
@@ -311,7 +359,11 @@ export function App() {
             <SourceSearchView origin={enabled.origin} hasMaps={model.stats.files > 0} />
           )}
           <div class="flex-1" />
-          <ExportBar origin={enabled.origin} exportable={model.stats.exportable} />
+          <ExportBar
+            origin={enabled.origin}
+            exportable={model.stats.exportable}
+            isWorkspace={workspaceMode.value === 'workspace'}
+          />
         </>
       )}
       <CodeViewer />

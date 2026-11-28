@@ -45,6 +45,18 @@ const SINK_IMPACT: Record<SinkCategory, { impact: string; remediation: string }>
     remediation:
       'Use crypto.getRandomValues(), SHA-256/Argon2, authenticated encryption (AES-GCM) with unique random IVs, and short-lived asymmetrically signed JWTs.',
   },
+  'supply-chain': {
+    impact:
+      'Missing Subresource Integrity (SRI), outdated client-side libraries with known CVEs, or suspicious third-party exfiltration patterns expose users to supply-chain compromise.',
+    remediation:
+      'Pin third-party assets with integrity="sha384-..." and crossorigin="anonymous", upgrade outdated libraries, and restrict script origins via CSP.',
+  },
+  oauth: {
+    impact:
+      'Weak OAuth 2.0 / OIDC / SAML client configurations (Implicit Flow, missing state/nonce/PKCE, dynamic redirect_uri) can leak tokens via URLs or enable login CSRF.',
+    remediation:
+      'Use Authorization Code Flow with PKCE (S256), enforce random state/nonce parameters, and validate exact redirect_uri values server-side.',
+  },
   framework: {
     impact:
       'Bypassing framework template escaping or exposing hydration state increases client-side XSS and data-exposure risk.',

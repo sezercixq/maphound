@@ -240,6 +240,8 @@ export default defineBackground(() => {
       setCookieFindings,
       data.cookieFindings ?? [],
       data.storageFindings ?? [],
+      data.supplyChainFindings ?? [],
+      data.oauthFindings ?? [],
       htmlCustomFindings,
     );
     const cookieNames = [
@@ -404,6 +406,21 @@ export default defineBackground(() => {
     if (!existing) return { ok: false };
     await db.put('customRules', { ...existing, enabled: data.enabled });
     notifyDbChanged({ store: 'customRules' });
+    return { ok: true };
+  });
+
+  onMessage('triage:save', async ({ data }) => {
+    const db = await getDb();
+    await db.put('triage', { ...data.record, updatedAt: Date.now() });
+    notifyDbChanged({ store: 'triage', origin: data.record.origin });
+    return { ok: true };
+  });
+
+  onMessage('triage:delete', async ({ data }) => {
+    const db = await getDb();
+    const existing = await db.get('triage', data.id);
+    await db.delete('triage', data.id);
+    notifyDbChanged({ store: 'triage', origin: existing?.origin });
     return { ok: true };
   });
 

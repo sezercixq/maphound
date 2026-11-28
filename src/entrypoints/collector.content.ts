@@ -3,8 +3,11 @@ import { sendMessage } from '@/core/messaging';
 import {
   auditCookies,
   auditHtmlMetadata,
+  auditOAuthPage,
   auditStorageEntries,
+  auditSubresourceIntegrity,
   type ClientCookieInput,
+  type ExternalResourceTag,
 } from '@/engine/audit';
 import { parseNextData } from '@/engine/intel/next-data';
 
@@ -262,6 +265,41 @@ async function collectClientAudit(pageUrl: string): Promise<void> {
     // Meta traversal unavailable.
   }
 
+  const externalResources: ExternalResourceTag[] = [];
+  try {
+    for (const s of Array.from(document.querySelectorAll<HTMLScriptElement>('script[src]')).slice(
+      0,
+      150,
+    )) {
+      const url = normalizeScriptUrl(s.src, document.baseURI);
+      if (url) {
+        externalResources.push({
+          tag: 'script',
+          url,
+          integrity: s.getAttribute('integrity') ?? undefined,
+          crossOrigin: s.getAttribute('crossorigin'),
+        });
+      }
+    }
+    for (const l of Array.from(
+      document.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"][href]'),
+    ).slice(0, 150)) {
+      const url = normalizeScriptUrl(l.href, document.baseURI);
+      if (url) {
+        externalResources.push({
+          tag: 'stylesheet',
+          url,
+          integrity: l.getAttribute('integrity') ?? undefined,
+          crossOrigin: l.getAttribute('crossorigin'),
+        });
+      }
+    }
+  } catch {
+    // DOM resource traversal unavailable.
+  }
+
+  const supplyChainFindings = auditSubresourceIntegrity(pageUrl, externalResources);
+  const oauthFindings = auditOAuthPage(pageUrl);
   const htmlAudit = auditHtmlMetadata(rawComments, rawMetas);
 
   const cookieFindings = auditCookies(cookieInputs, pageUrl);
@@ -269,6 +307,9 @@ async function collectClientAudit(pageUrl: string): Promise<void> {
     pageUrl,
     storageFindings,
     cookieFindings,
+    supplyChainFindings,
+    oauthFindings,
+    externalResources,
     cookieNames: [...seenNames],
     htmlAudit,
     storageKeysChecked: localEntries.length + sessionEntries.length,

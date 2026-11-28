@@ -3,6 +3,32 @@
 All notable changes to MapHound. The format follows [Keep a Changelog](https://keepachangelog.com/)
 and the project uses [Semantic Versioning](https://semver.org/).
 
+## [0.8.0] - 2026-11-28
+
+### Added
+
+- **Session-Based Multi-Page Target Workspace (`src/engine/workspace/target-workspace.ts`).**
+  Upgraded IndexedDB non-destructively to schema **v6** (`triage` store) and added a top-level
+  **Active Page / Target Workspace (`*.domain.com` — N pages)** switcher using `tldts` registrable
+  domains. Merges and deduplicates endpoints, secrets, taint flows, OSINT hits, runtime API/DOM
+  events, and unified `openapi.json` / ZIP exports across visited routes and sibling subdomains.
+- **Client-Side Supply Chain & 3rd-Party Script Auditor (`src/engine/audit/supply-chain.ts`).**
+  Offline auditing of cross-origin `<script>` and `<link rel="stylesheet">` tags for missing SRI
+  (`integrity`) or `crossorigin` attributes, offline library version fingerprinting (`jQuery`,
+  `Lodash`, `Angular`, `React`, `Moment`, `Handlebars`, `DOMPurify`, `Bootstrap`, `Axios`) against
+  an embedded local advisory table, and web skimmer / exfiltration pattern detection
+  (`sendBeacon`, `Image().src`, dynamic `<script>` reading password/card/cookie fields).
+- **OAuth 2.0 / OIDC & SAML Auth Flow Auditor (`src/engine/audit/oauth-audit.ts`).**
+  Passive inspection of URLs, hash fragments, source code `/authorize` calls, and runtime
+  `postMessage` events for Implicit Flow (`response_type=token`/`id_token`), masked fragment token
+  leakage, missing `state`/`nonce`/PKCE (`code_challenge`), suspicious `redirect_uri` candidates,
+  and SAML query bindings.
+- **Bug Bounty Triage Studio & HackerOne/Bugcrowd Report Generator (`src/engine/workspace/triage.ts`, `TriageControls.tsx`).**
+  Persistent per-finding triage status (`unreviewed`, `confirmed`, `investigating`, `false_positive`)
+  and researcher notes in IndexedDB. False positives are hidden by default (with a toggle to reveal)
+  and stay suppressed across rescans; confirmed findings export as 1-click copyable HackerOne/Bugcrowd
+  Markdown reports and `TRIAGE_REPORT.md` inside the ZIP alongside updated `results.sarif` CWE mappings.
+
 ## [0.7.0] - 2026-11-28
 
 ### Added

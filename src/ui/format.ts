@@ -151,6 +151,8 @@ export const SINK_CATEGORY_KEYS: Record<SinkCategory, MessageKey> = {
   redirect: 'sinkCatRedirect',
   'authz-idor': 'sinkCatAuthzIdor',
   crypto: 'sinkCatCrypto',
+  'supply-chain': 'sinkCatSupplyChain',
+  oauth: 'sinkCatOauth',
   framework: 'sinkCatFramework',
 };
 
@@ -182,4 +184,6 @@ export const AUDIT_CATEGORY_KEYS: Record<AuditCategory, MessageKey> = {
   headers: 'auditCatHeaders',
   cookie: 'auditCatCookie',
   storage: 'auditCatStorage',
+  'supply-chain': 'auditCatSupplyChain',
+  oauth: 'auditCatOauth',
 };

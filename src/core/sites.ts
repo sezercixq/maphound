@@ -74,6 +74,7 @@ async function purgeOrigin(handle: MaphoundHandle, origin: string): Promise<void
     'snapshots',
     'runtimeApi',
     'runtimeDom',
+    'triage',
     'jobs',
   ] as const) {
     const tx = handle.transaction(store, 'readwrite');

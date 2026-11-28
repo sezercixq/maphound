@@ -19,10 +19,11 @@ import type {
 import type { CustomRuleRecord } from '@/engine/rules';
 import type { ObservedApiEvent, RuntimeDomEvent } from '@/engine/runtime';
 import type { SafeCheckReport } from '@/engine/verify';
+import type { TriageRecord, TriageStatus } from '@/engine/workspace';
 
 export const DB_NAME = 'maphound';
-/** v5: `customRules`, `runtimeApi` and `runtimeDom` stores. */
-export const DB_VERSION = 5;
+/** v6: `triage` store for persistent Bug Bounty triage statuses and researcher notes. */
+export const DB_VERSION = 6;
 
 export type Scope = 'origin' | 'subdomains';
 export type JobState =
@@ -303,6 +304,11 @@ export interface MaphoundDB extends DBSchema {
     value: RuntimeDomEvent;
     indexes: { 'by-origin': string };
   };
+  triage: {
+    key: string;
+    value: TriageRecord;
+    indexes: { 'by-origin': string; 'by-domain': string; 'by-status': TriageStatus };
+  };
   jobs: {
     key: string;
     value: JobRecord;
@@ -366,6 +372,12 @@ export function openMaphoundDb(name: string = DB_NAME): Promise<MaphoundHandle> 
 
         const runtimeDom = db.createObjectStore('runtimeDom', { keyPath: 'id' });
         runtimeDom.createIndex('by-origin', 'origin');
+      }
+      if (oldVersion < 6) {
+        const triage = db.createObjectStore('triage', { keyPath: 'id' });
+        triage.createIndex('by-origin', 'origin');
+        triage.createIndex('by-domain', 'domain');
+        triage.createIndex('by-status', 'status');
       }
     },
   });

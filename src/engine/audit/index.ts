@@ -21,6 +21,7 @@ export {
 } from './discovery-files';
 export { auditHeaders, SECURITY_HEADER_NAMES, STACK_HEADER_NAMES } from './headers';
 export { auditHtmlMetadata, MAX_HTML_COMMENTS, MAX_HTML_METAS } from './html-audit';
+export { auditOAuthPage, auditOAuthRuntimeDom, auditOAuthSource } from './oauth-audit';
 export { AUDIT_PATTERNS } from './patterns';
 export { auditMarkdown } from './report';
 export {
@@ -34,6 +35,14 @@ export {
 } from './stack-hints';
 export { auditStorageEntries, maskAuditValue } from './storage';
 export {
+  auditSubresourceIntegrity,
+  compareSemver,
+  detectSkimmerPatterns,
+  fingerprintLibraries,
+  type LibraryAdvisory,
+  type LibraryFingerprint,
+} from './supply-chain';
+export {
   AUDIT_SEVERITY_ORDER,
   type AuditCategory,
   type AuditFinding,
@@ -41,6 +50,7 @@ export {
   type ClientAuditPayload,
   type ClientCookieInput,
   type DiscoveryFilesRecord,
+  type ExternalResourceTag,
   type HeaderMatrixEntry,
   type HeaderStatus,
   type HtmlAuditSummary,

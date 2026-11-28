@@ -1,4 +1,6 @@
 import { auditSourceCrypto } from '@/engine/audit/crypto-audit';
+import { auditOAuthSource } from '@/engine/audit/oauth-audit';
+import { detectSkimmerPatterns } from '@/engine/audit/supply-chain';
 import { extractModuleSummary, MAX_MODULES_PER_SITE } from './architecture';
 import { extractAuthzSurface } from './authz-surface';
 import {
@@ -84,12 +86,17 @@ export function analyzeSourceFile(
   const routes = extractRoutes(slice, lexed, lines, location);
   const comments = isBundle ? [] : extractComments(slice, lexed, lines, location);
   const sinks = isBundle
-    ? []
+    ? [
+        ...detectSkimmerPatterns(slice, lines, location, options.siteOrigin),
+        ...auditOAuthSource(slice, lines, location),
+      ]
     : [
         ...extractTaintFlows(slice, lexed, lines, location),
         ...extractSinks(slice, lexed, lines, location),
         ...extractAuthzSurface(slice, lexed, lines, location, endpoints),
         ...auditSourceCrypto(slice, lexed, lines, location),
+        ...detectSkimmerPatterns(slice, lines, location, options.siteOrigin),
+        ...auditOAuthSource(slice, lines, location),
       ];
   const osint = extractOsint(slice, lexed, lines, location, { siteOrigin: options.siteOrigin });
 

@@ -51,6 +51,8 @@ export type SinkCategory =
   | 'redirect'
   | 'authz-idor'
   | 'crypto'
+  | 'supply-chain'
+  | 'oauth'
   | 'framework';
 
 export type SdkCategory =

@@ -18,6 +18,12 @@ import type { SiteSnapshotRecord } from '@/engine/diff';
 import type { CustomRuleRecord } from '@/engine/rules';
 import type { ObservedApiEvent, RuntimeDomEvent } from '@/engine/runtime';
 import type { FileLoadTarget } from '@/engine/search/source-search';
+import {
+  mergeWorkspaceState,
+  registrableDomainFor,
+  sitesInWorkspace,
+  type TriageRecord,
+} from '@/engine/workspace';
 import { clearSearchCache } from './search-client';
 import { buildViewModel } from './view-model';
 
@@ -51,8 +57,21 @@ const snapshots = signal<SiteSnapshotRecord[]>([]);
 const runtimeApi = signal<ObservedApiEvent[]>([]);
 const runtimeDom = signal<RuntimeDomEvent[]>([]);
 const customRules = signal<CustomRuleRecord[]>([]);
+const triage = signal<TriageRecord[]>([]);
+export const workspaceMode = signal<'page' | 'workspace'>('page');
+export const workspaceMeta = signal<{ domain: string; pageCount: number; originCount: number }>({
+  domain: '',
+  pageCount: 0,
+  originCount: 0,
+});
 export const viewerTarget = signal<ViewerTarget | null>(null);
 export const loaded = signal(false);
+
+export function setWorkspaceMode(mode: 'page' | 'workspace'): void {
+  if (workspaceMode.value === mode) return;
+  workspaceMode.value = mode;
+  void refresh();
+}
 
 export function openCodeViewer(target: ViewerTarget): void {
   viewerTarget.value = target;
@@ -76,6 +95,7 @@ export const view = computed(() =>
     runtimeApi.value,
     runtimeDom.value,
     customRules.value,
+    triage.value,
   ),
 );
 
@@ -93,44 +113,96 @@ export async function refresh(): Promise<void> {
     clearSearchCache();
   }
   const allCustomRules = await db.getAll('customRules');
-  const [
-    siteJobs,
-    siteScripts,
-    siteMaps,
-    siteFindings,
-    siteIntel,
-    sitePages,
-    siteAudits,
-    siteSnapshots,
-    siteRuntimeApi,
-    siteRuntimeDom,
-  ] = active
-    ? await Promise.all([
-        db.getAllFromIndex('jobs', 'by-origin', active.origin),
-        db.getAllFromIndex('scripts', 'by-origin', active.origin),
-        db.getAllFromIndex('maps', 'by-origin', active.origin),
-        db.getAllFromIndex('findings', 'by-origin', active.origin),
-        db.getAllFromIndex('intel', 'by-origin', active.origin),
-        db.getAllFromIndex('pages', 'by-origin', active.origin),
-        db.getAllFromIndex('audits', 'by-origin', active.origin),
-        db.getAllFromIndex('snapshots', 'by-origin', active.origin),
-        db.getAllFromIndex('runtimeApi', 'by-origin', active.origin),
-        db.getAllFromIndex('runtimeDom', 'by-origin', active.origin),
-      ])
-    : [[], [], [], [], [], [], [], [], [], []];
+  const domain = active ? registrableDomainFor(active.origin) : '';
+  const wsSites = active ? sitesInWorkspace(allSites, active.origin) : [];
+  const targetOrigins =
+    active && workspaceMode.peek() === 'workspace' && wsSites.length > 0
+      ? wsSites.map((s) => s.origin)
+      : active
+        ? [active.origin]
+        : [];
+
+  const perOrigin = await Promise.all(
+    targetOrigins.map(async (o) => {
+      const [
+        siteJobs,
+        siteScripts,
+        siteMaps,
+        siteFindings,
+        siteIntel,
+        sitePages,
+        siteAudits,
+        siteSnapshots,
+        siteRuntimeApi,
+        siteRuntimeDom,
+      ] = await Promise.all([
+        db.getAllFromIndex('jobs', 'by-origin', o),
+        db.getAllFromIndex('scripts', 'by-origin', o),
+        db.getAllFromIndex('maps', 'by-origin', o),
+        db.getAllFromIndex('findings', 'by-origin', o),
+        db.getAllFromIndex('intel', 'by-origin', o),
+        db.getAllFromIndex('pages', 'by-origin', o),
+        db.getAllFromIndex('audits', 'by-origin', o),
+        db.getAllFromIndex('snapshots', 'by-origin', o),
+        db.getAllFromIndex('runtimeApi', 'by-origin', o),
+        db.getAllFromIndex('runtimeDom', 'by-origin', o),
+      ]);
+      return {
+        siteJobs,
+        siteScripts,
+        siteMaps,
+        siteFindings,
+        siteIntel,
+        sitePages,
+        siteAudits,
+        siteSnapshots,
+        siteRuntimeApi,
+        siteRuntimeDom,
+      };
+    }),
+  );
+
+  const siteTriage = active
+    ? workspaceMode.peek() === 'workspace' && domain
+      ? await db.getAllFromIndex('triage', 'by-domain', domain)
+      : await db.getAllFromIndex('triage', 'by-origin', active.origin)
+    : [];
+
+  const merged = active
+    ? mergeWorkspaceState({
+        domain,
+        origins: targetOrigins,
+        jobs: perOrigin.flatMap((x) => x.siteJobs),
+        scripts: perOrigin.flatMap((x) => x.siteScripts),
+        maps: perOrigin.flatMap((x) => x.siteMaps),
+        findings: perOrigin.flatMap((x) => x.siteFindings),
+        intel: perOrigin.flatMap((x) => x.siteIntel),
+        pages: perOrigin.flatMap((x) => x.sitePages),
+        audits: perOrigin.flatMap((x) => x.siteAudits),
+        runtimeApi: perOrigin.flatMap((x) => x.siteRuntimeApi),
+        runtimeDom: perOrigin.flatMap((x) => x.siteRuntimeDom),
+      })
+    : null;
+
   batch(() => {
     sites.value = allSites;
-    jobs.value = siteJobs;
-    scripts.value = siteScripts;
-    maps.value = siteMaps;
-    findings.value = siteFindings;
-    intel.value = siteIntel;
-    pages.value = sitePages;
-    audits.value = siteAudits;
-    snapshots.value = siteSnapshots;
-    runtimeApi.value = siteRuntimeApi;
-    runtimeDom.value = siteRuntimeDom;
+    jobs.value = merged ? merged.jobs : [];
+    scripts.value = merged ? merged.scripts : [];
+    maps.value = merged ? merged.maps : [];
+    findings.value = merged ? merged.findings : [];
+    intel.value = perOrigin.flatMap((x) => x.siteIntel);
+    pages.value = merged ? merged.pages : [];
+    audits.value = merged ? merged.audits : [];
+    snapshots.value = perOrigin.flatMap((x) => x.siteSnapshots);
+    runtimeApi.value = merged ? merged.runtimeApi : [];
+    runtimeDom.value = merged ? merged.runtimeDom : [];
     customRules.value = allCustomRules;
+    triage.value = siteTriage;
+    workspaceMeta.value = {
+      domain,
+      pageCount: merged?.pageCount ?? 0,
+      originCount: wsSites.length,
+    };
     loaded.value = true;
   });
 }

@@ -1,4 +1,5 @@
 import type { FindingRecord, Severity } from '@/core/db';
+import type { AuditFinding } from '@/engine/audit';
 import type { HintLevel, SinkCategory, SinkHit } from '@/engine/intel';
 
 export type SarifLevel = 'error' | 'warning' | 'note';
@@ -91,6 +92,14 @@ const SINK_CWE: Record<SinkCategory, string[]> = {
   redirect: ['security', 'external/cwe/cwe-601'],
   'authz-idor': ['security', 'external/cwe/cwe-639', 'external/cwe/cwe-346'],
   crypto: ['security', 'external/cwe/cwe-327', 'external/cwe/cwe-338'],
+  'supply-chain': [
+    'security',
+    'supply-chain',
+    'external/cwe/cwe-353',
+    'external/cwe/cwe-829',
+    'external/cwe/cwe-1104',
+  ],
+  oauth: ['security', 'oauth', 'external/cwe/cwe-352', 'external/cwe/cwe-601'],
   framework: ['security', 'external/cwe/cwe-79'],
 };
 
@@ -101,6 +110,7 @@ function sanitizeUri(path: string): string {
 export function buildSarifLog(input: {
   findings: readonly FindingRecord[];
   sinks: readonly SinkHit[];
+  auditFindings?: readonly AuditFinding[];
   origin: string;
   version: string;
 }): SarifLog {
@@ -194,6 +204,37 @@ export function buildSarifLog(input: {
     });
   }
 
+  for (const a of input.auditFindings ?? []) {
+    if (a.category !== 'supply-chain' && a.category !== 'oauth') continue;
+    const sarifRuleId = `audit/${a.ruleId}`;
+    if (!rulesMap.has(sarifRuleId)) {
+      rulesMap.set(sarifRuleId, {
+        id: sarifRuleId,
+        name: a.title,
+        shortDescription: { text: a.title },
+        defaultConfiguration: { level: SECRET_LEVEL[a.severity] },
+        properties: {
+          tags: SINK_CWE[a.category],
+          'security-severity': SECRET_SCORE[a.severity],
+        },
+      });
+    }
+    results.push({
+      ruleId: sarifRuleId,
+      level: SECRET_LEVEL[a.severity],
+      message: { text: `${a.title}: ${a.detail}` },
+      locations: [
+        {
+          physicalLocation: {
+            artifactLocation: { uri: sanitizeUri(a.subject), uriBaseId: '%SRCROOT%' },
+            region: { startLine: 1, startColumn: 1 },
+          },
+        },
+      ],
+      partialFingerprints: { primaryLocationLineHash: a.id },
+    });
+  }
+
   const rules = [...rulesMap.values()].sort((a, b) => a.id.localeCompare(b.id));
 
   return {
@@ -219,6 +260,7 @@ export function buildSarifLog(input: {
 export function sarifJson(input: {
   findings: readonly FindingRecord[];
   sinks: readonly SinkHit[];
+  auditFindings?: readonly AuditFinding[];
   origin: string;
   version: string;
 }): string {

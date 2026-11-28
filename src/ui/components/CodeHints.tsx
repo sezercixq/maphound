@@ -5,10 +5,12 @@ import { draftSinkReport } from '@/engine/export';
 import type { HintLevel, SinkCategory, SinkHit } from '@/engine/intel';
 import type { RuntimeDomEvent } from '@/engine/runtime';
 import { generatePostMessageFixSnippet } from '@/engine/verify';
+import { filterByTriage, findingTriageId, type TriageRecord } from '@/engine/workspace';
 import { formatBytes, HINT_LEVEL_KEYS, NEXT_DATA_REASON_KEYS, SINK_CATEGORY_KEYS } from '../format';
 import { t } from '../i18n';
 import { openCodeViewer, refresh } from '../state';
 import { Badge, CopyDraftButton, Section, Toggle } from './primitives';
+import { TriageBar, TriageSummaryBar } from './TriageControls';
 
 const SINK_CATEGORIES: readonly SinkCategory[] = [
   'taint-flow',
@@ -18,6 +20,8 @@ const SINK_CATEGORIES: readonly SinkCategory[] = [
   'redirect',
   'authz-idor',
   'crypto',
+  'supply-chain',
+  'oauth',
   'framework',
 ];
 
@@ -144,15 +148,20 @@ export function CodeHintsView({
   runtimeDom = [],
   runtimeGuard = false,
   origin,
+  triageRecords = [],
+  triageById = new Map(),
 }: {
   sinks: SinkHit[];
   pages: PageIntelRecord[];
   runtimeDom?: readonly RuntimeDomEvent[];
   runtimeGuard?: boolean;
   origin: string;
+  triageRecords?: readonly TriageRecord[];
+  triageById?: ReadonlyMap<string, TriageRecord>;
 }) {
   const activeCategory = useSignal<SinkCategory | 'all'>('all');
   const activeLevel = useSignal<HintLevel | 'all'>('all');
+  const showDismissed = useSignal(false);
   const limit = useSignal(PAGE_LIMIT);
   const togglingGuard = useSignal(false);
   const copiedFix = useSignal<string | null>(null);
@@ -167,11 +176,19 @@ export function CodeHintsView({
     }
   };
 
+  const sinkTriageKind = (cat: SinkCategory) =>
+    cat === 'supply-chain' || cat === 'oauth' ? cat : 'sink';
+  const sinkId = (s: SinkHit) =>
+    findingTriageId(sinkTriageKind(s.category), s.ruleId, s.location.file, String(s.location.line));
+
+  const triaged = filterByTriage(sinks, sinkId, triageById, showDismissed.value);
+  const activeSinks = triaged.visible;
+
   const presentCategories = SINK_CATEGORIES.filter((cat) =>
-    sinks.some((sink) => sink.category === cat),
+    activeSinks.some((sink) => sink.category === cat),
   );
-  const presentLevels = SINK_LEVELS.filter((lvl) => sinks.some((sink) => sink.level === lvl));
-  const filtered = sinks.filter(
+  const presentLevels = SINK_LEVELS.filter((lvl) => activeSinks.some((sink) => sink.level === lvl));
+  const filtered = activeSinks.filter(
     (sink) =>
       (activeCategory.value === 'all' || sink.category === activeCategory.value) &&
       (activeLevel.value === 'all' || sink.level === activeLevel.value),
@@ -227,6 +244,15 @@ export function CodeHintsView({
       )}
 
       <Section title={t('hintsSectionSinks')} count={filtered.length}>
+        <TriageSummaryBar
+          records={triageRecords}
+          target={origin}
+          dismissedCount={triaged.dismissedCount}
+          showDismissed={showDismissed.value}
+          onToggleDismissed={() => {
+            showDismissed.value = !showDismissed.value;
+          }}
+        />
         {presentCategories.length > 1 && (
           <div class="flex flex-wrap gap-1 px-0.5">
             <button
@@ -389,6 +415,16 @@ export function CodeHintsView({
                     <pre class="overflow-hidden truncate rounded bg-black/30 px-2 py-1 font-mono text-[10px] text-zinc-300">
                       {sink.snippet}
                     </pre>
+                    <TriageBar
+                      triageId={sinkId(sink)}
+                      origin={origin}
+                      kind={sinkTriageKind(sink.category)}
+                      title={sink.title}
+                      severity={sink.level}
+                      asset={`${sink.location.file}:${sink.location.line}`}
+                      evidence={sink.snippet}
+                      record={triageById.get(sinkId(sink))}
+                    />
                   </li>
                 );
               })}

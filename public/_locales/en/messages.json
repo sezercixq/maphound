@@ -859,5 +859,62 @@
   },
   "customRulesDelete": {
     "message": "Delete"
+  },
+  "workspaceActivePage": {
+    "message": "Active Page"
+  },
+  "workspaceUnifiedLabel": {
+    "message": "*.$1 ($2 pages)"
+  },
+  "sinkCatSupplyChain": {
+    "message": "Supply Chain"
+  },
+  "sinkCatOauth": {
+    "message": "OAuth / SAML"
+  },
+  "auditCatSupplyChain": {
+    "message": "Supply Chain"
+  },
+  "auditCatOauth": {
+    "message": "OAuth / SAML"
+  },
+  "triageStatusLabel": {
+    "message": "Triage status"
+  },
+  "triageStatusUnreviewed": {
+    "message": "Unreviewed"
+  },
+  "triageStatusConfirmed": {
+    "message": "Confirmed"
+  },
+  "triageStatusInvestigating": {
+    "message": "Investigating"
+  },
+  "triageStatusFalsePositive": {
+    "message": "False Positive"
+  },
+  "triageAddNote": {
+    "message": "+ Note"
+  },
+  "triageEditNote": {
+    "message": "Edit note"
+  },
+  "triageNotePlaceholder": {
+    "message": "Researcher note or impact summary…"
+  },
+  "triageSaveNote": {
+    "message": "Save"
+  },
+  "triageCopyBounty": {
+    "message": "Copy H1/BC"
+  },
+  "triageCopyFullReport": {
+    "message": "Copy Bounty Report ($1)"
+  },
+  "triageShowDismissed": {
+    "message": "Show dismissed ($1)"
+  },
+  "triageHideDismissed": {
+    "message": "Hide dismissed ($1)"
   }
 }

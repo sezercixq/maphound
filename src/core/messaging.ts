@@ -4,6 +4,7 @@ import type { NextDataSummary } from '@/engine/intel';
 import type { CustomRuleRecord } from '@/engine/rules';
 import type { RuntimeDomKind } from '@/engine/runtime';
 import type { SafeCheckReport } from '@/engine/verify';
+import type { TriageRecord } from '@/engine/workspace';
 import type { MapAnalysisRequest, MapAnalysisResult } from './analyze';
 import type { Scope, SiteSettings } from './db';
 import type { ScriptScanRequest, ScriptScanResult } from './scan-job';
@@ -64,6 +65,9 @@ export interface ProtocolMap {
   'rules:save': (data: { rule: CustomRuleRecord }) => { ok: boolean; error?: string };
   'rules:delete': (data: { id: string }) => { ok: boolean };
   'rules:toggle': (data: { id: string; enabled: boolean }) => { ok: boolean };
+  /** Bug Bounty Triage persistence (status + researcher note). */
+  'triage:save': (data: { record: TriageRecord }) => { ok: boolean };
+  'triage:delete': (data: { id: string }) => { ok: boolean };
   /** Sent by the side panel after `permissions.request` succeeded. */
   'site:enable': (data: {
     origin: string;

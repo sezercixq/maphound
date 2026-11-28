@@ -14,6 +14,7 @@ import { isRelatedDomain } from '@/core/scope';
 import {
   AUDIT_SEVERITY_ORDER,
   type AuditFinding,
+  auditOAuthRuntimeDom,
   extractStackHints,
   type StackHint,
 } from '@/engine/audit';
@@ -30,6 +31,7 @@ import {
   observedEventsToEndpoints,
   type RuntimeDomEvent,
 } from '@/engine/runtime';
+import type { TriageRecord } from '@/engine/workspace';
 import { combineSiteIntel } from '@/engine/zip/endpoints-report';
 import { countBySeverity, sortFindings } from '@/engine/zip/findings-report';
 import { fileName, hostOf } from './format';
@@ -104,6 +106,9 @@ export interface ViewModel {
   runtimeDom: RuntimeDomEvent[];
   /** User-defined custom regex rules (ReDoS-validated). */
   customRules: CustomRuleRecord[];
+  /** Persistent Bug Bounty triage statuses & notes keyed by finding ID. */
+  triageRecords: TriageRecord[];
+  triageById: Map<string, TriageRecord>;
   endpointCount: number;
   hintCount: number;
   osintCount: number;
@@ -130,6 +135,7 @@ export function buildViewModel(
   runtimeApi: readonly ObservedApiEvent[] = [],
   runtimeDom: readonly RuntimeDomEvent[] = [],
   customRules: readonly CustomRuleRecord[] = [],
+  triageRecords: readonly TriageRecord[] = [],
 ): ViewModel {
   const scriptByHash = new Map(scripts.map((s) => [s.hash, s]));
   const mapById = new Map(maps.map((m) => [m.id, m]));
@@ -221,6 +227,9 @@ export function buildViewModel(
       if (!auditFindingsMap.has(f.id)) auditFindingsMap.set(f.id, f);
     }
   }
+  for (const f of auditOAuthRuntimeDom(runtimeDom)) {
+    if (!auditFindingsMap.has(f.id)) auditFindingsMap.set(f.id, f);
+  }
   const auditFindings = [...auditFindingsMap.values()].sort(
     (a, b) =>
       AUDIT_SEVERITY_ORDER[b.severity] - AUDIT_SEVERITY_ORDER[a.severity] ||
@@ -267,6 +276,8 @@ export function buildViewModel(
     runtimeApi: [...runtimeApi].sort((a, b) => b.lastSeen - a.lastSeen),
     runtimeDom: [...runtimeDom].sort((a, b) => b.lastSeen - a.lastSeen),
     customRules: [...customRules].sort((a, b) => b.createdAt - a.createdAt),
+    triageRecords: [...triageRecords].sort((a, b) => b.updatedAt - a.updatedAt),
+    triageById: new Map(triageRecords.map((r) => [r.id, r])),
     endpointCount,
     hintCount,
     osintCount,

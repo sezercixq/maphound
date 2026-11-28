@@ -38,6 +38,7 @@ describe('schema', () => {
         'scripts',
         'sites',
         'snapshots',
+        'triage',
       ].sort(),
     );
     expect([...db.transaction('findings').store.indexNames].sort()).toEqual(

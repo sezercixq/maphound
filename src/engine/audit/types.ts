@@ -1,4 +1,4 @@
-export type AuditCategory = 'headers' | 'cookie' | 'storage';
+export type AuditCategory = 'headers' | 'cookie' | 'storage' | 'supply-chain' | 'oauth';
 export type AuditSeverity = 'critical' | 'high' | 'medium' | 'low' | 'info';
 
 export const AUDIT_SEVERITY_ORDER: Record<AuditSeverity, number> = {
@@ -84,10 +84,22 @@ export interface DiscoveryFilesRecord {
   sitemap: SitemapSummary;
 }
 
+export interface ExternalResourceTag {
+  tag: 'script' | 'stylesheet';
+  url: string;
+  integrity?: string;
+  crossOrigin?: string | null;
+}
+
 export interface ClientAuditPayload {
   pageUrl: string;
   storageFindings: AuditFinding[];
   cookieFindings: AuditFinding[];
+  /** Client-side SRI / Supply Chain and OAuth URL/fragment audit findings. */
+  supplyChainFindings?: AuditFinding[];
+  oauthFindings?: AuditFinding[];
+  /** External <script> and <link rel="stylesheet"> tags captured for SRI auditing. */
+  externalResources?: ExternalResourceTag[];
   /** Cookie names only (never values), for passive backend stack fingerprinting. */
   cookieNames?: string[];
   htmlAudit?: HtmlAuditSummary;

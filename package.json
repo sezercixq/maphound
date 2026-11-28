@@ -1,6 +1,6 @@
 {
   "name": "maphound",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "private": true,
   "description": "Passive source map and bundle secret scanner. Everything stays local.",
   "license": "MIT",

@@ -859,5 +859,62 @@
   },
   "customRulesDelete": {
     "message": "Sil"
+  },
+  "workspaceActivePage": {
+    "message": "Aktif Sayfa"
+  },
+  "workspaceUnifiedLabel": {
+    "message": "*.$1 ($2 sayfa)"
+  },
+  "sinkCatSupplyChain": {
+    "message": "Tedarik Zinciri"
+  },
+  "sinkCatOauth": {
+    "message": "OAuth / SAML"
+  },
+  "auditCatSupplyChain": {
+    "message": "Tedarik Zinciri"
+  },
+  "auditCatOauth": {
+    "message": "OAuth / SAML"
+  },
+  "triageStatusLabel": {
+    "message": "Triyaj durumu"
+  },
+  "triageStatusUnreviewed": {
+    "message": "İncelenmedi"
+  },
+  "triageStatusConfirmed": {
+    "message": "Doğrulandı"
+  },
+  "triageStatusInvestigating": {
+    "message": "İnceleniyor"
+  },
+  "triageStatusFalsePositive": {
+    "message": "Yoksay (FP)"
+  },
+  "triageAddNote": {
+    "message": "+ Not"
+  },
+  "triageEditNote": {
+    "message": "Notu düzenle"
+  },
+  "triageNotePlaceholder": {
+    "message": "Araştırmacı notu veya etki özeti…"
+  },
+  "triageSaveNote": {
+    "message": "Kaydet"
+  },
+  "triageCopyBounty": {
+    "message": "H1/BC Kopyala"
+  },
+  "triageCopyFullReport": {
+    "message": "Bounty Raporu Kopyala ($1)"
+  },
+  "triageShowDismissed": {
+    "message": "Yoksayılanları göster ($1)"
+  },
+  "triageHideDismissed": {
+    "message": "Yoksayılanları gizle ($1)"
   }
 }

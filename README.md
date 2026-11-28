@@ -59,6 +59,11 @@ you export everything as a ZIP. No server, no account, no telemetry.
 - **On-demand standard discovery files (`robots.txt` & `sitemap.xml`).** User-triggered button in
   the **OSINT** tab parses `Disallow:`, `Allow:`, `Sitemap:` and `<loc>` entries into clickable
   lists and includes them in `OSINT.md` and `ENDPOINTS.md` (zero background brute-force).
+- **Target Workspace, Supply Chain, OAuth/SAML & Bug Bounty Triage (`v0.8.0`).** Merge multi-page
+  and multi-subdomain findings under one registrable domain (`*.domain.com`), audit missing SRI /
+  outdated JS libraries / web skimmer patterns and OAuth/OIDC/SAML client flows offline, triage
+  findings with persistent false-positive suppression, and export HackerOne/Bugcrowd reports
+  (`TRIAGE_REPORT.md`).
 - **Snapshot & Diff tracking.** Compares deployments and rescans across files, endpoints, routes,
   secrets and code sinks (`DIFF.md`).
 - **Source-to-Sink taint flow, AuthZ/IDOR & crypto/JWT auditing.** Tracks untrusted browser inputs

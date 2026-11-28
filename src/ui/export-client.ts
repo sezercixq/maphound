@@ -28,6 +28,7 @@ export function downloadSourcesZip(
   origin: string,
   onProgress: (done: number, total: number) => void,
   includeSecrets = false,
+  workspaceMode = false,
 ): Promise<ExportOutcome> {
   const worker = new ExportWorker();
   const parts: Uint8Array<ArrayBuffer>[] = [];
@@ -66,6 +67,7 @@ export function downloadSourcesZip(
       origin,
       generator: `MapHound ${browser.runtime.getManifest().version}`,
       includeSecrets,
+      workspaceMode,
     };
     worker.postMessage(request);
   });
